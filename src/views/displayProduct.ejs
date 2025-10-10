@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get CRUD</title>
+</head>
+<style>
+table,th,td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}  
+</style>
+<body>
+<table style="width:100%">
+        <tr>
+          <th>ProductId</th>
+          <th>ProductName</th>
+          <th>ProductPrice</th>
+          <th>Desciption</th>
+          <th>Size</th>
+          <th>Image</th>
+          <th>Quantity</th>
+          <th>CategoryType</th>
+ 
+        </tr>
+        <tr>
+            <% for(let i=0; i < dataProducts.length; i++) { %>
+                <tr>
+                  <td><%= dataProducts[i].productId %></td>
+                  <td><%= dataProducts[i].productName %></td>
+                  <td><%= dataProducts[i].productPrice %></td>
+                  <td><%= dataProducts[i].descriptions %></td>
+                  <td><%= dataProducts[i].size %></td>
+                  <td><%= dataProducts[i].image %></td>
+                  <td><%= dataProducts[i].quantity %></td>
+                  <td><%= dataProducts[i].categoryType %></td>
+ 
+              
+                </tr>
+             <% } %>
+        </tr> 
+      </table>
+
+  
+
+    
+</body>
+</html>

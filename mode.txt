@@ -1,0 +1,28 @@
+create Database by sequelize: npx sequelize-cli db:migrate
+
+check seeder :npx sequelize-cli db:seed:all
+
+ CRUD : create ,read , update ,delete 
+ API: dung de giao tiep giua backend va fontend
+ BackEnd:Node.js(Database) Database=> data object-> json object(key , value)
+ FontEnd:React.js(interface)
+ 
+
+ npm i error :npm i --legacy-peer-deps
+
+ set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start
+
+
+
+CORS: npm install -save cors@2.8.5
+CORS Error xảy ra khi trình duyệt ngăn chặn một yêu cầu 
+HTTP đến một nguồn (domain) khác với nguồn mà 
+trang web hiện tại đang chạy,
+ do vi phạm các quy tắc bảo mật của 
+ Cross-Origin Resource Sharing (CORS).
+
+
+Frontend (nén ảnh) 
+  → Backend (nhận ảnh, lưu vào /uploads) 
+  → Database (lưu path) 
+  → Client (hiển thị qua URL /uploads/filename.jpg)
