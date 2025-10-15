@@ -41,8 +41,8 @@ let initWebRoutes = (app) => {
     // Get All Users
     router.get(
         "/api/get-all-user",
-        authMiddleware,
-        adminMiddleware,
+        // authMiddleware,
+        // adminMiddleware,
         userController.getAllUser
     );
     //Update User Data
@@ -62,8 +62,8 @@ let initWebRoutes = (app) => {
     //Delete User by ID
     router.get(
         "/api/delete-user",
-        authMiddleware,
-        adminMiddleware,
+        // authMiddleware,
+        // adminMiddleware,
         userController.deleteUserByID
     );
     //---------------------------------------------------------------------------------------------

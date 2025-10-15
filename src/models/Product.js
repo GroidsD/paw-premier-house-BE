@@ -1,32 +1,36 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Product extends Model {
     static associate(models) {
-      Product.belongsToMany(models.Appointment, {
-        through: models.AppointmentServiceProduct,
-        foreignKey: "productId",
-      });
+      Product.hasMany(models.ProductTranslate, { foreignKey: "product_id", as: "translations" });
+      Product.belongsTo(models.Category, { foreignKey: "category_id", as: "category" });
+      Product.hasMany(models.OrderItem, { foreignKey: "product_id", as: "orderItems" });
     }
   }
 
   Product.init(
     {
-      productId: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
+      // id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+
+      product_id: {
+        type: DataTypes.STRING,
+        unique: true,
+        autoIncrement: true, primaryKey: true 
       },
-      name: DataTypes.STRING,
-      price: DataTypes.DECIMAL(10, 2),
-      description: DataTypes.TEXT,
-      status: DataTypes.ENUM("available", "out_of_stock"),
-      type: DataTypes.STRING,
+
+      category_id: { type: DataTypes.INTEGER, allowNull: false },
+
+      status: {
+        type: DataTypes.ENUM("active", "inactive", "deleted"),
+        defaultValue: "active",
+      },
     },
     {
       sequelize,
       modelName: "Product",
-      tableName: "product",
+      tableName: "products",
       freezeTableName: true,
     }
   );

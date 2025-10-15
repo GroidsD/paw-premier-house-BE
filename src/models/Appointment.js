@@ -1,33 +1,55 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Appointment extends Model {
     static associate(models) {
-      Appointment.belongsTo(models.User, { foreignKey: "customerId", as: "customer" });
-      Appointment.belongsTo(models.User, { foreignKey: "staffId", as: "staff" });
-      Appointment.belongsTo(models.Pet, { foreignKey: "petId", as: "pet" });
-      Appointment.hasOne(models.Payment, { foreignKey: "appointmentId", as: "payment" });
-      Appointment.hasMany(models.Feedback, { foreignKey: "appointmentId", as: "feedback" });
-      Appointment.belongsToMany(models.Service, {
-        through: models.AppointmentServiceProduct,
-        foreignKey: "appointmentId",
-      });
+      // 1 khách hàng có nhiều lịch hẹn
+      Appointment.belongsTo(models.User, { foreignKey: "customer_id", as: "customer" });
+
+      // 1 nhân viên có thể có nhiều lịch hẹn
+      Appointment.belongsTo(models.User, { foreignKey: "staff_id", as: "staff" });
+
+      // 1 lịch hẹn có thể chứa nhiều dịch vụ
+      Appointment.hasMany(models.AppointmentItem, { foreignKey: "appointment_id", as: "items" });
     }
   }
 
   Appointment.init(
     {
-      appointmentId: {
+
+
+      appointment_id: {
         type: DataTypes.INTEGER,
-        autoIncrement: true,
+        unique: true,
+         autoIncrement: true,
         primaryKey: true,
       },
-      staffId: DataTypes.INTEGER,
-      customerId: DataTypes.INTEGER,
-      petId: DataTypes.INTEGER,
-      appointmentDate: DataTypes.DATE,
-      status: DataTypes.ENUM("pending", "confirmed", "cancelled", "completed"),
-      notes: DataTypes.TEXT,
+
+      customer_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
+      staff_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
+      total_price: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
+      },
+
+      status: {
+        type: DataTypes.ENUM("pending", "confirmed", "completed", "cancelled"),
+        defaultValue: "pending",
+      },
+
+      date: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize,

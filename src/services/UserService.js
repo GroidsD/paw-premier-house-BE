@@ -58,7 +58,7 @@ let updateUserData = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
       let user = await db.User.findOne({
-        where: { userId: data.userId },
+        where: { user_id: data.userId },
       });
 
       if (user) {
@@ -97,7 +97,7 @@ let deleteUserByID = (userId) => {
       }
 
       let user = await db.User.findOne({
-        where: { userId: userId },
+        where: { user_id: userId },
       });
 
       if (!user) {
@@ -106,7 +106,8 @@ let deleteUserByID = (userId) => {
           errMessage: "User not found",
         });
       } else {
-        await user.destroy();
+        // await user.destroy();
+        await user.update({ status: "inactive" });
         resolve({
           errCode: 0,
           errMessage: "User deleted successfully",
