@@ -28,3 +28,7 @@ Frontend (nén ảnh)
   → Backend (nhận ảnh, lưu vào /uploads) 
   → Database (lưu path) 
   → Client (hiển thị qua URL /uploads/filename.jpg)
+
+
+ngrok config add-authtoken ...... bỏ token vào chổ chấm 
+  chạy lệnh ngrok: ngrok http 5050
