@@ -3,8 +3,8 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("CategoryTranslates", {
-            id: {
+        await queryInterface.createTable("categoryTranslates", {
+            categoryTranslate_id: {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true,
@@ -12,33 +12,39 @@ module.exports = {
             },
             category_id: {
                 type: Sequelize.INTEGER,
+                allowNull: false,
                 references: {
-                    model: "Categories",
-                    key: "id",
+                    model: "category", // đúng với tableName trong model Category
+                    key: "category_id",
                 },
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             },
-            language: {
+            name: {
                 type: Sequelize.STRING,
                 allowNull: false,
             },
-            translation: {
-                type: Sequelize.STRING,
+            lang: {
+                type: Sequelize.ENUM("vi", "en"),
                 allowNull: false,
+                defaultValue: "vi",
             },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE,
+                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
             updatedAt: {
                 allowNull: false,
                 type: Sequelize.DATE,
+                defaultValue: Sequelize.literal(
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                ),
             },
         });
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable("CategoryTranslates");
+        await queryInterface.dropTable("categoryTranslates");
     },
 };

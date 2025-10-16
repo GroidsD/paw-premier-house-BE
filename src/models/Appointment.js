@@ -18,21 +18,20 @@ module.exports = (sequelize, DataTypes) => {
   Appointment.init(
     {
 
-
       appointment_id: {
         type: DataTypes.INTEGER,
         unique: true,
-         autoIncrement: true,
+        autoIncrement: true,
         primaryKey: true,
       },
 
       customer_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         allowNull: true,
       },
 
       staff_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         allowNull: true,
       },
 

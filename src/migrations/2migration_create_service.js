@@ -3,12 +3,12 @@
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("services", {
-            id: {
+            services_id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
+                unique: true,
                 primaryKey: true,
             },
-            services_id: { type: Sequelize.STRING, unique: true },
             status: {
                 type: Sequelize.ENUM("active", "inactive", "deleted"),
                 defaultValue: "active",

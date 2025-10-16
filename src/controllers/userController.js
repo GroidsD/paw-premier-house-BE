@@ -39,6 +39,7 @@ let getAllUser = async (req, res) => {
 };
 
 let createNewUser = async (req, res) => {
+  console.log("Check req.user:", req.body);
   try {
     // Check if the current logged in user is admin
     // if (!req.user || req.user.role !== "admin") {
@@ -48,9 +49,9 @@ let createNewUser = async (req, res) => {
     //   });
     // }
 
-    const { role, email, password, name, } = req.body;
+    const { userId, role, email, password, name, phone, address, status } = req.body;
 
-    if (!email || !password || !name || !role ) {
+    if (!email || !password || !name ) {
       return res.status(400).json({
         errCode: 1,
         errMessage: "Missing required fields",
@@ -58,11 +59,14 @@ let createNewUser = async (req, res) => {
     }
 
     let result = await UserService.createNewUser({
+      userId,
+      phone,
+      address,
+      status,
       email,
       password,
       name,
       role,
-    
     });
 
     if (result.error) {

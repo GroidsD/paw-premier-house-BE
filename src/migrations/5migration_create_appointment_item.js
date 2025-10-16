@@ -15,7 +15,7 @@ module.exports = {
             // Khóa ngoại tham chiếu đến bảng 'appointments'
             appointment_id: {
                 type: Sequelize.INTEGER,
-                allowNull: true, // Thêm ràng buộc NOT NULL từ model
+                allowNull: false, // Thêm ràng buộc NOT NULL từ model
                 references: {
                     // Sử dụng tên bảng đã sửa: "appointments"
                     model: "appointments",
@@ -32,7 +32,7 @@ module.exports = {
                 references: {
                     // Sử dụng tên bảng đã sửa: "services"
                     model: "services",
-                    key: "id", 
+                    key: "services_id", 
                 },
                 onUpdate: "CASCADE",
                 // Thay đổi thành CASCADE để nhất quán với allowNull: false, hoặc thay SET NULL bằng RESTRICT.

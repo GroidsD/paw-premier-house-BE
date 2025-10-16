@@ -17,13 +17,14 @@ let createNewUser = async (data) => {
       return { error: true, message: "Email already exists" };
     }
 
+    
     let hashPasswordFromBcrypt = await hashUserPassword(data.password);
     await db.User.create({
+      user_id: data.userId,
       email: data.email,
       password: hashPasswordFromBcrypt,
       name: data.name,
-      role: data.role,
-    
+      
     });
 
     return { error: false, message: "Create new user successful" };

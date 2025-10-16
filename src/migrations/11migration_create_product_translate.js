@@ -1,10 +1,9 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("ProductTranslates", {
-            id: {
+        await queryInterface.createTable("productTranslates", {
+            productTranslate_id: {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true,
@@ -12,33 +11,41 @@ module.exports = {
             },
             product_id: {
                 type: Sequelize.INTEGER,
+                allowNull: false,
                 references: {
                     model: "products",
-                    key: "id",
+                    key: "product_id",
                 },
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             },
-            language: {
+            name: {
                 type: Sequelize.STRING,
-                allowNull: false,
             },
-            translation: {
-                type: Sequelize.STRING,
-                allowNull: false,
+            description: {
+                type: Sequelize.TEXT,
+            },
+            lang: {
+                type: Sequelize.ENUM("vi", "en"),
+                defaultValue: "vi",
+            },
+            price: {
+                type: Sequelize.FLOAT,
             },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE,
+                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
             updatedAt: {
                 allowNull: false,
                 type: Sequelize.DATE,
+                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
         });
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable("ProductTranslates");
+        await queryInterface.dropTable("productTranslates");
     },
 };
