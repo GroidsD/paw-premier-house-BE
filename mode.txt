@@ -30,5 +30,5 @@ Frontend (nén ảnh)
   → Client (hiển thị qua URL /uploads/filename.jpg)
 
 
-ngrok config add-authtoken ...... bỏ token vào chổ chấm 
-  chạy lệnh ngrok: ngrok http 5050
+./ngrok config add-authtoken ...... bỏ token vào chổ chấm 
+  chạy lệnh ngrok: ./ngrok http 5050

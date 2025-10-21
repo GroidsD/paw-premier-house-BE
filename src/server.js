@@ -23,7 +23,7 @@ const server = http.createServer(app);
 
 // Cấu hình CORS
 const corsOptions = {
-  origin: process.env.URL_REACT || "http://localhost:3000",
+  origin: [process.env.URL_REACT, "http://localhost:3000"],
   methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
@@ -70,8 +70,8 @@ app.use(
 // View engine & routes
 viewEngine(app);
 initWebRoutes(app);
-app.use("/", productRoutes); 
-app.use("/", orderRoutes); 
+app.use("/", productRoutes);
+app.use("/", orderRoutes);
 app.use("/", spaRoutes);
 
 // Connect DB
