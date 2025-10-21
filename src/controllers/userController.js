@@ -4,7 +4,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 const getCurrentUser = async (req, res) => {
   try {
-    const user = await db.User.findByPk(req.user.userId, {
+    // console.log("Check req.user in getCurrentUser:", req.user);
+    const user = await db.User.findByPk(req.user.user_id, {
       attributes: { exclude: ["password"] },
     });
 
@@ -49,9 +50,10 @@ let createNewUser = async (req, res) => {
     //   });
     // }
 
-    const { userId, role, email, password, name, phone, address, status } = req.body;
+    const { user_id, role, email, password, name, phone, address, status } =
+      req.body;
 
-    if (!email || !password || !name ) {
+    if (!email || !password || !name) {
       return res.status(400).json({
         errCode: 1,
         errMessage: "Missing required fields",
@@ -59,7 +61,7 @@ let createNewUser = async (req, res) => {
     }
 
     let result = await UserService.createNewUser({
-      userId,
+      user_id,
       phone,
       address,
       status,
@@ -88,10 +90,10 @@ let createNewUser = async (req, res) => {
 
 let deleteUserByID = async (req, res) => {
   try {
-    let userId = req.query.userId;
+    let user_id = req.query.user_id;
     // console.log(userId, "ssss");
 
-    let data = await UserService.deleteUserByID(userId);
+    let data = await UserService.deleteUserByID(user_id);
     //console.log(data);
     return res.status(200).json(data);
   } catch (error) {
@@ -140,14 +142,16 @@ const handleLogin = async (req, res) => {
   //   { expiresIn: "1d" }
   // );
   const token = jwt.sign(
-    { userId: user.userId, email: user.email, role: user.role },
+    { user_id: user.user_id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" } // hoặc expiresIn: 180
+    { expiresIn: "1d" }
   );
+
   res.cookie("access_token", token, {
     httpOnly: true,
     secure: true,
-    sameSite: "Lax",
+    sameSite: "none",
+    // sameSite: "Lax",
     // maxAge: 60 * 1000,
   });
 
@@ -158,7 +162,8 @@ const handleLogout = (req, res) => {
   res.clearCookie("access_token", {
     httpOnly: true,
     secure: false,
-    sameSite: "Lax",
+    sameSite: "none",
+    // sameSite: "Lax",
   });
 
   return res.status(200).json({ message: "Logged out successfully" });
@@ -174,7 +179,7 @@ let getUsersByRole = async (req, res) => {
 
     const users = await db.User.findAll({
       where: { role: role },
-      attributes: ["userId", "name", "email"],
+      attributes: ["user_id  ", "name", "email"],
     });
 
     return res.status(200).json({ users });
@@ -192,15 +197,15 @@ let resetUserPassword = async (req, res) => {
       });
     }
 
-    const { userId, newPassword } = req.body;
-    if (!userId || !newPassword) {
+    const { user_id, newPassword } = req.body;
+    if (!user_id || !newPassword) {
       return res.status(400).json({
         errCode: 1,
         errMessage: "Missing userId or newPassword",
       });
     }
 
-    let result = await UserService.resetUserPassword(userId, newPassword);
+    let result = await UserService.resetUserPassword(user_id, newPassword);
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
@@ -221,7 +226,7 @@ let changeMyPassword = async (req, res) => {
     }
 
     let result = await UserService.changeMyPassword(
-      req.user.userId,
+      req.user.user_id,
       oldPassword,
       newPassword,
       logoutAllDevices

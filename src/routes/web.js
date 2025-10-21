@@ -35,21 +35,21 @@ let initWebRoutes = (app) => {
   // User Routes
   router.get(
     "/api/get-users-role",
-    // authMiddleware,
+    authMiddleware,
     userController.getUsersByRole
   );
   // Get All Users
   router.get(
     "/api/get-all-user",
-    // authMiddleware,
-    // adminMiddleware,
+    authMiddleware,
+    adminMiddleware,
     userController.getAllUser
   );
   //Update User Data
   router.post(
     "/api/update-user",
-    // authMiddleware,
-    // adminMiddleware,
+    authMiddleware,
+    adminMiddleware,
     userController.updateUserData
   );
   //create new user
@@ -62,8 +62,8 @@ let initWebRoutes = (app) => {
   //Delete User by ID
   router.get(
     "/api/delete-user",
-    // authMiddleware,
-    // adminMiddleware,
+    authMiddleware,
+    adminMiddleware,
     userController.deleteUserByID
   );
   //---------------------------------------------------------------------------------------------
