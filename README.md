@@ -1,4 +1,4 @@
-# IAMS Backend
+# PET-SANCTUARY Backend
 
 This is the backend service for the IAMS (Internal Audit Management System) project. It is built with Node.js, Express, and Sequelize ORM, providing RESTful APIs and real-time socket communication for the IAMS frontend.
 
