@@ -23,13 +23,49 @@ const server = http.createServer(app);
 
 // Cấu hình CORS
 const corsOptions = {
-  origin: [process.env.URL_REACT, "http://localhost:3000"],
+  origin: [
+    process.env.URL_REACT,
+    "http://localhost:3000",
+    "https://pet-sanctuary-7f78f.web.app",
+  ],
   methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
 };
-
+app.use((req, res, next) => {
+  console.log(`[CORS DEBUG] Request Origin: ${req.headers.origin}`);
+  console.log(`[CORS DEBUG] URL_REACT (Expected): ${process.env.URL_REACT}`);
+  next();
+});
 app.use(cors(corsOptions));
+
+// Sau app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    process.env.URL_REACT,
+    "http://localhost:3000",
+    "https://pet-sanctuary-7f78f.web.app",
+  ];
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+    );
+  }
+
+  next();
+});
+app.options("*", cors(corsOptions));
+
+console.log("CORS allowed origins:", corsOptions.origin);
 
 // Multer static route
 // app.use(

@@ -9,6 +9,11 @@ const authMiddleware = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || !decoded.user_id) {
+      // Nếu decode được nhưng thiếu user_id (payload sai), coi là token lỗi
+      return res.status(403).json({ error: "Invalid token payload" });
+    }
+
     req.user = decoded; // add user in req
     next();
   } catch (err) {

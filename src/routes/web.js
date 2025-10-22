@@ -13,8 +13,8 @@ let initWebRoutes = (app) => {
   //---------------------------------------------------------------------------------------------
 
   // User Routes
-  router.post("/api/login", userController.handleLogin);
-  router.post("/api/logout", userController.handleLogout);
+  router.post("/api/login", userController.login);
+  router.post("/api/logout", userController.logout);
   // User Change Password (Need Login)
   router.post(
     "/api/change-password",
@@ -43,28 +43,28 @@ let initWebRoutes = (app) => {
     "/api/get-all-user",
     authMiddleware,
     adminMiddleware,
-    userController.getAllUser
+    userController.getAllUsers
   );
   //Update User Data
   router.post(
     "/api/update-user",
     authMiddleware,
     adminMiddleware,
-    userController.updateUserData
+    userController.updateUser
   );
   //create new user
   router.post(
     "/api/create-new-user",
     // authMiddleware,
     // adminMiddleware,
-    userController.createNewUser
+    userController.createUser
   );
   //Delete User by ID
   router.get(
     "/api/delete-user",
     authMiddleware,
     adminMiddleware,
-    userController.deleteUserByID
+    userController.deleteUserById
   );
   //---------------------------------------------------------------------------------------------
 
