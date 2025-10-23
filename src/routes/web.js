@@ -40,7 +40,7 @@ let initWebRoutes = (app) => {
   );
   // Get All Users
   router.get(
-    "/api/get-all-user",
+    "/api/get-all-users",
     authMiddleware,
     adminMiddleware,
     userController.getAllUsers
