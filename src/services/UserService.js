@@ -292,6 +292,7 @@ let updateUser = (user_id, data) => {
         email: data.email || user.email,
         phone: data.phone || user.phone,
         address: data.address || user.address,
+        gender: data.gender || user.gender,
         role: data.role || user.role,
         status: data.status || user.status,
       });

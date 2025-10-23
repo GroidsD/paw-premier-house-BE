@@ -49,7 +49,7 @@ let initWebRoutes = (app) => {
   router.post(
     "/api/update-user",
     authMiddleware,
-    adminMiddleware,
+    // adminMiddleware,
     userController.updateUser
   );
   //create new user
