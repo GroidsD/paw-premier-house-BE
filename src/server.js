@@ -24,10 +24,7 @@ const server = http.createServer(app);
 // Cấu hình CORS
 const corsOptions = {
   origin: [
-    process.env.URL_REACT,
-    "http://localhost:3000",
-    "https://pet-sanctuary-7f78f.web.app",
-  ],
+  origin: [process.env.URL_REACT, "http://localhost:3000"],
   methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
