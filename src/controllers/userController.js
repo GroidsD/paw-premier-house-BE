@@ -315,6 +315,8 @@ let createUser = async (req, res) => {
 
 // ✏️ Cập nhật thông tin người dùng
 let updateUser = async (req, res) => {
+
+
   try {
     const { user_id, ...data } = req.body;
     const result = await userService.updateUser(user_id, data);
