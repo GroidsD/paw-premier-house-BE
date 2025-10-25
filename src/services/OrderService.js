@@ -5,7 +5,8 @@ let createOrder = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             const { customer_id, items } = data;
-
+            console.log(data);
+            
             if (!customer_id || !items || items.length === 0) {
                 return resolve({
                     errCode: 1,
@@ -32,7 +33,8 @@ let createOrder = (data) => {
 
                 const price = product.translations[0]?.price || 0;
                 const lineTotal = price * item.quantity;
-
+                console.log(`Product ID: ${item.product_id}, Quantity: ${item.quantity}, Line Total: ${lineTotal}, Price: ${price}`);
+                
                 orderItems.push({
                     product_id: item.product_id,
                     quantity: item.quantity,
@@ -44,15 +46,16 @@ let createOrder = (data) => {
 
             // Tạo đơn hàng
             const order = await db.Order.create({
+                
                 customer_id,
                 total_price,
                 status: "pending",
             });
 
             // Thêm chi tiết đơn hàng
-            for (const it of orderItems) {
+            for (const index of orderItems) {
                 await db.OrderItem.create({
-                    ...it,
+                    ...index,
                     order_id: order.order_id,
                 });
             }
@@ -107,11 +110,11 @@ let getAllOrders = () => {
 };
 
 // GET ORDER BY ID
-let getOrderById = (id) => {
+let getOrderById = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
             let order = await db.Order.findOne({
-                where: { order_id: id },
+                where: { order_id: order_id },
                 include: [
                     {
                         model: db.User,
@@ -149,10 +152,10 @@ let getOrderById = (id) => {
 };
 
 // UPDATE ORDER STATUS
-let updateOrderStatus = (id, status) => {
+let updateOrderStatus = (order_id, status) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let order = await db.Order.findByPk(id);
+            let order = await db.Order.findByPk(order_id);
             if (!order) {
                 return resolve({ errCode: 1, errMessage: "Order not found" });
             }
@@ -167,17 +170,17 @@ let updateOrderStatus = (id, status) => {
 };
 
 // DELETE ORDER
-let deleteOrder = (id) => {
+let deleteOrder = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const order = await db.Order.findByPk(id);
+            const order = await db.Order.findByPk(order_id);
 
             if (!order) {
                 return resolve({ errCode: 1, errMessage: "Order not found" });
             }
 
-            await db.OrderItem.destroy({ where: { order_id: id } });
-            await order.destroy();
+            // await db.OrderItem.destroy({ where: { order_id: order_id } });
+            // await order.destroy();
 
             resolve({ errCode: 0, errMessage: "Order deleted successfully" });
         } catch (e) {

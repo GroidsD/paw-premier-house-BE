@@ -9,6 +9,7 @@ module.exports = {
                 primaryKey: true,
                 allowNull: false,
                 unique: true,
+                autoIncrement: true,
             },
 
             customer_id: {
@@ -16,7 +17,7 @@ module.exports = {
                 allowNull: true,
                 references: {
                     model: "users", // tên bảng users (chữ thường, khớp với User.tableName)
-                    key: "user_id", // khóa chính trong bảng users
+                    key: "user_id", // khoá chính trong bảng users
                 },
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",

@@ -23,8 +23,8 @@ let getAllOrders = async (req, res) => {
 
 let getOrderById = async (req, res) => {
     try {
-        const id = req.params.id;
-        const order = await orderService.getOrderById(id);
+        const order_id = req.query.id;
+        const order = await orderService.getOrderById(order_id);
         return res.status(200).json(order);
     } catch (e) {
         console.error(e);
@@ -34,8 +34,8 @@ let getOrderById = async (req, res) => {
 
 let updateStatus = async (req, res) => {
     try {
-        const { id, status } = req.body;
-        const result = await orderService.updateOrderStatus(id, status);
+        const { order_id, status } = req.body;
+        const result = await orderService.updateOrderStatus(order_id, status);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
