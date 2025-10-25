@@ -32,3 +32,5 @@ Frontend (nén ảnh)
 
 ./ngrok config add-authtoken ...... bỏ token vào chổ chấm 
   chạy lệnh ngrok: ./ngrok http 5050
+
+  Lưu SupBase :node src/scripts/embedProducts.js
