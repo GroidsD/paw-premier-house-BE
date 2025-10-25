@@ -5,7 +5,8 @@ import authMiddleware from "../middleware/authMiddleware";
 import adminMiddleware from "../middleware/adminMiddleware";
 import roleMiddleware from "../middleware/roleMiddleware";
 
-const { singleUpload, userSingleUpload } = require("../middleware/upload");
+const { userSingleUpload } = require("../middleware/uploadImageUsers");
+const { productSingleUpload } = require("../middleware/uploadImageProducts");
 const { auditUpload } = require("../middleware/uploadExcel");
 
 let router = express.Router();
@@ -49,6 +50,7 @@ let initWebRoutes = (app) => {
   router.post(
     "/api/update-user",
     authMiddleware,
+    userSingleUpload,
     // adminMiddleware,
     userController.updateUser
   );

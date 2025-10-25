@@ -191,12 +191,19 @@ console.log("CORS allowed origins:", corsOptions.origin);
 //   "/uploadsPDF",
 //   express.static(path.join(__dirname, "public/uploadsPDF"))
 // );
-app.use(
-  "/uploadsExcel",
-  express.static(path.join(__dirname, "public/uploadsExcel"))
-);
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+// app.use(
+//   "/uploadsExcel",
+//   express.static(path.join(__dirname, "public/uploadsExcel"))
+// );
 
+app.use(
+  "/uploadImageUsers",
+  express.static(path.join(__dirname, "public/uploadImageUsers"))
+);
+app.use(
+  "/uploadImageProducts",
+  express.static(path.join(__dirname, "public/uploadImageProducts"))
+);
 // Token Cookie
 app.use(cookieParser());
 app.use((err, req, res, next) => {
