@@ -11,10 +11,9 @@ import cron from "node-cron";
 import productRoutes from "./routes/productRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import spaRoutes from "./routes/spaRoutes";
-import chatRoutes from "./routes/chatRoutes";
-import searchRoutes from "./routes/searchRoutes.js";
-// Import test route
-import testRoute from "./routes/test.js";
+import scheduleRoutes from "./routes/scheduleRoutes.js";
+import shiftRoutes from "./routes/shiftRoute.js";
+import shiftRequestRoutes from "./routes/shiftRequestRoutes.js";
 import chatRoute from "./routes/chat.js";
 
 require("dotenv").config();
@@ -31,6 +30,8 @@ const corsOptions = {
     origin: [
         process.env.URL_REACT,
         "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
         "https://pet-sanctuary-7f78f.web.app",
     ],
     methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
@@ -129,7 +130,9 @@ initWebRoutes(app);
 app.use("/", productRoutes);
 app.use("/", orderRoutes);
 app.use("/", spaRoutes);
-
+app.use("/", scheduleRoutes);
+app.use("/", shiftRoutes);
+app.use("/", shiftRequestRoutes);
 // Connect DB
 connectDB();
 
