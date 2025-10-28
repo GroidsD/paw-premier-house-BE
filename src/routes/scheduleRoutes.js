@@ -2,7 +2,7 @@ import express from "express";
 import scheduleController from "../controllers/scheduleController";
 import authMiddleware from "../middleware/authMiddleware";
 import adminMiddleware from "../middleware/adminMiddleware";
-
+import roleMiddleware from "../middleware/roleMiddleware";
 let router = express.Router();
 
 // STAFF xem lịch làm của mình
@@ -24,7 +24,21 @@ router.get(
 router.put(
     "/api/update-schedule-status",
     authMiddleware,
+    roleMiddleware(["admin", "staff"]),
     scheduleController.updateStatus
+);
+router.post(
+    "/api/create-schedules",
+    // authMiddleware,
+    scheduleController.create
+);
+
+// ADMIN xác nhận hoặc từ chối ca làm
+router.put(
+    "/api/admin/update-schedule/:id",
+    authMiddleware,
+    adminMiddleware,
+    scheduleController.updateScheduleStatusByAdmin
 );
 
 export default router;
