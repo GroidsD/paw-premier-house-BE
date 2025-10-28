@@ -315,8 +315,15 @@ let createUser = async (req, res) => {
 
 // ✏️ Cập nhật thông tin người dùng
 let updateUser = async (req, res) => {
+  console.log("🧩 req.body:", req.body);
+  console.log("🖼 req.file:", req.file);
+
   try {
     const { user_id, ...data } = req.body;
+    if (req.file) {
+      data.img = `/uploadImageUsers/${req.file.filename}`;
+    }
+
     const result = await userService.updateUser(user_id, data);
     return res.status(200).json(result);
   } catch (e) {

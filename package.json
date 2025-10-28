@@ -4,17 +4,20 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --exec ./node_modules/.bin/babel-node src/server.js"
+    "start": "nodemon --exec ./node_modules/.bin/babel-node src/server.js  ",
+    "embed": "babel-node src/scripts/embedProducts.js"
   },
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "This is the backend service for the IAMS (Internal Audit Management System) project. It is built with Node.js, Express, and Sequelize ORM, providing RESTful APIs and real-time socket communication for the IAMS frontend.",
   "dependencies": {
+    "@supabase/supabase-js": "^2.76.1",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^8.6.0",
     "ejs": "^3.1.5",
@@ -27,6 +30,7 @@
     "nanoid": "^5.1.5",
     "node-cron": "^4.1.0",
     "nodemailer": "^6.6.3",
+    "openai": "^6.6.0",
     "request": "^2.88.2",
     "sequelize": "^6.37.5",
     "socket.io": "^4.8.1",
@@ -39,5 +43,6 @@
     "@babel/preset-env": "^7.12.10",
     "nodemon": "^2.0.7",
     "sequelize-cli": "^6.6.2"
-  }
+  },
+  "keywords": []
 }

@@ -202,7 +202,8 @@ import bcrypt from "bcrypt";
 import db from "../models/index.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-
+const fs = require("fs");
+const path = require("path");
 dotenv.config();
 
 const saltRounds = 10;
@@ -281,28 +282,79 @@ let createUser = (data) => {
 };
 
 // ✏️ Cập nhật người dùng
+// let updateUser = (user_id, data) => {
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       const user = await db.User.findByPk(user_id);
+//       if (!user) return resolve({ errCode: 1, errMessage: "User not found" });
+
+//       await user.update({
+//         name: data.name || user.name,
+//         email: data.email || user.email,
+//         phone: data.phone || user.phone,
+//         address: data.address || user.address,
+//         gender: data.gender || user.gender,
+//         role: data.role || user.role,
+//         status: data.status || user.status,
+//         img: data.img || user.img,
+//       });
+
+//       resolve({
+//         errCode: 0,
+//         errMessage: "User updated successfully",
+//         img: user.img,
+//       });
+//     } catch (e) {
+//       reject(e);
+//     }
+//   });
+// };
 let updateUser = (user_id, data) => {
   return new Promise(async (resolve, reject) => {
     try {
       const user = await db.User.findByPk(user_id);
       if (!user) return resolve({ errCode: 1, errMessage: "User not found" });
 
+      // 🧹 Nếu có ảnh mới & user có ảnh cũ → xóa ảnh cũ
+      if (data.img && user.img && user.img !== data.img) {
+        const oldFileName = path.basename(user.img);
+        const oldImagePath = path.join(
+          __dirname,
+          "../public/uploadImageUsers",
+          oldFileName
+        );
+
+        // console.log("🧾 oldImagePath:", oldImagePath);
+
+        // if (fs.existsSync(oldImagePath)) {
+        //   fs.unlinkSync(oldImagePath);
+        //   console.log("🧽 Đã xóa ảnh cũ:", oldImagePath);
+        // } else {
+        //   console.log("⚠️ Không tìm thấy ảnh cũ:", oldImagePath);
+        // }
+      }
+
       await user.update({
         name: data.name || user.name,
         email: data.email || user.email,
         phone: data.phone || user.phone,
         address: data.address || user.address,
+        gender: data.gender || user.gender,
         role: data.role || user.role,
         status: data.status || user.status,
+        img: data.img || user.img,
       });
 
-      resolve({ errCode: 0, errMessage: "User updated successfully" });
+      resolve({
+        errCode: 0,
+        errMessage: "User updated successfully",
+        img: data.img,
+      });
     } catch (e) {
       reject(e);
     }
   });
 };
-
 // 🗑️ Xóa (ẩn) người dùng
 let deleteUserById = (user_id) => {
   return new Promise(async (resolve, reject) => {
