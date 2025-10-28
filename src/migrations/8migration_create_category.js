@@ -10,6 +10,24 @@ module.exports = {
                 primaryKey: true,
                 type: Sequelize.INTEGER,
             },
+            parent_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "category", // self reference
+                    key: "category_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "SET NULL",
+                comment: "ID danh mục cha (nếu có)",
+            },
+            type: {
+                type: Sequelize.STRING(50),
+                allowNull: false,
+                defaultValue: "product",
+                comment:
+                    "Phân loại category, ví dụ: product, spa, hotel, service...",
+            },
             status: {
                 type: Sequelize.ENUM("active", "inactive"),
                 defaultValue: "active",
@@ -22,7 +40,9 @@ module.exports = {
             updatedAt: {
                 allowNull: false,
                 type: Sequelize.DATE,
-                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+                defaultValue: Sequelize.literal(
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                ),
             },
         });
     },

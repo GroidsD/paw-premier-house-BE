@@ -12,6 +12,14 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "category_id",
                 as: "products",
             });
+            Category.belongsTo(models.Category, {
+                foreignKey: "parent_id",
+                as: "parent",
+            });
+            Category.hasMany(models.Category, {
+                foreignKey: "parent_id",
+                as: "children",
+            });
         }
     }
 
@@ -22,6 +30,18 @@ module.exports = (sequelize, DataTypes) => {
                 unique: true,
                 autoIncrement: true,
                 primaryKey: true,
+            },
+            parent_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                comment: "ID danh mục cha (nếu có)",
+            },
+            type: {
+                type: DataTypes.STRING(50), // <-- thay ENUM bằng STRING
+                allowNull: false,
+                defaultValue: "product",
+                comment:
+                    "Phân loại category, ví dụ: product, spa, hotel, service...",
             },
             status: {
                 type: DataTypes.ENUM("active", "inactive"),

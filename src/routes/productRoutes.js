@@ -10,7 +10,7 @@ let router = express.Router();
 // CREATE
 router.post(
   "/api/create-new-product",
-  authMiddleware,
+  // authMiddleware,
   productController.createProduct
 );
 
@@ -24,14 +24,14 @@ router.get(
 // READ ONE
 router.get(
   "/api/get-product-by-id",
-  authMiddleware,
+  // authMiddleware,
   productController.getProductById
 );
 
 // UPDATE
 router.get(
   "/api/update-product",
-  authMiddleware,
+  // authMiddleware,
   productController.updateProduct
 );
 

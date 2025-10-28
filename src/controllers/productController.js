@@ -21,7 +21,7 @@ let getAllProducts = async (req, res) => {
 
 let getProductById = async (req, res) => {
     try {
-        let product = await productService.getProductById(req.params.id);
+        let product = await productService.getProductById(req.query.id);
         return res.status(200).json(product);
     } catch (e) {
         return res.status(404).json({ message: e.toString() });
@@ -31,7 +31,7 @@ let getProductById = async (req, res) => {
 let updateProduct = async (req, res) => {
     try {
         let updated = await productService.updateProduct(
-            req.params.id,
+            req.query.id,
             req.body
         );
         return res.status(200).json(updated);
@@ -42,7 +42,7 @@ let updateProduct = async (req, res) => {
 
 let deleteProduct = async (req, res) => {
     try {
-        let result = await productService.deleteProduct(req.params.id);
+        let result = await productService.deleteProduct(req.query.id);
         return res.status(200).json({ message: result });
     } catch (e) {
         return res.status(404).json({ message: e.toString() });

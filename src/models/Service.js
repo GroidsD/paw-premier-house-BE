@@ -12,6 +12,22 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "service_id",
                 as: "appointmentItems",
             });
+            Service.hasMany(models.Media, {
+                foreignKey: "entity_id",
+                constraints: false, // Không tạo FK constraint thật
+                scope: {
+                    entity_type: "service", // Chỉ lấy media của loại "service"
+                },
+                as: "media_service",
+            });
+            Service.hasMany(models.Media, {
+                foreignKey: "entity_id",
+                constraints: false, // Không tạo FK constraint thật
+                scope: {
+                    entity_type: "hotel", // Chỉ lấy media của loại "hotel"
+                },
+                as: "media_hotel",
+            });
         }
     }
 

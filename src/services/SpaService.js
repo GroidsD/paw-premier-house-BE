@@ -30,7 +30,11 @@ let getAllSpaServices = () => {
     return new Promise(async (resolve, reject) => {
         try {
             const services = await db.Service.findAll({
-                include: [{ model: db.ServiceTranslate, as: "translations" }],
+                include: [
+                    { model: db.ServiceTranslate, as: "translations" },
+                    { model: db.Media, as: "media_service" },
+                    { model: db.Media, as: "media_hotel" },
+                ],
                 order: [["services_id", "ASC"]],
             });
 
