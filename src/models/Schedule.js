@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
                 as: "staff",
             });
             Schedule.belongsTo(models.Shift, { foreignKey: "shift_id" });
-            Schedule.belongsTo(models.WorkDate, { foreignKey: "work_date_id" });
+
             Schedule.belongsTo(models.User, {
                 foreignKey: "replaced_by",
                 as: "replacement",
@@ -26,11 +26,16 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
             },
             staff_id: { type: DataTypes.STRING, allowNull: false },
-            work_date_id: { type: DataTypes.INTEGER, allowNull: false },
+            work_date: { type: DataTypes.STRING, allowNull: false },
             shift_id: { type: DataTypes.INTEGER, allowNull: false },
             status: {
-                type: DataTypes.ENUM("confirmed", "cancelled", "replaced"),
-                defaultValue: "confirmed",
+                type: DataTypes.ENUM(
+                    "confirmed",
+                    "pending",
+                    "cancelled",
+                    "replaced"
+                ),
+                defaultValue: "pending",
             },
             work_status: {
                 type: DataTypes.ENUM(

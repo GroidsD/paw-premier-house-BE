@@ -13,7 +13,6 @@ import orderRoutes from "./routes/orderRoutes";
 import spaRoutes from "./routes/spaRoutes";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import shiftRoutes from "./routes/shiftRoute.js";
-import shiftRequestRoutes from "./routes/shiftRequestRoutes.js";
 import chatRoute from "./routes/chat.js";
 
 require("dotenv").config();
@@ -132,7 +131,7 @@ app.use("/", orderRoutes);
 app.use("/", spaRoutes);
 app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
-app.use("/", shiftRequestRoutes);
+
 // Connect DB
 connectDB();
 
