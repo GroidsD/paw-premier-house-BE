@@ -15,23 +15,22 @@ module.exports = {
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             },
-            work_date_id: {
-                type: Sequelize.INTEGER,
+            work_date: {
+                type: Sequelize.STRING,
                 allowNull: false,
-                references: { model: "workdates", key: "work_date_id" },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
             },
             shift_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
-                references: { model: "shifts", key: "shift_id" },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
             },
             status: {
-                type: Sequelize.ENUM("confirmed", "cancelled", "replaced"),
-                defaultValue: "confirmed",
+                type: Sequelize.ENUM(
+                    "confirmed",
+                    "pending",
+                    "cancelled",
+                    "replaced"
+                ),
+                defaultValue: "pending",
             },
             replaced_by: {
                 type: Sequelize.STRING,
