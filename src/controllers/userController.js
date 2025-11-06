@@ -3,9 +3,9 @@ import userService from "../services/UserService.js";
 // 👤 Lấy thông tin người dùng hiện tại
 let getCurrentUser = async (req, res) => {
     try {
-        if (!req.user || !req.user.user_id) {
-            return res.status(403).json({ message: "Authentication required" });
-        }
+        // if (!req.user || !req.user.user_id) {
+        //     return res.status(403).json({ message: "Authentication required" });
+        // }
 
         const user = await userService.getUserById(req.user.user_id);
         return res.status(200).json(user);
