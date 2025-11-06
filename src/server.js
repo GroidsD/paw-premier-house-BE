@@ -3,7 +3,7 @@ import http from "http";
 import { Server as SocketIO } from "socket.io";
 import bodyParser from "body-parser";
 import viewEngine from "./config/viewEngine";
-import initWebRoutes from "./routes/web";
+import initWebRoutes from "./routes/userRoute";
 import { connectDB } from "./config/connectDB";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -31,7 +31,7 @@ const corsOptions = {
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
-        "https://pet-sanctuary-7f78f.web.app",
+        // "https://pet-sanctuary-7f78f.web.app",,
     ],
     methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

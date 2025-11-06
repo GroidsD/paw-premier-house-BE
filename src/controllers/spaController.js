@@ -24,13 +24,13 @@ let getAllSpaServices = async (req, res) => {
 
 // 🔍 Lấy 1 dịch vụ theo ID
 let getSpaServiceById = async (req, res) => {
-  try {
-    const { id } = req.query;
-    const service = await spaService.getSpaServiceById(id);
-    return res.status(200).json(service);
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
+    try {
+        const { service_id } = req.query;
+        const service = await spaService.getSpaServiceById(service_id);
+        return res.status(200).json(service);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
 };
 
 // ✏️ Cập nhật dịch vụ
@@ -46,13 +46,13 @@ let updateSpaService = async (req, res) => {
 
 // 🗑️ Xóa dịch vụ
 let deleteSpaService = async (req, res) => {
-  try {
-    const { id } = req.query;
-    const message = await spaService.deleteSpaService(id);
-    return res.status(200).json({ message });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
+    try {
+        const { service_id } = req.query;
+        const message = await spaService.deleteSpaService(service_id);
+        return res.status(200).json({ message });
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
 };
 
 let createAppointment = async (req, res) => {

@@ -10,12 +10,14 @@ let router = express.Router();
 //  CREATE - Tạo đơn hàng mới
 router.post(
   "/api/create-new-order",
-  authMiddleware,
+  // authMiddleware,
   orderController.createOrder
 );
 
 //  READ ALL - Lấy tất cả đơn hàng
-router.get("/api/get-all-orders", authMiddleware, orderController.getAllOrders);
+router.get("/api/get-all-orders", 
+  // authMiddleware, 
+  orderController.getAllOrders);
 
 //  READ ONE - Lấy đơn hàng theo ID
 router.get(
