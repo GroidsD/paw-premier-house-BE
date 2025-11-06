@@ -12,37 +12,46 @@ const db = {};
 
 let sequelize;
 if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+    sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
-  sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    config
-  );
+    sequelize = new Sequelize(
+        config.database,
+        config.username,
+        config.password,
+        config
+    );
 }
 
-fs.readdirSync(__dirname)
-  .filter((file) => {
-    return (
-      file.indexOf(".") !== 0 &&
-      file !== basename &&
-      file.slice(-3) === ".js" &&
-      file.indexOf(".test.js") === -1
-    );
-  })
-  .forEach((file) => {
-    const model = require(path.join(__dirname, file))(
-      sequelize,
-      Sequelize.DataTypes
-    );
-    db[model.name] = model;
-  });
+/**
+ * Hàm đệ quy để load tất cả model trong thư mục models và các subfolder
+ */
+function loadModelsRecursively(directory) {
+    fs.readdirSync(directory).forEach((file) => {
+        const fullPath = path.join(directory, file);
 
+        if (fs.lstatSync(fullPath).isDirectory()) {
+            // Nếu là thư mục -> đệ quy tiếp
+            loadModelsRecursively(fullPath);
+        } else if (
+            file.indexOf(".") !== 0 &&
+            file !== basename &&
+            file.slice(-3) === ".js" &&
+            !file.includes(".test.js")
+        ) {
+            const model = require(fullPath)(sequelize, Sequelize.DataTypes);
+            db[model.name] = model;
+        }
+    });
+}
+
+// Gọi hàm để load tất cả model
+loadModelsRecursively(__dirname);
+
+// Thiết lập quan hệ giữa các model
 Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
+    if (db[modelName].associate) {
+        db[modelName].associate(db);
+    }
 });
 
 db.sequelize = sequelize;
