@@ -1,198 +1,198 @@
-import db from "../models";
+// import db from "../models";
 
-// CREATE NEW ORDER
-let createOrder = (data) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const { customer_id, items } = data;
-            console.log(data);
-            
-            if (!customer_id || !items || items.length === 0) {
-                return resolve({
-                    errCode: 1,
-                    errMessage: "Missing customer_id or items",
-                });
-            }
+// // CREATE NEW ORDER
+// let createOrder = (data) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             const { customer_id, items } = data;
+//             console.log(data);
 
-            // Lấy thông tin sản phẩm
-            const productIds = items.map((it) => it.product_id);
-            const products = await db.Product.findAll({
-                where: { product_id: productIds },
-                include: [{ model: db.ProductTranslate, as: "translations" }],
-            });
+//             if (!customer_id || !items || items.length === 0) {
+//                 return resolve({
+//                     errCode: 1,
+//                     errMessage: "Missing customer_id or items",
+//                 });
+//             }
 
-            // Tính tổng tiền và chuẩn bị danh sách items
-            let total_price = 0;
-            const orderItems = [];
+//             // Lấy thông tin sản phẩm
+//             const productIds = items.map((it) => it.product_id);
+//             const products = await db.Product.findAll({
+//                 where: { product_id: productIds },
+//                 include: [{ model: db.ProductTranslate, as: "translations" }],
+//             });
 
-            for (const item of items) {
-                const product = products.find(
-                    (p) => p.product_id === item.product_id
-                );
-                if (!product) continue;
+//             // Tính tổng tiền và chuẩn bị danh sách items
+//             let total_price = 0;
+//             const orderItems = [];
 
-                const price = product.translations[0]?.price || 0;
-                const lineTotal = price * item.quantity;
-                console.log(`Product ID: ${item.product_id}, Quantity: ${item.quantity}, Line Total: ${lineTotal}, Price: ${price}`);
-                
-                orderItems.push({
-                    product_id: item.product_id,
-                    quantity: item.quantity,
-                    total_price: lineTotal,
-                });
+//             for (const item of items) {
+//                 const product = products.find(
+//                     (p) => p.product_id === item.product_id
+//                 );
+//                 if (!product) continue;
 
-                total_price += lineTotal;
-            }
+//                 const price = product.translations[0]?.price || 0;
+//                 const lineTotal = price * item.quantity;
+//                 console.log(`Product ID: ${item.product_id}, Quantity: ${item.quantity}, Line Total: ${lineTotal}, Price: ${price}`);
 
-            // Tạo đơn hàng
-            const order = await db.Order.create({
-                
-                customer_id,
-                total_price,
-                status: "pending",
-            });
+//                 orderItems.push({
+//                     product_id: item.product_id,
+//                     quantity: item.quantity,
+//                     total_price: lineTotal,
+//                 });
 
-            // Thêm chi tiết đơn hàng
-            for (const index of orderItems) {
-                await db.OrderItem.create({
-                    ...index,
-                    order_id: order.order_id,
-                });
-            }
+//                 total_price += lineTotal;
+//             }
 
-            resolve({
-                errCode: 0,
-                errMessage: "Order created successfully",
-                order_id: order.order_id,
-            });
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
+//             // Tạo đơn hàng
+//             const order = await db.Order.create({
 
-// GET ALL ORDERS
-let getAllOrders = () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let orders = await db.Order.findAll({
-                include: [
-                    {
-                        model: db.User,
-                        as: "customer",
-                        attributes: ["user_id", "name", "email"],
-                    },
-                    {
-                        model: db.OrderItem,
-                        as: "items",
-                        include: [
-                            {
-                                model: db.Product,
-                                as: "product",
-                                include: [
-                                    {
-                                        model: db.ProductTranslate,
-                                        as: "translations",
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                ],
-                order: [["order_id", "DESC"]],
-            });
+//                 customer_id,
+//                 total_price,
+//                 status: "pending",
+//             });
 
-            resolve(orders);
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
+//             // Thêm chi tiết đơn hàng
+//             for (const index of orderItems) {
+//                 await db.OrderItem.create({
+//                     ...index,
+//                     order_id: order.order_id,
+//                 });
+//             }
 
-// GET ORDER BY ID
-let getOrderById = (order_id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let order = await db.Order.findOne({
-                where: { order_id: order_id },
-                include: [
-                    {
-                        model: db.User,
-                        as: "customer",
-                        attributes: ["user_id", "name", "email"],
-                    },
-                    {
-                        model: db.OrderItem,
-                        as: "items",
-                        include: [
-                            {
-                                model: db.Product,
-                                as: "product",
-                                include: [
-                                    {
-                                        model: db.ProductTranslate,
-                                        as: "translations",
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            });
+//             resolve({
+//                 errCode: 0,
+//                 errMessage: "Order created successfully",
+//                 order_id: order.order_id,
+//             });
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 
-            if (!order) {
-                resolve({ errCode: 1, errMessage: "Order not found" });
-            } else {
-                resolve(order);
-            }
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
+// // GET ALL ORDERS
+// let getAllOrders = () => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             let orders = await db.Order.findAll({
+//                 include: [
+//                     {
+//                         model: db.User,
+//                         as: "customer",
+//                         attributes: ["user_id", "name", "email"],
+//                     },
+//                     {
+//                         model: db.OrderItem,
+//                         as: "items",
+//                         include: [
+//                             {
+//                                 model: db.Product,
+//                                 as: "product",
+//                                 include: [
+//                                     {
+//                                         model: db.ProductTranslate,
+//                                         as: "translations",
+//                                     },
+//                                 ],
+//                             },
+//                         ],
+//                     },
+//                 ],
+//                 order: [["order_id", "DESC"]],
+//             });
 
-// UPDATE ORDER STATUS
-let updateOrderStatus = (order_id, status) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let order = await db.Order.findByPk(order_id);
-            if (!order) {
-                return resolve({ errCode: 1, errMessage: "Order not found" });
-            }
+//             resolve(orders);
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 
-            await order.update({ status });
+// // GET ORDER BY ID
+// let getOrderById = (order_id) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             let order = await db.Order.findOne({
+//                 where: { order_id: order_id },
+//                 include: [
+//                     {
+//                         model: db.User,
+//                         as: "customer",
+//                         attributes: ["user_id", "name", "email"],
+//                     },
+//                     {
+//                         model: db.OrderItem,
+//                         as: "items",
+//                         include: [
+//                             {
+//                                 model: db.Product,
+//                                 as: "product",
+//                                 include: [
+//                                     {
+//                                         model: db.ProductTranslate,
+//                                         as: "translations",
+//                                     },
+//                                 ],
+//                             },
+//                         ],
+//                     },
+//                 ],
+//             });
 
-            resolve({ errCode: 0, errMessage: "Status updated", order });
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
+//             if (!order) {
+//                 resolve({ errCode: 1, errMessage: "Order not found" });
+//             } else {
+//                 resolve(order);
+//             }
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 
-// DELETE ORDER
-let deleteOrder = (order_id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const order = await db.Order.findByPk(order_id);
+// // UPDATE ORDER STATUS
+// let updateOrderStatus = (order_id, status) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             let order = await db.Order.findByPk(order_id);
+//             if (!order) {
+//                 return resolve({ errCode: 1, errMessage: "Order not found" });
+//             }
 
-            if (!order) {
-                return resolve({ errCode: 1, errMessage: "Order not found" });
-            }
+//             await order.update({ status });
 
-            // await db.OrderItem.destroy({ where: { order_id: order_id } });
-            // await order.destroy();
+//             resolve({ errCode: 0, errMessage: "Status updated", order });
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 
-            resolve({ errCode: 0, errMessage: "Order deleted successfully" });
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
+// // DELETE ORDER
+// let deleteOrder = (order_id) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             const order = await db.Order.findByPk(order_id);
 
-export default {
-    createOrder,
-    getAllOrders,
-    getOrderById,
-    updateOrderStatus,
-    deleteOrder,
-};
+//             if (!order) {
+//                 return resolve({ errCode: 1, errMessage: "Order not found" });
+//             }
+
+//             // await db.OrderItem.destroy({ where: { order_id: order_id } });
+//             // await order.destroy();
+
+//             resolve({ errCode: 0, errMessage: "Order deleted successfully" });
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
+
+// export default {
+//     createOrder,
+//     getAllOrders,
+//     getOrderById,
+//     updateOrderStatus,
+//     deleteOrder,
+// };
