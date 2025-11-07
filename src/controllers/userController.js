@@ -3,9 +3,11 @@ import userService from "../services/UserService.js";
 // 👤 Lấy thông tin người dùng hiện tại
 let getCurrentUser = async (req, res) => {
     try {
-        // if (!req.user || !req.user.user_id) {
-        //     return res.status(403).json({ message: "Authentication required" });
-        // }
+        // console.log("Cookie", req.user);
+
+        if (!req.user || !req.user.user_id) {
+            return res.status(403).json({ message: "Authentication required" });
+        }
 
         const user = await userService.getUserById(req.user.user_id);
         return res.status(200).json(user);
@@ -102,6 +104,8 @@ let logout = async (req, res) => {
 let getUsersByRole = async (req, res) => {
     try {
         const { role } = req.query;
+        console.log(role);
+
         const result = await userService.getUsersByRole(role);
         return res.status(200).json(result);
     } catch (e) {
@@ -139,9 +143,19 @@ let changeMyPassword = async (req, res) => {
 };
 let firebaseLogin = async (req, res) => {
     try {
-        console.log("🔥 Body nhận từ frontend:", req.body);
+        // console.log("🔥 Body nhận từ frontend:", req.body);
         const { idToken } = req.body;
         const response = await userService.firebaseLogin(idToken);
+
+        // ✅ Nếu đăng nhập thành công, set cookie giống login thường
+        if (response.errCode === 0 && response.token) {
+            res.cookie("access_token", response.token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "none",
+            });
+        }
+
         return res.status(200).json(response);
     } catch (error) {
         console.error("Firebase login controller error:", error);
@@ -150,6 +164,7 @@ let firebaseLogin = async (req, res) => {
             .json({ errCode: -1, errMessage: "Server error" });
     }
 };
+
 export default {
     getCurrentUser,
     getAllUsers,

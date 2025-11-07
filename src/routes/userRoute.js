@@ -26,11 +26,7 @@ let initWebRoutes = (app) => {
         userController.resetUserPassword
     );
 
-    router.get(
-        "/api/me",
-        //  authMiddleware,
-        userController.getCurrentUser
-    );
+    router.get("/api/me", authMiddleware, userController.getCurrentUser);
     router.get(
         "/api/get-users-role",
         authMiddleware,

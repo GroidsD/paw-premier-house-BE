@@ -3,7 +3,6 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        // 🧱 Tạo bảng users
         await queryInterface.createTable("users", {
             user_id: {
                 type: Sequelize.STRING,
@@ -59,6 +58,23 @@ module.exports = {
                 type: Sequelize.BOOLEAN,
                 defaultValue: true,
             },
+
+            // ✅ Hai cột mới thêm
+            totalFeedback: {
+                type: Sequelize.INTEGER,
+                defaultValue: 0,
+                allowNull: false,
+                comment:
+                    "Tổng số feedback nhận được (chỉ áp dụng cho staff trở lên)",
+            },
+            totalStarFeedback: {
+                type: Sequelize.FLOAT,
+                defaultValue: 0,
+                allowNull: false,
+                comment:
+                    "Tổng số sao trung bình hoặc tổng số sao nhận được (chỉ áp dụng cho staff trở lên)",
+            },
+
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,

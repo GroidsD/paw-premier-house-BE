@@ -197,7 +197,7 @@ let getUsersByRole = (role) => {
             if (!role) return reject("Missing role parameter");
             const users = await db.User.findAll({
                 where: { role },
-                attributes: ["user_id", "name", "email"],
+                attributes: ["user_id", "fullname", "email"],
             });
             resolve(users);
         } catch (e) {

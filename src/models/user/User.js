@@ -86,6 +86,21 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,
             },
+
+            // ✅ Thêm 2 cột mới:
+            totalFeedback: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+                comment:
+                    "Tổng số feedback nhận được (chỉ áp dụng cho staff trở lên)",
+            },
+            totalStarFeedback: {
+                type: DataTypes.FLOAT,
+                defaultValue: 0,
+                comment:
+                    "Tổng số sao trung bình hoặc tổng số sao nhận được (chỉ áp dụng cho staff trở lên)",
+            },
+
             created_at: DataTypes.DATE,
             updated_at: DataTypes.DATE,
         },
@@ -100,6 +115,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     );
 
+    // Xóa media khi xóa user
     User.afterDestroy(async (user, options) => {
         await sequelize.models.Media.destroy({
             where: {
