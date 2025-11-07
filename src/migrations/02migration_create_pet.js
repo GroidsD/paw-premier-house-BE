@@ -10,7 +10,7 @@ module.exports = {
                 allowNull: false,
                 primaryKey: true,
             },
-            user_id: {
+            owner_id: {
                 type: Sequelize.STRING,
                 allowNull: true,
                 references: {

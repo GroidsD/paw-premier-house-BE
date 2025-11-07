@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // Mỗi pet thuộc về 1 user
             Pet.belongsTo(models.User, {
-                foreignKey: "user_id",
+                foreignKey: "owner_id",
+                targetKey: "user_id",
                 as: "owner", // alias: pet.owner
             });
             Pet.hasMany(models.Booking, {
@@ -30,7 +31,7 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
                 allowNull: false,
             },
-            user_id: {
+            owner_id: {
                 type: DataTypes.STRING, // vì bên User dùng STRING (UUID hoặc Firebase UID)
                 allowNull: true,
                 references: {

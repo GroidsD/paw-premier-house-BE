@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
 
     OrderItem.init(
         {
-            id: {
+            orderItem_id: {
                 type: DataTypes.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
