@@ -1,36 +1,86 @@
-// const { Shift } = require("../models");
+import db from "../models/index.js";
 
-// module.exports = {
-//     async getAllShifts() {
-//         return await Shift.findAll();
-//     },
+let getAllShifts = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const shifts = await db.Shift.findAll({
+                order: [["shift_id", "ASC"]],
+            });
+            resolve(shifts);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
-//     async createShift(data) {
-//         // Kiểm tra trùng theo name + giờ bắt đầu + giờ kết thúc
-//         const exist = await Shift.findOne({
-//             where: {
-//                 name: data.name,
-//                 start_time: data.start_time,
-//                 end_time: data.end_time,
-//             },
-//         });
+let getShiftById = (id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const shift = await db.Shift.findByPk(id);
+            if (!shift) return reject("Shift not found");
+            resolve(shift);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
-//         if (exist) {
-//             throw new Error("Shift with the same name and time already exists");
-//         }
+let createShift = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const exist = await db.Shift.findOne({
+                where: {
+                    name: data.name,
+                    start_time: data.start_time,
+                    end_time: data.end_time,
+                },
+            });
 
-//         return await Shift.create(data);
-//     },
-//     async updateShift(id, data) {
-//         const shift = await Shift.findByPk(id);
-//         if (!shift) throw new Error("Shift not found");
-//         return await shift.update(data);
-//     },
+            if (exist)
+                return reject(
+                    "Shift with the same name and time already exists"
+                );
 
-//     async deleteShift(id) {
-//         const shift = await Shift.findByPk(id);
-//         if (!shift) throw new Error("Shift not found");
-//         await shift.destroy();
-//         return true;
-//     },
-// };
+            const shift = await db.Shift.create(data);
+            resolve(shift);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+let updateShift = (id, data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const shift = await db.Shift.findByPk(id);
+            if (!shift) return reject("Shift not found");
+
+            await shift.update(data);
+            resolve(shift);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+let deleteShift = (id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const shift = await db.Shift.findByPk(id);
+            if (!shift) return reject("Shift not found");
+
+            await shift.destroy();
+            resolve("Shift deleted successfully");
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+export default {
+    getAllShifts,
+    getShiftById,
+    createShift,
+    updateShift,
+    deleteShift,
+};

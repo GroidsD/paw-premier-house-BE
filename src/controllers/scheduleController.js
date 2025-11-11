@@ -1,86 +1,112 @@
-// import ScheduleService from "../services/ScheduleService.js";
+import ScheduleService from "../services/ScheduleService.js";
 
-// const scheduleController = {
-//     async getMySchedule(req, res) {
-//         try {
-//             const result = await ScheduleService.getStaffSchedule(
-//                 req.user.user_id
-//             );
-//             res.json(result);
-//         } catch (err) {
-//             res.status(500).json({ message: err.message });
-//         }
-//     },
+// Lấy lịch của chính user (staff)
+let getMySchedule = async (req, res) => {
+    try {
+        const result = await ScheduleService.getStaffSchedule(req.user.user_id);
+        return res.status(200).json(result);
+    } catch (e) {
+        return res.status(500).json({ message: e.toString() });
+    }
+};
 
-//     async getAll(req, res) {
-//         try {
-//             const { staff_id, from, to } = req.query;
-//             const result = await ScheduleService.getAllSchedules({
-//                 staff_id,
-//                 from,
-//                 to,
-//             });
-//             res.json(result);
-//         } catch (err) {
-//             res.status(500).json({ message: err.message });
-//         }
-//     },
+// Lấy tất cả lịch (admin)
+let getAllSchedules = async (req, res) => {
+    try {
+        const { staff_id, from, to, status } = req.query;
+        const result = await ScheduleService.getAllSchedules({
+            staff_id,
+            fromDate: from,
+            toDate: to,
+            status,
+        });
+        return res.status(200).json(result);
+    } catch (e) {
+        return res.status(500).json({ message: e.toString() });
+    }
+};
 
-//     async updateStatus(req, res) {
-//         try {
-//             const { id } = req.params;
-//             const { work_status, work_note } = req.body;
-//             const updated = await ScheduleService.updateWorkStatus(
-//                 id,
-//                 work_status,
-//                 work_note
-//             );
-//             res.json({ message: "Updated", updated });
-//         } catch (err) {
-//             res.status(400).json({ message: err.message });
-//         }
-//     },
+// Tạo mới schedule
+let createSchedule = async (req, res) => {
+    try {
+        const staff_id = req.user?.user_id || req.body.staff_id;
+        const { schedules } = req.body;
+        const result = await ScheduleService.createSchedule(
+            staff_id,
+            schedules
+        );
+        return res
+            .status(201)
+            .json({ message: "Schedules created successfully", result });
+    } catch (e) {
+        return res.status(400).json({ message: e.toString() });
+    }
+};
 
-//     async create(req, res) {
-//         try {
-//             const staff_id =
-//                 req.user?.user_id || "eyBn3ahNHFgj3FbMhm3SuwZWUMw2";
-//             const { schedules } = req.body;
-//             const result = await ScheduleService.createSchedule(
-//                 staff_id,
-//                 schedules
-//             );
-//             res.json({ message: "Schedules created successfully", result });
-//         } catch (err) {
-//             res.status(400).json({ message: err.message });
-//         }
-//     },
-//     async updateScheduleStatusByAdmin(req, res) {
-//         try {
-//             const { id } = req.params; // id của schedule
-//             const { status, work_note } = req.body; // "confirmed" hoặc "rejected"
-//             console.log("Received status:", status);
-//             if (!["confirmed", "rejected", "cancelled"].includes(status)) {
-//                 throw new Error("Invalid status value");
-//             }
+// Cập nhật work_status của schedule (staff)
+let updateWorkStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { work_status, work_note } = req.body;
+        const updated = await ScheduleService.updateWorkStatus(
+            id,
+            work_status,
+            work_note
+        );
+        return res
+            .status(200)
+            .json({ message: "Updated successfully", updated });
+    } catch (e) {
+        return res.status(400).json({ message: e.toString() });
+    }
+};
 
-//             const updated = await ScheduleService.updateStatusByAdmin(
-//                 id,
-//                 status,
-//                 work_note
-//             );
+// Cập nhật status của schedule (admin)
+let updateScheduleStatusByAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, work_note } = req.body;
 
-//             res.json({
-//                 message:
-//                     status === "confirmed"
-//                         ? "Schedule confirmed successfully"
-//                         : "Schedule rejected",
-//                 updated,
-//             });
-//         } catch (err) {
-//             res.status(400).json({ message: err.message });
-//         }
-//     },
-// };
+        if (!["confirmed", "rejected", "cancelled"].includes(status)) {
+            throw new Error("Invalid status value");
+        }
 
-// export default scheduleController;
+        const updated = await ScheduleService.updateStatusByAdmin(
+            id,
+            status,
+            work_note
+        );
+
+        return res.status(200).json({
+            message:
+                status === "confirmed"
+                    ? "Schedule confirmed successfully"
+                    : status === "rejected"
+                    ? "Schedule rejected"
+                    : "Schedule cancelled",
+            updated,
+        });
+    } catch (e) {
+        return res.status(400).json({ message: e.toString() });
+    }
+};
+
+// Xóa schedule
+let deleteSchedule = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await ScheduleService.deleteSchedule(id);
+        return res.status(200).json({ message: result });
+    } catch (e) {
+        return res.status(400).json({ message: e.toString() });
+    }
+};
+
+export default {
+    getMySchedule,
+    getAllSchedules,
+    createSchedule,
+    updateWorkStatus,
+    updateScheduleStatusByAdmin,
+    deleteSchedule,
+};
