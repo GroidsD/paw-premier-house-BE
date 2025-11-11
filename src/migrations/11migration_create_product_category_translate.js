@@ -27,7 +27,7 @@ module.exports = {
                 allowNull: false,
             },
 
-            lang: {
+            language: {
                 type: Sequelize.ENUM("vi", "en"),
                 allowNull: false,
                 defaultValue: "vi",

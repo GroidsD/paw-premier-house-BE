@@ -87,7 +87,6 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: true,
             },
 
-            // ✅ Thêm 2 cột mới:
             totalFeedback: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,

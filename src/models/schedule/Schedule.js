@@ -53,8 +53,24 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             replaced_by: { type: DataTypes.STRING, allowNull: true },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
         },
-        { sequelize, modelName: "Schedule", tableName: "schedules" }
+        {
+            sequelize,
+            modelName: "Schedule",
+            tableName: "schedules",
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        }
     );
 
     return Schedule;
