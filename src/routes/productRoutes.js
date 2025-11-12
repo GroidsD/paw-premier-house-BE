@@ -1,45 +1,50 @@
 // src/routes/productRoutes.js
 import express from "express";
-import productController from "../controllers/productController";
-import authMiddleware from "../middleware/authMiddleware";
-import adminMiddleware from "../middleware/adminMiddleware";
-import roleMiddleware from "../middleware/roleMiddleware";
+import productController from "../controllers/productController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
-let router = express.Router();
+const router = express.Router();
 
-// CREATE
+// CREATE - Tạo sản phẩm mới
 router.post(
-    "/api/create-new-product",
+    "/api/products/create",
     // authMiddleware,
     productController.createProduct
 );
 
-// READ ALL
+// READ ALL - Lấy tất cả sản phẩm
 router.get(
-    "/api/get-all-products",
-    //   authMiddleware,
+    "/api/products/get-all",
+    // authMiddleware,
     productController.getAllProducts
 );
 
-// READ ONE
+// READ ONE - Lấy sản phẩm theo ID
 router.get(
-    "/api/get-product-by-id",
+    "/api/products/get-by-id",
     // authMiddleware,
     productController.getProductById
 );
 
-// UPDATE
-router.get(
-    "/api/update-product",
+// UPDATE - Cập nhật sản phẩm
+router.put(
+    "/api/products/update",
     // authMiddleware,
     productController.updateProduct
 );
 
-// DELETE
-router.get(
-    "/api/delete-product",
-    adminMiddleware,
-    productController.deleteProduct
+// SOFT DELETE - đổi status thành deleted
+router.delete(
+    "/api/products/soft-delete",
+    // authMiddleware,
+    productController.softDeleteProduct
+);
+
+// HARD DELETE - xóa hoàn toàn sản phẩm
+router.delete(
+    "/api/products/hard-delete",
+    // authMiddleware,
+    productController.hardDeleteProduct
 );
 
 export default router;

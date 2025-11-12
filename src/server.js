@@ -8,11 +8,11 @@ import { connectDB } from "./config/connectDB";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import cron from "node-cron";
-// import productRoutes from "./routes/productRoutes";
-// import orderRoutes from "./routes/orderRoutes";
-// import spaRoutes from "./routes/spaRoutes";
-// import scheduleRoutes from "./routes/scheduleRoutes.js";
-// import shiftRoutes from "./routes/shiftRoute.js";
+import productRoutes from "./routes/productRoutes";
+import orderRoutes from "./routes/orderRoutes";
+import spaRoutes from "./routes/spaRoutes";
+import scheduleRoutes from "./routes/scheduleRoutes.js";
+import shiftRoutes from "./routes/shiftRoute.js";
 import chatRoute from "./routes/chat.js";
 
 require("dotenv").config();
@@ -91,6 +91,10 @@ app.use(
     "/uploadImageProducts",
     express.static(path.join(__dirname, "public/uploadImageProducts"))
 );
+app.use(
+    "/uploadMedia",
+    express.static(path.join(__dirname, "public/uploadMedia"))
+);
 // Token Cookie
 app.use(cookieParser());
 app.use((err, req, res, next) => {
@@ -126,8 +130,8 @@ app.use(
 // View engine & routes
 viewEngine(app);
 initWebRoutes(app);
-// app.use("/", productRoutes);
-// app.use("/", orderRoutes);
+app.use("/", productRoutes);
+app.use("/", orderRoutes);
 // app.use("/", spaRoutes);
 // app.use("/", scheduleRoutes);
 // app.use("/", shiftRoutes);
