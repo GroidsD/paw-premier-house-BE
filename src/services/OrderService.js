@@ -1,110 +1,6 @@
 import { update } from "lodash";
 import db from "../models";
 
-// // CREATE NEW ORDER
-// let createOrder = (data) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             const { customer_id, items } = data;
-
-//             if (!customer_id || !items || items.length === 0) {
-//                 return resolve({
-//                     errCode: 1,
-//                     errMessage: "Missing customer_id or items",
-//                 });
-//             }
-
-//             // Lấy thông tin sản phẩm từ DB
-//             const productIds = items.map((it) => it.product_id);
-//             const products = await db.Product.findAll({
-//                 where: { product_id: productIds },
-//                 include: [{ model: db.ProductTranslate, as: "translates" }],
-//             });
-
-//             if (!products || products.length === 0) {
-//                 return resolve({
-//                     errCode: 2,
-//                     errMessage: "No valid products found",
-//                 });
-//             }
-
-//             // Tính tổng tiền và tạo orderItems với giá gốc, chiết khấu
-//             let original_total = 0;
-//             const orderItemsData = [];
-
-//             for (const item of items) {
-//                 const product = products.find(
-//                     (p) => p.product_id === item.product_id
-//                 );
-//                 if (!product) continue;
-
-//                 const original_price = parseFloat(product.original_price);
-//                 const discount = parseFloat(product.discount || 0);
-//                 const discount_type = product.discount_type;
-
-//                 let finalPrice = original_price;
-//                 if (discount > 0) {
-//                     if (discount_type === "percent") {
-//                         finalPrice =
-//                             original_price - (original_price * discount) / 100;
-//                     } else if (discount_type === "fixed") {
-//                         finalPrice = original_price - discount;
-//                     }
-//                 }
-//                 finalPrice = finalPrice < 0 ? 0 : finalPrice;
-
-//                 orderItemsData.push({
-//                     product_id: product.product_id,
-//                     quantity: item.quantity,
-//                     original_price,
-//                     discount,
-//                     discount_type,
-//                     price: finalPrice,
-//                 });
-
-//                 original_total += finalPrice * item.quantity;
-
-//             }
-
-//             // Tạo Order
-//             const order = await db.Order.create({
-//                 customer_id,
-//                 original_price: original_total,
-//                 discount: 0, // nếu bạn muốn áp dụng discount cho cả đơn, có thể thay đổi sau
-//                 discount_type: "percent",
-//                 total_price: original_total,
-//                 status: "pending",
-//             });
-
-//             // Tạo OrderItems
-//             for (const item of orderItemsData) {
-//                 await db.OrderItem.create({
-//                     order_id: order.order_id,
-//                     ...item,
-//                 });
-//             }
-
-//             // Lấy lại dữ liệu order đầy đủ
-//             const newOrder = await db.Order.findByPk(order.order_id, {
-//                 include: [
-//                     {
-//                         model: db.OrderItem,
-//                         as: "orderItems",
-//                         include: [{ model: db.Product, as: "product" }],
-//                     },
-//                 ],
-//             });
-
-//             resolve({
-//                 errCode: 0,
-//                 errMessage: "Order created successfully",
-//                 order: newOrder,
-//             });
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
 // CREATE NEW ORDER WITH RESERVED STOCK
 let createOrder = (data) => {
     return new Promise(async (resolve, reject) => {
@@ -513,25 +409,6 @@ let cancelOrder = (order_id) => {
 };
 
 // DELETE ORDER
-let deleteOrder = (order_id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const order = await db.Order.findByPk(order_id);
-
-            if (!order) {
-                return resolve({ errCode: 1, errMessage: "Order not found" });
-            }
-
-            // await db.OrderItem.destroy({ where: { order_id: order_id } });
-            // await order.destroy();
-
-            resolve({ errCode: 0, errMessage: "Order deleted successfully" });
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
-
 // SOFT DELETE bằng status
 let softDeleteOrder = (order_id) => {
     return new Promise(async (resolve, reject) => {
@@ -582,6 +459,61 @@ let hardDeleteOrder = (order_id) => {
         }
     });
 };
+// GET ALL ORDERS BY USER / CUSTOMER ID
+let getAllOrdersByUserId = (customer_id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!customer_id) {
+                return resolve({
+                    errCode: 1,
+                    errMessage: "Missing customer_id",
+                });
+            }
+
+            const orders = await db.Order.findAll({
+                where: { customer_id },
+                attributes: [
+                    "order_id",
+                    "customer_id",
+                    "original_price",
+                    "discount",
+                    "discount_type",
+                    "total_price",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                ],
+                include: [
+                    {
+                        model: db.OrderItem,
+                        as: "orderItems",
+                        include: [
+                            {
+                                model: db.Product,
+                                as: "product",
+                                include: [
+                                    {
+                                        model: db.ProductTranslate,
+                                        as: "translates",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                order: [["order_id", "DESC"]],
+            });
+
+            resolve({
+                errCode: 0,
+                errMessage: "Fetched orders successfully",
+                orders,
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
 export default {
     createOrder,
@@ -590,7 +522,7 @@ export default {
     updateOrderStatus,
     confirmOrder,
     cancelOrder,
-    deleteOrder,
     softDeleteOrder,
     hardDeleteOrder,
+    getAllOrdersByUserId,
 };

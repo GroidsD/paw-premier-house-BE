@@ -1,53 +1,10 @@
-// src/services/productService.js
-import db from "../models/index.js"; // hoặc const db = require("../models");
-// let createProduct = async (data) => {
-//     try {
-//         let { productCategories_id, price, quantity, translates, media } = data;
+import db from "../models/index.js";
+import mediaService from "./MediaService.js"; // import MediaService
 
-//         // 1️⃣ Tạo product cùng translations
-//         let product = await db.Product.create(
-//             {
-//                 productCategories_id,
-//                 price,
-//                 quantity,
-//                 translates,
-//             },
-//             {
-//                 include: [{ model: db.ProductTranslate, as: "translates" }],
-//             }
-//         );
-
-//         // 2️⃣ Nếu có media, thêm media tương ứng
-//         if (media && Array.isArray(media) && media.length > 0) {
-//             const mediaWithEntity = media.map((item) => ({
-//                 ...item,
-//                 entity_id: product.product_id,
-//                 entity_type: "product",
-//             }));
-
-//             await db.Media.bulkCreate(mediaWithEntity);
-//         }
-
-//         // 3️⃣ Lấy lại product có kèm media & translates
-//         const productWithRelations = await db.Product.findByPk(
-//             product.product_id,
-//             {
-//                 include: [
-//                     { model: db.ProductTranslate, as: "translates" },
-//                     { model: db.Media, as: "media" },
-//                 ],
-//             }
-//         );
-
-//         return productWithRelations;
-//     } catch (e) {
-//         throw e;
-//     }
-// };
-
+// 🟢 Tạo product mới
 let createProduct = async (data) => {
     try {
-        const {
+        let {
             productCategories_id,
             original_price,
             discount = 0,
@@ -58,7 +15,7 @@ let createProduct = async (data) => {
         } = data;
 
         // 1️⃣ Tạo product cùng translations
-        const product = await db.Product.create(
+        let product = await db.Product.create(
             {
                 productCategories_id,
                 original_price,
@@ -67,24 +24,18 @@ let createProduct = async (data) => {
                 quantity,
                 translates,
             },
-            {
-                include: [{ model: db.ProductTranslate, as: "translates" }],
-            }
+            { include: [{ model: db.ProductTranslate, as: "translates" }] }
         );
 
-        // 2️⃣ Nếu có media, thêm media tương ứng
-        if (media.length > 0) {
-            const mediaWithEntity = media.map((item) => ({
-                ...item,
-                entity_id: product.product_id,
-                entity_type: "product",
-            }));
-
-            await db.Media.bulkCreate(mediaWithEntity);
-        }
+        // 2️⃣ Tạo media thông qua MediaService
+        await mediaService.createMediaForEntity(
+            media,
+            product.product_id,
+            "product"
+        );
 
         // 3️⃣ Lấy lại product có kèm media & translates
-        const productWithRelations = await db.Product.findByPk(
+        let productWithRelations = await db.Product.findByPk(
             product.product_id,
             {
                 include: [
@@ -103,6 +54,8 @@ let createProduct = async (data) => {
         throw e;
     }
 };
+
+// 🟢 Lấy tất cả product
 let getAllProducts = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -136,7 +89,7 @@ let getAllProducts = () => {
                         include: [
                             {
                                 model: db.ProductCategoryTranslate,
-                                as: "translates", // phải trùng alias trong model Category
+                                as: "translates",
                                 attributes: ["language", "type"],
                             },
                         ],
@@ -152,6 +105,7 @@ let getAllProducts = () => {
     });
 };
 
+// 🟢 Lấy product theo ID
 let getProductById = (product_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -169,7 +123,7 @@ let getProductById = (product_id) => {
                         include: [
                             {
                                 model: db.ProductCategoryTranslate,
-                                as: "translates", // phải trùng alias trong model Category
+                                as: "translates",
                                 attributes: ["language", "type"],
                             },
                         ],
@@ -201,154 +155,10 @@ let getProductById = (product_id) => {
     });
 };
 
-// let updateProduct = async (product_id, data) => {
-//     try {
-//         const {
-//             productCategories_id,
-//             original_price,
-//             discount,
-//             discount_type,
-//             quantity,
-//             isActive,
-//             isDelete,
-//             translates,
-//             media,
-//         } = data;
-
-//         // 1️⃣ Tìm product
-//         const product = await db.Product.findByPk(product_id);
-//         if (!product) throw new Error("Product not found");
-//         if (!product) {
-//             resolve({
-//                 errCode: 1,
-//                 errMessage: "Product not found",
-//                 product: null,
-//             });
-//         }
-
-//         // 2️⃣ Tính price dựa trên original_price và discount
-//         let finalPrice = original_price;
-//         if (discount && discount > 0) {
-//             if (discount_type === "percent") {
-//                 finalPrice = original_price - (original_price * discount) / 100;
-//             } else if (discount_type === "fixed") {
-//                 finalPrice = original_price - discount;
-//             }
-//         }
-//         finalPrice = finalPrice < 0 ? 0 : finalPrice;
-
-//         // 3️⃣ Cập nhật dữ liệu cơ bản của product
-//         await product.update({
-//             productCategories_id,
-//             original_price,
-//             discount,
-//             discount_type,
-//             price: finalPrice,
-//             quantity,
-//             isActive,
-//             isDelete,
-//         });
-
-//         // 4️⃣ Cập nhật hoặc thêm mới translations
-//         if (Array.isArray(translates)) {
-//             for (const t of translates) {
-//                 if (t.productTranslates_id) {
-//                     // Update bản dịch đã có
-//                     await db.ProductTranslate.update(
-//                         {
-//                             name: t.name,
-//                             description: t.description,
-//                             language: t.language,
-//                         },
-//                         {
-//                             where: {
-//                                 productTranslates_id: t.productTranslates_id,
-//                             },
-//                         }
-//                     );
-//                 } else {
-//                     // Tạo mới nếu không có productTranslates_id
-//                     await db.ProductTranslate.create({
-//                         product_id: product.product_id,
-//                         name: t.name,
-//                         description: t.description,
-//                         language: t.language,
-//                     });
-//                 }
-//             }
-//         }
-
-//         // 5️⃣ Cập nhật media
-//         if (Array.isArray(media)) {
-//             const ENTITY_TYPE = "product";
-
-//             // Lấy media hiện tại
-//             const existingMedia = await db.Media.findAll({
-//                 where: {
-//                     entity_id: product.product_id,
-//                     entity_type: ENTITY_TYPE,
-//                 },
-//             });
-
-//             const existingMap = new Map();
-//             existingMedia.forEach((m) => existingMap.set(m.url, m));
-
-//             for (const m of media) {
-//                 if (existingMap.has(m.url)) {
-//                     // Cập nhật media đã tồn tại
-//                     await db.Media.update(
-//                         {
-//                             is_main: m.is_main,
-//                             alt_text: m.alt_text,
-//                         },
-//                         {
-//                             where: {
-//                                 entity_id: product.product_id,
-//                                 entity_type: ENTITY_TYPE,
-//                                 url: m.url,
-//                             },
-//                         }
-//                     );
-//                     existingMap.delete(m.url);
-//                 } else {
-//                     // Tạo media mới
-//                     await db.Media.create({
-//                         ...m,
-//                         entity_id: product.product_id,
-//                         entity_type: ENTITY_TYPE,
-//                     });
-//                 }
-//             }
-
-//             // Xóa media không còn trong request
-//             for (const [url] of existingMap.entries()) {
-//                 await db.Media.destroy({
-//                     where: {
-//                         entity_id: product.product_id,
-//                         entity_type: ENTITY_TYPE,
-//                         url,
-//                     },
-//                 });
-//             }
-//         }
-
-//         // 6️⃣ Lấy lại product đầy đủ với relations
-//         const updatedProduct = await db.Product.findByPk(product.product_id, {
-//             include: [
-//                 { model: db.ProductTranslate, as: "translates" },
-//                 { model: db.Media, as: "media" },
-//             ],
-//         });
-
-//         return updatedProduct;
-//     } catch (e) {
-//         throw e;
-//     }
-// };
-
+// 🟢 Cập nhật product
 let updateProduct = async (product_id, data) => {
     try {
-        const {
+        let {
             productCategories_id,
             original_price,
             discount,
@@ -360,29 +170,25 @@ let updateProduct = async (product_id, data) => {
             media,
         } = data;
 
-        // 1️⃣ Tìm product
-        const product = await db.Product.findByPk(product_id);
-        if (!product) {
-            // Nếu không tìm thấy, exit luôn với thông báo
+        let product = await db.Product.findByPk(product_id);
+        if (!product)
             return {
                 errCode: 1,
                 errMessage: "Product not found",
                 product: null,
             };
-        }
 
-        // 2️⃣ Tính price dựa trên original_price và discount
+        // Tính giá finalPrice
         let finalPrice = original_price;
         if (discount && discount > 0) {
-            if (discount_type === "percent") {
-                finalPrice = original_price - (original_price * discount) / 100;
-            } else if (discount_type === "fixed") {
-                finalPrice = original_price - discount;
-            }
+            finalPrice =
+                discount_type === "percent"
+                    ? original_price - (original_price * discount) / 100
+                    : original_price - discount;
         }
         finalPrice = finalPrice < 0 ? 0 : finalPrice;
 
-        // 3️⃣ Cập nhật dữ liệu cơ bản của product
+        // Update product cơ bản
         await product.update({
             productCategories_id,
             original_price,
@@ -394,11 +200,10 @@ let updateProduct = async (product_id, data) => {
             isDelete,
         });
 
-        // 4️⃣ Cập nhật hoặc thêm mới translations
+        // Cập nhật translations
         if (Array.isArray(translates)) {
-            for (const t of translates) {
+            for (let t of translates) {
                 if (t.productTranslates_id) {
-                    // Update bản dịch đã có
                     await db.ProductTranslate.update(
                         {
                             name: t.name,
@@ -412,7 +217,6 @@ let updateProduct = async (product_id, data) => {
                         }
                     );
                 } else {
-                    // Tạo mới nếu không có productTranslates_id
                     await db.ProductTranslate.create({
                         product_id: product.product_id,
                         name: t.name,
@@ -423,62 +227,16 @@ let updateProduct = async (product_id, data) => {
             }
         }
 
-        // 5️⃣ Cập nhật media
+        // Cập nhật media thông qua MediaService
         if (Array.isArray(media)) {
-            const ENTITY_TYPE = "product";
-
-            // Lấy media hiện tại
-            const existingMedia = await db.Media.findAll({
-                where: {
-                    entity_id: product.product_id,
-                    entity_type: ENTITY_TYPE,
-                },
-            });
-
-            const existingMap = new Map();
-            existingMedia.forEach((m) => existingMap.set(m.url, m));
-
-            for (const m of media) {
-                if (existingMap.has(m.url)) {
-                    // Cập nhật media đã tồn tại
-                    await db.Media.update(
-                        {
-                            is_main: m.is_main,
-                            alt_text: m.alt_text,
-                        },
-                        {
-                            where: {
-                                entity_id: product.product_id,
-                                entity_type: ENTITY_TYPE,
-                                url: m.url,
-                            },
-                        }
-                    );
-                    existingMap.delete(m.url);
-                } else {
-                    // Tạo media mới
-                    await db.Media.create({
-                        ...m,
-                        entity_id: product.product_id,
-                        entity_type: ENTITY_TYPE,
-                    });
-                }
-            }
-
-            // Xóa media không còn trong request
-            for (const [url] of existingMap.entries()) {
-                await db.Media.destroy({
-                    where: {
-                        entity_id: product.product_id,
-                        entity_type: ENTITY_TYPE,
-                        url,
-                    },
-                });
-            }
+            await mediaService.updateMediaForEntity(
+                media,
+                product.product_id,
+                "product"
+            );
         }
 
-        // 6️⃣ Lấy lại product đầy đủ với relations
-        const updatedProduct = await db.Product.findByPk(product.product_id, {
+        let updatedProduct = await db.Product.findByPk(product.product_id, {
             include: [
                 { model: db.ProductTranslate, as: "translates" },
                 { model: db.Media, as: "media" },
@@ -499,71 +257,37 @@ let updateProduct = async (product_id, data) => {
     }
 };
 
-let deleteProduct = (id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let product = await db.Product.findByPk(id);
-            if (!product) {
-                reject("Product not found");
-            } else {
-                await db.ProductTranslate.destroy({
-                    where: { product_id: id },
-                });
-                await product.destroy();
-                resolve("Product deleted successfully");
-            }
-        } catch (e) {
-            reject(e);
-        }
-    });
+// 🟢 Xóa product
+let deleteProduct = async (id) => {
+    let product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
+
+    await db.ProductTranslate.destroy({ where: { product_id: id } });
+    await mediaService.deleteMediaByEntity("product", id);
+    await product.destroy();
+
+    return "Product deleted successfully";
 };
 
-let softDeleteProduct = (id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let product = await db.Product.findByPk(id);
-            if (!product) return reject("Product not found");
+// 🟢 Xóa mềm
+let softDeleteProduct = async (id) => {
+    let product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
 
-            // Cập nhật cờ xóa mềm
-            await product.update({
-                isActive: false,
-                isDelete: true,
-            });
-
-            resolve("Product soft deleted successfully");
-        } catch (e) {
-            reject(e);
-        }
-    });
+    await product.update({ isActive: false, isDelete: true });
+    return "Product soft deleted successfully";
 };
 
-let hardDeleteProduct = (id) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let product = await db.Product.findByPk(id);
-            if (!product) return reject("Product not found");
+// 🟢 Xóa cứng
+let hardDeleteProduct = async (id) => {
+    let product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
 
-            // 1️⃣ Xóa tất cả translations
-            await db.ProductTranslate.destroy({
-                where: { product_id: id },
-            });
+    await db.ProductTranslate.destroy({ where: { product_id: id } });
+    await mediaService.deleteMediaByEntity("product", id);
+    await product.destroy();
 
-            // 2️⃣ Xóa tất cả media liên quan
-            await db.Media.destroy({
-                where: {
-                    entity_id: id,
-                    entity_type: "product",
-                },
-            });
-
-            // 3️⃣ Xóa sản phẩm
-            await product.destroy();
-
-            resolve("Product hard deleted successfully");
-        } catch (e) {
-            reject(e);
-        }
-    });
+    return "Product hard deleted successfully";
 };
 
 export default {

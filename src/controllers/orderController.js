@@ -91,19 +91,6 @@ let updateStatus = async (req, res) => {
     }
 };
 
-let deleteOrder = async (req, res) => {
-    try {
-        const order_id = req.query.order_id;
-        const result = await orderService.deleteOrder(order_id);
-        return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
-    }
-};
 // SOFT DELETE bằng status
 let softDeleteOrder = async (req, res) => {
     try {
@@ -131,6 +118,20 @@ let hardDeleteOrder = async (req, res) => {
             .json({ errCode: -1, errMessage: "Server error" });
     }
 };
+// GET ALL ORDERS BY USER ID
+let getAllOrdersByUserId = async (req, res) => {
+    try {
+        const customer_id = req.query.customer_id;
+        const result = await orderService.getAllOrdersByUserId(customer_id);
+
+        return res.status(200).json(result);
+    } catch (e) {
+        console.error(e);
+        return res
+            .status(500)
+            .json({ errCode: -1, errMessage: "Server error" });
+    }
+};
 
 export default {
     createOrder,
@@ -139,7 +140,7 @@ export default {
     confirmOrder,
     cancelOrder,
     updateStatus,
-    deleteOrder,
     softDeleteOrder,
     hardDeleteOrder,
+    getAllOrdersByUserId,
 };
