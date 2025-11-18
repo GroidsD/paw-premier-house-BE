@@ -24,15 +24,17 @@ module.exports = {
                 type: Sequelize.FLOAT,
                 allowNull: false,
             },
-            createdAt: {
+            created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
-                defaultValue: Sequelize.fn("NOW"),
+                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
-            updatedAt: {
+            updated_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
-                defaultValue: Sequelize.fn("NOW"),
+                defaultValue: Sequelize.literal(
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                ),
             },
         });
     },

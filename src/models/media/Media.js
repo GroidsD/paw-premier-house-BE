@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
             entity_type: {
+                // Use singular values to match DB migration and association scopes
                 type: DataTypes.ENUM("product", "pet", "user", "service"),
                 allowNull: false,
                 comment: "Tên loại đối tượng: product, pet, user, service",

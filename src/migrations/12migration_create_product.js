@@ -22,23 +22,60 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
+            // Giá gốc
+            original_price: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Giá gốc của sản phẩm (trước khi giảm giá)",
+            },
+
+            // Giá trị chiết khấu
+            discount: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                comment:
+                    "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
+            },
+
+            // Loại chiết khấu
+            discount_type: {
+                type: Sequelize.ENUM("percent", "fixed"),
+                allowNull: false,
+                defaultValue: "percent",
+                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
+            },
+
+            // Giá sau khi giảm
             price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
+                comment: "Giá sau khi áp dụng chiết khấu",
             },
 
+            // Số lượng tồn kho
             quantity: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
             },
 
+            reserved_quantity: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Số lượng đã được đặt nhưng chưa confirm",
+            },
+
+            // Cờ hoạt động
             isActive: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: true,
             },
 
+            // Cờ xóa mềm
             isDelete: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false,
@@ -62,5 +99,10 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("products");
+
+        // Dọn ENUM để tránh lỗi khi migrate lại
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_products_discount_type";'
+        );
     },
 };

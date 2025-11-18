@@ -20,13 +20,15 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "CASCADE",
             });
 
-            // Nếu bạn có ProductTranslates (đa ngôn ngữ)
+            // ProductTranslates (đa ngôn ngữ)
             Product.hasMany(models.ProductTranslate, {
                 foreignKey: "product_id",
                 as: "translates",
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             });
+
+            // Media (ảnh, video,...)
             Product.hasMany(models.Media, {
                 foreignKey: "entity_id",
                 constraints: false,
@@ -50,22 +52,57 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: true,
                 references: {
-                    model: "productCategories", // bảng thật trong DB
+                    model: "productCategories",
                     key: "productCategories_id",
                 },
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
+            // Giá gốc (chưa giảm)
+            original_price: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Giá gốc của sản phẩm (trước khi giảm giá)",
+            },
+
+            // Chiết khấu
+            discount: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                comment:
+                    "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
+            },
+            discount_type: {
+                type: DataTypes.ENUM("percent", "fixed"),
+                allowNull: false,
+                defaultValue: "percent",
+                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
+            },
+
+            // Giá sau khi giảm
             price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
+                comment: "Giá sau khi áp dụng chiết khấu",
             },
+
             quantity: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
             },
+
+            reserved_quantity: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Số lượng đã được đặt nhưng chưa confirm",
+            },
+
             isActive: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,
@@ -91,6 +128,27 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
+            hooks: {
+                beforeSave: (product) => {
+                    // Tính giá sau chiết khấu trước khi lưu
+                    let finalPrice = product.original_price;
+
+                    if (product.discount && product.discount > 0) {
+                        if (product.discount_type === "percent") {
+                            finalPrice =
+                                product.original_price -
+                                (product.original_price * product.discount) /
+                                    100;
+                        } else if (product.discount_type === "fixed") {
+                            finalPrice =
+                                product.original_price - product.discount;
+                        }
+                    }
+
+                    // Không để giá âm
+                    product.price = finalPrice < 0 ? 0 : finalPrice;
+                },
+            },
         }
     );
 
