@@ -84,14 +84,6 @@ module.exports = (sequelize, DataTypes) => {
             updatedAt: "updated_at",
         }
     );
-    Service.afterDestroy(async (service, options) => {
-        await sequelize.models.Media.destroy({
-            where: {
-                entity_type: "service",
-                entity_id: service.service_id,
-            },
-        });
-    });
 
     return Service;
 };

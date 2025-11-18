@@ -130,9 +130,8 @@ module.exports = (sequelize, DataTypes) => {
             updatedAt: "updated_at",
             hooks: {
                 beforeSave: (product) => {
-                    // Tính giá sau chiết khấu trước khi lưu
+                    // Tính giá sau chiết khấu
                     let finalPrice = product.original_price;
-
                     if (product.discount && product.discount > 0) {
                         if (product.discount_type === "percent") {
                             finalPrice =
@@ -144,8 +143,6 @@ module.exports = (sequelize, DataTypes) => {
                                 product.original_price - product.discount;
                         }
                     }
-
-                    // Không để giá âm
                     product.price = finalPrice < 0 ? 0 : finalPrice;
                 },
             },
