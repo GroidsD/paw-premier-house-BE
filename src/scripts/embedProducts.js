@@ -1,182 +1,97 @@
-    // // import { createClient } from "@supabase/supabase-js";
-    // // import OpenAI from "openai";
-    // // import db from "../models/index.js";
-    // // import { Op } from "sequelize";
+import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
+import db from "../models/index.js";
+import { Op } from "sequelize";
 
-    // // const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    // // const supabase = createClient(
-    // //     process.env.SUPABASE_URL,
-    // //     process.env.SUPABASE_SERVICE_ROLE_KEY
-    // // );
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-    // // async function embedProducts() {
-    // //     const products = await db.Product.findAll({
-    // //         where: { status: "active" },
-    // //         include: [
-    // //             {
-    // //                 model: db.ProductTranslate,
-    // //                 as: "translates",
-    // //                 where: { isActive: true, isDelete: false },
-    // //             },
-    // //         ],
-    // //     });
-
-    // //     for (const p of products) {
-    // //         const productId = p.id || p.product_id;
-
-    // //         // ✅ Lặp qua từng bản dịch (vi, en)
-    // //         for (const t of p.translates) {
-    // //             if (!t.name) continue;
-
-    // //             const content = `${t.name}. ${t.description}. Giá: ${t.price} VNĐ. Ngôn ngữ: ${t.language}`;
-    // //             console.log(
-    // //                 `🟢 Embedding for: ${productId} [${t.language}] ${t.name}`
-    // //             );
-
-    // //             const embeddingRes = await openai.embeddings.create({
-    // //                 model: "text-embedding-3-small",
-    // //                 input: content,
-    // //             });
-
-    // //             const embedding = embeddingRes.data[0].embedding;
-
-    // //             // ✅ Lưu từng ngôn ngữ vào Supabase
-    // //             const { error } = await supabase.from("product_vectors").upsert({
-    // //                 product_id: productId,
-    // //                 content,
-    // //                 embedding,
-    // //                 language: t.language,
-    // //             });
-
-    // //             if (error) console.error("❌ Supabase error:", error);
-    // //         }
-    // //     }
-
-    // //     console.log("✅ Đã lưu embeddings (vi + en) vào Supabase!");
-    // // }
-
-    // // embedProducts();
-    // import { createClient } from "@supabase/supabase-js";
-    // import OpenAI from "openai";
-    // import db from "../models/index.js";
-    // import { Op } from "sequelize";
-
-    // const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    // const supabase = createClient(
-    //   process.env.SUPABASE_URL,
-    //   process.env.SUPABASE_SERVICE_ROLE_KEY
-    // );
-
-    // async function embedProducts() {
-    //   const products = await db.Product.findAll({
-    //     where: { isActive: true, isDelete: false },
-    //     include: [
-    //       {
-    //         model: db.ProductTranslate,
-    //         as: "translates",
-    //         where: {
-    //           language: { [Op.in]: ["vi", "en"] },
-    //           isActive: true,
-    //           isDelete: false,
-    //         },
-    //       },
-    //     ],
-    //   });
-
-    //   for (const p of products) {
-    //     const productId = p.product_id;
-
-    //     for (const t of p.translates) {
-    //       if (!t.name) continue;
-
-    //       const content = `${t.name}. ${t.description}. Giá: ${p.price} VNĐ. Ngôn ngữ: ${t.language}`;
-    //       console.log(`🟢 Embedding for: ${productId} [${t.language}] ${t.name}`);
-
-    //       const embeddingRes = await openai.embeddings.create({
-    //         model: "text-embedding-3-small",
-    //         input: content,
-    //       });
-
-    //       const embedding = embeddingRes.data[0].embedding;
-
-    //       const { error } = await supabase
-    //         .from("product_vectors")
-    //         .upsert(
-    //           {
-    //             product_id: productId,
-    //             content,
-    //             embedding,
-    //             lang: t.language,
-    //           },
-    //           { onConflict: ["product_id", "lang"] }
-    //         );
-
-    //       if (error) console.error("❌ Supabase error:", error);
-    //     }
-    //   }
-
-    //   console.log("✅ Đã lưu embeddings (vi + en) vào Supabase!");
-    // }
-
-    // embedProducts();
-    import { createClient } from "@supabase/supabase-js";
-    import OpenAI from "openai";
-    import db from "../models/index.js";
-    import { Op } from "sequelize";
-
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    async function embedProducts() {
-        const products = await db.Product.findAll({
-            where: { isActive: true, isDelete: false },
-            include: [
-                {
-                    model: db.ProductTranslate,
-                    as: "translates",
-                    where: {
-                        language: { [Op.in]: ["vi", "en"] },
+async function embedProducts() {
+    const products = await db.Product.findAll({
+        where: { isActive: true, isDelete: false },
+        include: [
+            {
+                model: db.ProductTranslate,
+                as: "translates",
+                where: { language: { [Op.in]: ["vi", "en"] } },
+                required: true,
+            },
+            {
+                model: db.ProductCategory,
+                as: "category",
+                include: [
+                    {
+                        model: db.ProductCategoryTranslate,
+                        as: "translates",
+                        where: { language: { [Op.in]: ["vi", "en"] } },
+                        required: false,
                     },
-                },
-            ],
-        });
+                ],
+            },
+        ],
+    });
 
-        for (const p of products) {
-            const productId = p.product_id;
+    console.log(`🟢 Found ${products.length} products`);
 
-            for (const t of p.translates) {
-                if (!t.name) continue;
+    for (const p of products) {
+        const productId = p.product_id;
 
-                const content = `${t.name}. ${t.description}. Giá: ${p.price} VNĐ. Ngôn ngữ: ${t.language}`;
-                console.log(
-                    `🟢 Embedding for: ${productId} [${t.language}] ${t.name}`
-                );
+        for (const t of p.translates) {
+            if (!t.name) continue;
 
-                const embeddingRes = await openai.embeddings.create({
-                    model: "text-embedding-3-small",
-                    input: content,
+            // Lấy category theo ngôn ngữ
+            const catTranslate = p.category?.translates?.find(
+                (ct) => ct.language === t.language
+            );
+            const categoryName = catTranslate?.type || "general";
+
+            // Nội dung embedding
+            const content = `${t.name}. ${
+                t.description || ""
+            }. Loại sản phẩm: ${categoryName}. Giá: ${p.price} VNĐ. Ngôn ngữ: ${
+                t.language
+            }`;
+
+            console.log(
+                `🟢 Embedding: ${productId} [${t.language}] ${t.name} (${categoryName})`
+            );
+
+            const embeddingRes = await openai.embeddings.create({
+                model: "text-embedding-3-small",
+                input: content,
+            });
+
+            const embedding = embeddingRes.data[0].embedding;
+
+            // Chỉ lưu name_vi / name_en nếu có
+            const row = {
+                product_id: productId,
+                name: t.name, // cột NOT NULL
+                name_vi: t.language === "vi" ? t.name : null,
+                name_en: t.language === "en" ? t.name : null,
+                price: p.price,
+                original_price: p.original_price || null,
+                discount: p.discount || null,
+                content,
+                embedding,
+                category: categoryName.toLowerCase(),
+                language: t.language,
+            };
+
+            const { error } = await supabase
+                .from("product_vectors")
+                .upsert(row, {
+                    onConflict: ["product_id", "language"],
                 });
 
-                const embedding = embeddingRes.data[0].embedding;
-
-                const { error } = await supabase.from("product_vectors").upsert(
-                    {
-                        product_id: productId,
-                        content,
-                        embedding,
-                        language: t.language,
-                    },
-                    { onConflict: ["product_id", "language"] } // ✅ sửa lại
-                );
-
-                if (error) console.error("❌ Supabase error:", error);
-            }
+            if (error) console.error("❌ Supabase error:", error);
         }
-
-        console.log("✅ Đã lưu embeddings (vi + en) vào Supabase!");
     }
 
-    embedProducts();
+    console.log("✅ Embeddings lưu xong (vi + en)!");
+}
+
+embedProducts();

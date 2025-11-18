@@ -13,7 +13,7 @@ import orderRoutes from "./routes/orderRoutes";
 import spaRoutes from "./routes/spaRoutes";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import shiftRoutes from "./routes/shiftRoute.js";
-import chatRoute from "./routes/chat.js";
+import chatRoute from "./routes/chatRoutes.js";
 
 require("dotenv").config();
 const multer = require("multer");
@@ -109,12 +109,9 @@ app.use((err, req, res, next) => {
 // Parse request
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// app.use("/", chatRoutes);
-// app.use("/", searchRoutes);
 
 //Test route
 app.use("/", chatRoute);
-// app.use("/", testRoute);
 
 app.use(
     express.static(path.join(__dirname, "build"), {
