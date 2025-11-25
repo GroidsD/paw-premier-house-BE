@@ -22,7 +22,14 @@ Backend/
 ├── src/
 │   ├── server.js          # Express server setup
 │   ├── socket.js          # Socket.io setup
-│   ├── config/            # Configuration files (DB, view engine)
+│   ├── AI/                # 🤖 AI Chatbot (NEW)
+│   │   ├── classifyIntent.js      # Intent classification
+│   │   ├── semanticSearch.js      # Semantic search with embeddings
+│   │   ├── handleUserQuery.js     # Main query handler
+│   │   ├── conversationMemory.js  # Conversation context manager
+│   │   ├── recommendService.js    # Product recommendation
+│   │   └── statsQueries.js        # Statistics queries
+│   ├── config/            # Configuration files (DB, view engine, OpenAI)
 │   ├── controllers/       # API controllers
 │   ├── cron/              # Scheduled jobs
 │   ├── middleware/        # Express middlewares (auth, upload, etc.)
@@ -30,6 +37,7 @@ Backend/
 │   ├── models/            # Sequelize models
 │   ├── public/            # Static files (uploads)
 │   ├── routes/            # API routes
+│   ├── scripts/           # Utility scripts (embedProducts.js)
 │   ├── seeders/           # Database seeders
 │   ├── services/          # Business logic
 │   └── views/             # EJS templates
@@ -99,6 +107,51 @@ API endpoints are defined in [`src/routes/web.js`](src/routes/web.js) and handle
 - Images: `src/public/uploads/`
 - Excel: `src/public/uploadsExcel/`
 - PDF: `src/public/uploadsPDF/`
+
+---
+
+## 🤖 AI Chatbot (NEW)
+
+### Features
+
+- **Intent Classification:** Hiểu 14+ loại câu hỏi (greeting, product search, price inquiry, recommendations, etc.)
+- **Semantic Search:** Tìm kiếm sản phẩm bằng embeddings với OpenAI
+- **Conversation Memory:** Nhớ context và lịch sử chat
+- **Entity Extraction:** Tự động trích xuất category, pet_type, price_range
+- **Smart Recommendations:** Gợi ý sản phẩm dựa trên user profile và lịch sử
+- **Multi-language:** Hỗ trợ tiếng Việt và tiếng Anh
+
+### Quick Start
+
+```bash
+# 1. Update Supabase schema
+# Copy nội dung supabase_schema_update.sql vào Supabase SQL Editor và chạy
+
+# 2. Re-embed products
+node src/scripts/embedProducts.js
+
+# 3. Test chatbot
+# Gửi request đến API endpoint với câu hỏi
+```
+
+### Documentation
+
+- **Quick Start:** [`QUICK_START.md`](QUICK_START.md) - Train AI trong 5 phút
+- **Training Guide:** [`AI_TRAINING_GUIDE.md`](AI_TRAINING_GUIDE.md) - Hướng dẫn chi tiết
+- **Upgrade Summary:** [`AI_UPGRADE_SUMMARY.md`](AI_UPGRADE_SUMMARY.md) - Tổng kết nâng cấp
+
+### Requirements
+
+- OpenAI API Key (for embeddings & GPT)
+- Supabase account (for vector storage)
+- Environment variables:
+  ```
+  OPENAI_API_KEY=sk-...
+  SUPABASE_URL=https://...
+  SUPABASE_SERVICE_ROLE_KEY=...
+  ```
+
+---
 
 ## Useful Notes
 
