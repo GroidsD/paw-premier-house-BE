@@ -28,12 +28,16 @@ Bạn là bộ phân loại intent cho chatbot e-commerce thú cưng (Pet Sanctu
 10. "lowest_price" - Sản phẩm rẻ nhất
 11. "compare" - So sánh sản phẩm (ví dụ: "khác gì nhau", "nên chọn cái nào")
 12. "category_browse" - Xem theo danh mục (ví dụ: "có những loại thức ăn nào", "danh mục phụ kiện")
-13. "greeting" - Chào hỏi (ví dụ: "xin chào", "hello")
-14. "other" - Không rõ ràng
+13. "service_search" - Tìm dịch vụ (ví dụ: "dịch vụ tắm cho chó", "pet spa")
+14. "service_price" - Hỏi giá dịch vụ (ví dụ: "tắm spa bao nhiêu", "dịch vụ grooming giá")
+15. "service_booking" - Đặt lịch dịch vụ (ví dụ: "đặt lịch tắm", "book grooming")
+16. "service_recommend" - Gợi ý dịch vụ (ví dụ: "nên chọn dịch vụ nào cho mèo")
+17. "greeting" - Chào hỏi (ví dụ: "xin chào", "hello")
+18. "other" - Không rõ ràng
 
 **Nhiệm vụ:**
 - Phân loại câu hỏi vào 1 intent phù hợp nhất
-- Trích xuất entities quan trọng (category, price_range, product_name, pet_type)
+- Trích xuất entities quan trọng (category, service_category, price_range, product_name, pet_type)
 - Đánh giá confidence (0.0 - 1.0)
 ${contextStr}
 
@@ -45,6 +49,7 @@ ${contextStr}
   "confidence": 0.0,
   "entities": {
     "category": "food|toy|accessory|null",
+    "service_category": "spa|grooming|hotel|training|null",
     "pet_type": "cat|dog|null",
     "price_range": {"min": 0, "max": 0} or null,
     "product_name": "..." or null
@@ -140,10 +145,37 @@ function fallbackClassifyIntent(text) {
     if (/(đồ chơi|toy|play)/.test(t)) entities.category = "toy";
     if (/(phụ kiện|accessory|collar|leash)/.test(t)) entities.category = "accessory";
 
+    const serviceKeywords = /(dịch vụ|spa|tắm|bath|groom|grooming|khách sạn|hotel|boarding|huấn luyện|training)/;
+    if (serviceKeywords.test(t)) {
+        entities.service_category = detectServiceCategory(t);
+
+        if (/(giá|bao nhiêu|price|cost)/.test(t)) {
+            return { intent: "service_price", confidence: 0.85, entities };
+        }
+
+        if (/(đặt lịch|book|booking|schedule|đăng ký)/.test(t)) {
+            return { intent: "service_booking", confidence: 0.85, entities };
+        }
+
+        if (/(gợi ý|recommend|suggest|nên chọn)/.test(t)) {
+            return { intent: "service_recommend", confidence: 0.8, entities };
+        }
+
+        return { intent: "service_search", confidence: 0.75, entities };
+    }
+
     // Default to product_search
     return { 
         intent: "product_search", 
         confidence: 0.6,
         entities 
     };
+}
+
+function detectServiceCategory(text) {
+    if (/(spa|tắm|bath)/.test(text)) return "spa";
+    if (/(groom|cắt tỉa|trim)/.test(text)) return "grooming";
+    if (/(khách sạn|hotel|boarding)/.test(text)) return "hotel";
+    if (/(huấn luyện|training|coach)/.test(text)) return "training";
+    return null;
 }

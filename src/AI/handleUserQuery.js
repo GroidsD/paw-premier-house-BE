@@ -1,14 +1,14 @@
-import openai from "../config/openAI.js";
-import supabase from "../config/supabase.js";
-import { semanticSearchProducts } from "./semanticSearch.js";
+import { semanticSearchProducts } from "./products/semanticSearch.js";
+import { semanticSearchServices } from "./services/semanticSearch.js";
 import {
     getTopSelling,
     getLowStock,
     getDiscounted,
     getTopExpensive,
     getLowestPrice,
-} from "./statsQueries.js";
-import { recommendForUser } from "./recommendService.js";
+} from "./products/statsQueries.js";
+import { recommendForUser } from "./products/recommendProducts.js";
+import { recommendServices } from "./services/recommendServices.js";
 import { classifyIntent } from "./classifyIntent.js";
 import conversationMemory from "./conversationMemory.js";
 
@@ -112,6 +112,35 @@ export async function handleUserQuery({ userId = null, text }) {
                 );
                 break;
 
+            case "service_price":
+                response = await handleServicePriceQuery(text, userLang, entities, userProfile);
+                break;
+
+            case "service_booking":
+                response = await handleServiceBookingQuery(text, userLang, entities, userProfile);
+                break;
+
+            case "service_recommend":
+                response = formatServices(
+                    await recommendServices({
+                        userId,
+                        userText: text,
+                        userProfile,
+                        entities,
+                        language: userLang,
+                        limit: 5,
+                    }),
+                    userLang === "en"
+                        ? "✨ Service recommendations for you:"
+                        : "✨ Gợi ý dịch vụ cho bạn:",
+                    userLang
+                );
+                break;
+
+            case "service_search":
+                response = await handleServiceSearchQuery(text, userLang, entities, userProfile);
+                break;
+
             case "product_search":
             case "product_info":
             default:
@@ -212,6 +241,66 @@ async function handleProductInfoQuery(text, lang, entities = {}) {
     );
 }
 
+// ------------------------- Handle service search -------------------------
+async function handleServiceSearchQuery(text, lang, entities = {}, userProfile = {}) {
+    const filters = buildServiceFilters(entities, userProfile);
+    const results = await semanticSearchServices(text, lang, 5, filters);
+
+    if (!results || results.length === 0) {
+        return lang === "en"
+            ? "I couldn't find a matching service yet. Could you describe it differently?"
+            : "Mình chưa tìm thấy dịch vụ phù hợp, bạn mô tả chi tiết hơn giúp mình nhé?";
+    }
+
+    return formatServices(
+        results,
+        lang === "en" ? "🛁 Recommended services:" : "🛁 Các dịch vụ phù hợp:",
+        lang
+    );
+}
+
+// ------------------------- Handle service price -------------------------
+async function handleServicePriceQuery(text, lang, entities = {}, userProfile = {}) {
+    const filters = buildServiceFilters(entities, userProfile);
+    const results = await semanticSearchServices(text, lang, 1, filters);
+
+    if (!results || results.length === 0) {
+        return lang === "en"
+            ? "Sorry, I couldn't pinpoint that service price."
+            : "Xin lỗi, mình chưa tìm được giá dịch vụ bạn cần.";
+    }
+
+    const service = results[0];
+    const nameObj =
+        service.translates.find((t) => t.language === lang) ||
+        service.translates[0];
+
+    return lang === "en"
+        ? `The price for **${nameObj.name}** is **${formatPrice(service.price, lang)}**.`
+        : `Giá của **${nameObj.name}** là **${formatPrice(service.price, lang)}**.`;
+}
+
+// ------------------------- Handle service booking -------------------------
+async function handleServiceBookingQuery(text, lang, entities = {}, userProfile = {}) {
+    const filters = buildServiceFilters(entities, userProfile);
+    const results = await semanticSearchServices(text, lang, 3, filters);
+
+    if (!results || results.length === 0) {
+        return lang === "en"
+            ? "Please tell me which service you want to book so I can guide you."
+            : "Bạn cho mình biết rõ dịch vụ muốn đặt để mình hướng dẫn nhé.";
+    }
+
+    const service = results[0];
+    const nameObj =
+        service.translates.find((t) => t.language === lang) ||
+        service.translates[0];
+
+    return lang === "en"
+        ? `To book **${nameObj.name}**, let me know your preferred time slot and pet info. I will create the booking in our system or you can visit the schedule page in the app.`
+        : `Để đặt dịch vụ **${nameObj.name}**, bạn cho mình biết khung giờ mong muốn và thông tin thú cưng. Mình sẽ hỗ trợ tạo lịch hoặc bạn có thể đặt trực tiếp trong ứng dụng tại mục lịch hẹn.`;
+}
+
 // ------------------------- Build filters from entities -------------------------
 function buildFilters(entities) {
     const filters = {};
@@ -226,6 +315,24 @@ function buildFilters(entities) {
 
     if (entities.price_range) {
         filters.price_range = entities.price_range;
+    }
+
+    return filters;
+}
+
+function buildServiceFilters(entities = {}, userProfile = {}) {
+    const filters = {};
+
+    if (entities.service_category) {
+        filters.category = entities.service_category;
+    } else if (userProfile.serviceInterests?.length) {
+        filters.category = userProfile.serviceInterests[0];
+    }
+
+    if (entities.price_range) {
+        filters.price_range = entities.price_range;
+    } else if (userProfile.priceRange) {
+        filters.price_range = userProfile.priceRange;
     }
 
     return filters;
@@ -262,6 +369,25 @@ function formatProducts(products, title, lang = "vi") {
             msg += `• ${nameObj.name} – **${formatPrice(p.price, lang)}**\n`;
         }
     }
+    return msg;
+}
+
+// ------------------------- Format services -------------------------
+function formatServices(services, title, lang = "vi") {
+    if (!services || services.length === 0) {
+        return lang === "en"
+            ? "No services match yet."
+            : "Không tìm thấy dịch vụ phù hợp.";
+    }
+
+    let msg = `\n${title}\n`;
+    for (const service of services) {
+        const translations = service.translates || [];
+        const nameObj =
+            translations.find((t) => t.language === lang) || translations[0];
+        msg += `• ${nameObj?.name || "Dịch vụ"} – **${formatPrice(service.price, lang)}**\n`;
+    }
+
     return msg;
 }
 
@@ -327,9 +453,10 @@ function formatProductsWithHighlight(
 
 // ------------------------- Format price -------------------------
 function formatPrice(price, lang = "vi") {
-    if (!price || typeof price !== "number")
+    const numericPrice = Number(price);
+    if (Number.isNaN(numericPrice) || numericPrice < 0)
         return lang === "en" ? "Contact for price" : "Giá liên hệ";
     return lang === "en"
-        ? `$${(price / 23000).toFixed(2)}`
-        : price.toLocaleString("vi-VN") + "₫";
+        ? `$${(numericPrice / 23000).toFixed(2)}`
+        : numericPrice.toLocaleString("vi-VN") + "₫";
 }

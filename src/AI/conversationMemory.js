@@ -61,7 +61,8 @@ class ConversationMemory {
     analyzeUserIntent(userId) {
         const history = this.getHistory(userId);
         const analysis = {
-            interests: [], // Sản phẩm/category user quan tâm
+            interests: [], // Product categories
+            serviceInterests: [], // Service categories
             priceRange: null,
             petType: null,
         };
@@ -75,10 +76,16 @@ class ConversationMemory {
             if (/(mèo|cat)/.test(text)) analysis.petType = 'cat';
             if (/(chó|dog)/.test(text)) analysis.petType = 'dog';
 
-            // Detect interests
+            // Detect product interests
             if (/(thức ăn|food)/.test(text)) analysis.interests.push('food');
             if (/(đồ chơi|toy)/.test(text)) analysis.interests.push('toy');
             if (/(phụ kiện|accessory)/.test(text)) analysis.interests.push('accessory');
+
+            // Detect service interests
+            if (/(spa|tắm|bath)/.test(text)) analysis.serviceInterests.push('spa');
+            if (/(groom|cắt tỉa|trim)/.test(text)) analysis.serviceInterests.push('grooming');
+            if (/(khách sạn|hotel|boarding|lưu trú)/.test(text)) analysis.serviceInterests.push('hotel');
+            if (/(huấn luyện|training|coach)/.test(text)) analysis.serviceInterests.push('training');
 
             // Detect price range
             const priceMatch = text.match(/(\d+)k?\s*(đến|to|-)\s*(\d+)k?/);

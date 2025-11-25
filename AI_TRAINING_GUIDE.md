@@ -64,6 +64,28 @@ node src/scripts/embedProducts.js
 - Cần có OPENAI_API_KEY và SUPABASE credentials trong .env
 - Mỗi sản phẩm sẽ có 2 embeddings (vi + en)
 
+### **Bước 2b: Re-embed toàn bộ dịch vụ (NEW)**
+
+Sau khi đã có `service_vectors` trong Supabase, chạy script mới để tạo embeddings cho dịch vụ:
+
+```bash
+# Từ thư mục gốc của project
+npm run embed:services
+```
+
+Script `src/scripts/embedServices.js` sẽ:
+- Scan tất cả dịch vụ đang active
+- Tạo nội dung embedding gồm tên, mô tả, category, tags
+- Upsert vào bảng `service_vectors` theo từng ngôn ngữ
+
+Muốn chạy cả sản phẩm và dịch vụ một lượt:
+
+```bash
+npm run embed:all
+```
+
+---
+
 ### **Bước 3: Test các intent mới**
 
 Test chatbot với các câu hỏi sau:
@@ -90,6 +112,11 @@ Bot: [Trả về danh sách thức ăn mèo]
 User: "Cái nào rẻ nhất?" 
 Bot: [Nhớ context là "thức ăn mèo", trả về thức ăn mèo rẻ nhất]
 ```
+
+#### **Service Search / Booking (NEW):**
+- "Có dịch vụ tắm spa cho chó không?" → service_search + service_category=spa
+- "Dịch vụ grooming giá bao nhiêu?" → service_price + service_category=grooming
+- "Mình muốn đặt lịch khách sạn cho mèo vào cuối tuần" → service_booking + pet_type=cat
 
 ### **Bước 4: Monitor logs**
 

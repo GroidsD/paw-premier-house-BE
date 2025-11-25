@@ -1,4 +1,5 @@
-import supabase from "../config/supabase.js";
+import supabase from "../../config/supabase.js";
+
 export async function getTopSelling(limit = 5) {
     const { data, error } = await supabase
         .from("product_vectors")
@@ -11,14 +12,7 @@ export async function getTopSelling(limit = 5) {
         return [];
     }
 
-    return data.map((d) => ({
-        product_id: d.product_id,
-        name: d.name,
-        price: d.price,
-        original_price: d.original_price,
-        discount: d.discount,
-        translates: [{ name: d.name, language: d.language }],
-    }));
+    return mapProductRows(data);
 }
 
 export async function getDiscounted(limit = 20) {
@@ -34,14 +28,7 @@ export async function getDiscounted(limit = 20) {
         return [];
     }
 
-    return data.map((d) => ({
-        product_id: d.product_id,
-        name: d.name,
-        price: d.price,
-        original_price: d.original_price,
-        discount: d.discount,
-        translates: [{ name: d.name, language: d.language }],
-    }));
+    return mapProductRows(data);
 }
 
 export async function getLowStock(threshold = 5) {
@@ -56,15 +43,9 @@ export async function getLowStock(threshold = 5) {
         return [];
     }
 
-    return data.map((d) => ({
-        product_id: d.product_id,
-        name: d.name,
-        price: d.price,
-        original_price: d.original_price,
-        discount: d.discount,
-        translates: [{ name: d.name, language: d.language }],
-    }));
+    return mapProductRows(data);
 }
+
 export async function getLowestPrice(topK = 5) {
     const { data, error } = await supabase
         .from("product_vectors")
@@ -77,15 +58,9 @@ export async function getLowestPrice(topK = 5) {
         return [];
     }
 
-    return data.map((d) => ({
-        product_id: d.product_id,
-        name: d.name,
-        price: d.price,
-        original_price: d.original_price,
-        discount: d.discount,
-        translates: [{ name: d.name, language: d.language }],
-    }));
+    return mapProductRows(data);
 }
+
 export async function getTopExpensive(limit = 5) {
     const { data, error } = await supabase
         .from("product_vectors")
@@ -98,7 +73,11 @@ export async function getTopExpensive(limit = 5) {
         return [];
     }
 
-    return data.map((d) => ({
+    return mapProductRows(data);
+}
+
+function mapProductRows(rows = []) {
+    return rows.map((d) => ({
         product_id: d.product_id,
         name: d.name,
         price: d.price,
@@ -107,3 +86,4 @@ export async function getTopExpensive(limit = 5) {
         translates: [{ name: d.name, language: d.language }],
     }));
 }
+
