@@ -46,7 +46,7 @@ module.exports = {
                 defaultValue: "vi",
             },
             role: {
-                type: Sequelize.ENUM("admin", "staff", "customer"),
+                type: Sequelize.ENUM("admin", "staff", "customer", "manager"),
                 allowNull: false,
                 defaultValue: "customer",
             },

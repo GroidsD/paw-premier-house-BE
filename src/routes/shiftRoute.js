@@ -1,19 +1,38 @@
-// import express from "express";
-// import shiftController from "../controllers/shiftController";
-// import authMiddleware from "../middleware/authMiddleware";
-// import adminMiddleware from "../middleware/adminMiddleware";
+import express from "express";
+import shiftController from "../controllers/shiftController";
+import authMiddleware from "../middleware/authMiddleware";
+import roleMiddleware from "../middleware/roleMiddleware.js";
 
-// let router = express.Router();
+let router = express.Router();
 
-// // CREATE SHIFT (chỉ admin)
-// router.post(
-//     "/api/create-shift",
-//     authMiddleware,
-//     adminMiddleware,
-//     shiftController.create
-// );
+// CREATE SHIFT (admin + manager)
+router.post(
+    "/api/create-shift",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    shiftController.create
+);
 
-// // GET ALL SHIFTS (ai cũng có thể xem)
-// router.get("/api/get-all-shifts", authMiddleware, shiftController.getAll);
+// GET ALL SHIFTS (ai cũng xem được)
+router.get("/api/get-all-shifts", authMiddleware, shiftController.getAll);
 
-// export default router;
+// GET SHIFT BY ID
+router.get("/api/get-shift/:shift_id", authMiddleware, shiftController.getById);
+
+// UPDATE SHIFT (admin + manager)
+router.put(
+    "/api/update-shift/:shift_id",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    shiftController.update
+);
+
+// DELETE SHIFT (admin + manager)
+router.delete(
+    "/api/delete-shift/:shift_id",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    shiftController.delete
+);
+
+export default router;

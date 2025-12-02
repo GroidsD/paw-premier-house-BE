@@ -1,36 +1,37 @@
-// const { Shift } = require("../models");
+const db = require("../models");
 
-// module.exports = {
-//     async getAllShifts() {
-//         return await Shift.findAll();
-//     },
+exports.getAllShifts = async () => {
+    return await db.Shift.findAll({ order: [["start_time", "ASC"]] });
+};
 
-//     async createShift(data) {
-//         // Kiểm tra trùng theo name + giờ bắt đầu + giờ kết thúc
-//         const exist = await Shift.findOne({
-//             where: {
-//                 name: data.name,
-//                 start_time: data.start_time,
-//                 end_time: data.end_time,
-//             },
-//         });
+exports.getShiftById = async (shift_id) => {
+    return await db.Shift.findByPk(shift_id);
+};
 
-//         if (exist) {
-//             throw new Error("Shift with the same name and time already exists");
-//         }
+exports.createShift = async (data) => {
+    if (
+        !data.shift_name ||
+        !data.start_time ||
+        !data.end_time ||
+        !data.duration_hours
+    ) {
+        throw new Error("Missing required fields");
+    }
 
-//         return await Shift.create(data);
-//     },
-//     async updateShift(id, data) {
-//         const shift = await Shift.findByPk(id);
-//         if (!shift) throw new Error("Shift not found");
-//         return await shift.update(data);
-//     },
+    return await db.Shift.create(data);
+};
 
-//     async deleteShift(id) {
-//         const shift = await Shift.findByPk(id);
-//         if (!shift) throw new Error("Shift not found");
-//         await shift.destroy();
-//         return true;
-//     },
-// };
+exports.updateShift = async (shift_id, data) => {
+    const shift = await db.Shift.findByPk(shift_id);
+    if (!shift) throw new Error("Shift not found");
+
+    return await shift.update(data);
+};
+
+exports.deleteShift = async (shift_id) => {
+    const shift = await db.Shift.findByPk(shift_id);
+    if (!shift) throw new Error("Shift not found");
+
+    await shift.destroy();
+    return "Shift deleted successfully";
+};

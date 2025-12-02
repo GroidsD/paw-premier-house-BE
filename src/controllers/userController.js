@@ -1,6 +1,6 @@
 import userService from "../services/UserService.js";
 
-// 👤 Lấy thông tin người dùng hiện tại
+//  Lấy thông tin người dùng hiện tại
 let getCurrentUser = async (req, res) => {
     try {
         // console.log("Cookie", req.user);
@@ -17,7 +17,7 @@ let getCurrentUser = async (req, res) => {
     }
 };
 
-// 📋 Lấy tất cả người dùng
+//  Lấy tất cả người dùng
 let getAllUsers = async (req, res) => {
     try {
         const users = await userService.getAllUsers();
@@ -27,7 +27,7 @@ let getAllUsers = async (req, res) => {
     }
 };
 
-// ➕ Tạo người dùng mới
+//  Tạo người dùng mới
 let registerUser = async (req, res) => {
     try {
         const data = req.body;
@@ -39,10 +39,10 @@ let registerUser = async (req, res) => {
     }
 };
 
-// ✏️ Cập nhật thông tin người dùng
+//  Cập nhật thông tin người dùng
 let updateUser = async (req, res) => {
-    console.log("🧩 req.body:", req.body);
-    console.log("🖼 req.file:", req.file);
+    console.log(" req.body:", req.body);
+    console.log(" req.file:", req.file);
 
     try {
         const { user_id, ...data } = req.body;
@@ -57,7 +57,7 @@ let updateUser = async (req, res) => {
     }
 };
 
-// 🗑️ Xóa người dùng
+//  Xóa người dùng
 let deleteUserById = async (req, res) => {
     try {
         const { user_id } = req.query;
@@ -164,6 +164,22 @@ let firebaseLogin = async (req, res) => {
             .json({ errCode: -1, errMessage: "Server error" });
     }
 };
+let createUserByAdminOrManager = async (req, res) => {
+    try {
+        const creator = req.user; // token chứa role
+        const data = req.body;
+
+        const result = await userService.createUserByAdminOrManager(
+            creator.role,
+            data
+        );
+
+        return res.status(200).json(result);
+    } catch (e) {
+        console.error("Error in createUserByAdminOrManager:", e);
+        return res.status(500).json({ error: e.message });
+    }
+};
 
 export default {
     getCurrentUser,
@@ -177,4 +193,5 @@ export default {
     resetUserPassword,
     changeMyPassword,
     firebaseLogin,
+    createUserByAdminOrManager,
 };
