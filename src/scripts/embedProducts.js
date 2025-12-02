@@ -53,7 +53,12 @@ async function embedProducts() {
 
             // 🔥 Tạo nội dung embedding phong phú hơn
             const metadata = buildProductMetadata(p, t, categoryName);
-            const content = generateEmbeddingContent(p, t, categoryName, metadata);
+            const content = generateEmbeddingContent(
+                p,
+                t,
+                categoryName,
+                metadata
+            );
 
             console.log(
                 `🟢 Embedding: ${productId} [${t.language}] ${t.name} (${categoryName})`
@@ -73,7 +78,9 @@ async function embedProducts() {
                 name_vi: t.language === "vi" ? t.name : null,
                 name_en: t.language === "en" ? t.name : null,
                 price: parseInt(p.price) || 0,
-                original_price: p.original_price ? parseInt(p.original_price) : null,
+                original_price: p.original_price
+                    ? parseInt(p.original_price)
+                    : null,
                 discount: p.discount ? parseInt(p.discount) : null,
                 content,
                 embedding,
@@ -196,4 +203,3 @@ function generateEmbeddingContent(product, translate, categoryName, metadata) {
 }
 
 embedProducts();
-
