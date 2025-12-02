@@ -1,67 +1,64 @@
 import ShiftService from "../services/ShiftService.js";
 
-// Lấy tất cả ca làm
-let getAllShifts = async (req, res) => {
+// Lấy tất cả ca làm việc
+let getAll = async (req, res) => {
     try {
         const shifts = await ShiftService.getAllShifts();
-        return res.status(200).json(shifts);
+        res.json(shifts);
     } catch (err) {
-        return res.status(500).json({ message: err.toString() });
+        res.status(500).json({ message: err.message });
     }
 };
 
-// Lấy ca làm theo ID
-let getShiftById = async (req, res) => {
+// Lấy ca theo ID
+let getById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const shift = await ShiftService.getShiftById(id);
+        const shift = await ShiftService.getShiftById(req.params.shift_id);
         if (!shift) return res.status(404).json({ message: "Shift not found" });
-        return res.status(200).json(shift);
+        res.json(shift);
     } catch (err) {
-        return res.status(500).json({ message: err.toString() });
+        res.status(500).json({ message: err.message });
     }
 };
 
-// Tạo ca làm mới
-let createShift = async (req, res) => {
+// Tạo ca mới
+let create = async (req, res) => {
     try {
         const newShift = await ShiftService.createShift(req.body);
-        return res.status(201).json(newShift);
+        res.status(201).json(newShift);
     } catch (err) {
-        return res.status(400).json({ message: err.toString() });
+        res.status(400).json({ message: err.message });
     }
 };
 
-// Cập nhật ca làm
-let updateShift = async (req, res) => {
+// Cập nhật ca
+let update = async (req, res) => {
     try {
-        const { id } = req.params;
-        const updated = await ShiftService.updateShift(id, req.body);
-        if (!updated)
-            return res.status(404).json({ message: "Shift not found" });
-        return res.status(200).json(updated);
+        const updatedShift = await ShiftService.updateShift(
+            req.params.shift_id,
+            req.body
+        );
+        res.json(updatedShift);
     } catch (err) {
-        return res.status(400).json({ message: err.toString() });
+        res.status(400).json({ message: err.message });
     }
 };
 
-// Xóa ca làm
-let deleteShift = async (req, res) => {
+// Xóa ca
+let remove = async (req, res) => {
     try {
-        const { id } = req.params;
-        const result = await ShiftService.deleteShift(id);
-        if (!result)
-            return res.status(404).json({ message: "Shift not found" });
-        return res.status(200).json({ message: "Shift deleted successfully" });
+        const result = await ShiftService.deleteShift(req.params.shift_id);
+        res.json({ message: result });
     } catch (err) {
-        return res.status(400).json({ message: err.toString() });
+        res.status(400).json({ message: err.message });
     }
 };
 
+// Export tất cả functions
 export default {
-    getAllShifts,
-    getShiftById,
-    createShift,
-    updateShift,
-    deleteShift,
+    getAll,
+    getById,
+    create,
+    update,
+    delete: remove,
 };

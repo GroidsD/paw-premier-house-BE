@@ -8,12 +8,12 @@ import { connectDB } from "./config/connectDB";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import cron from "node-cron";
-// import productRoutes from "./routes/productRoutes";
-// import orderRoutes from "./routes/orderRoutes";
-// import spaRoutes from "./routes/spaRoutes";
+import productRoutes from "./routes/productRoutes";
+import orderRoutes from "./routes/orderRoutes";
+import serviceRoutes from "./routes/serviceRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import shiftRoutes from "./routes/shiftRoute.js";
-import chatRoute from "./routes/chat.js";
+import chatRoute from "./routes/chatRoutes.js";
 
 require("dotenv").config();
 const multer = require("multer");
@@ -91,6 +91,10 @@ app.use(
     "/uploadImageProducts",
     express.static(path.join(__dirname, "public/uploadImageProducts"))
 );
+app.use(
+    "/uploadMedia",
+    express.static(path.join(__dirname, "public/uploadMedia"))
+);
 // Token Cookie
 app.use(cookieParser());
 app.use((err, req, res, next) => {
@@ -105,12 +109,9 @@ app.use((err, req, res, next) => {
 // Parse request
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// app.use("/", chatRoutes);
-// app.use("/", searchRoutes);
 
 //Test route
 app.use("/", chatRoute);
-// app.use("/", testRoute);
 
 app.use(
     express.static(path.join(__dirname, "build"), {
@@ -126,10 +127,10 @@ app.use(
 // View engine & routes
 viewEngine(app);
 initWebRoutes(app);
-// app.use("/", productRoutes);
-// app.use("/", orderRoutes);
-// app.use("/", spaRoutes);
-app.use("/", scheduleRoutes);
+app.use("/", productRoutes);
+app.use("/", orderRoutes);
+app.use("/", serviceRoutes);
+// app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
 
 // Connect DB

@@ -22,12 +22,40 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
+            // Tổng giá trị gốc (chưa giảm)
+            original_price: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Tổng giá trị gốc của đơn hàng (trước khi giảm giá)",
+            },
+
+            // Giá trị chiết khấu
+            discount: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                comment:
+                    "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
+            },
+
+            // Loại chiết khấu
+            discount_type: {
+                type: Sequelize.ENUM("percent", "fixed"),
+                allowNull: false,
+                defaultValue: "percent",
+                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
+            },
+
+            // Tổng giá sau khi giảm
             total_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
+                comment: "Tổng giá trị đơn hàng sau khi áp dụng chiết khấu",
             },
 
+            // Trạng thái đơn hàng
             status: {
                 type: Sequelize.ENUM(
                     "pending",
@@ -39,7 +67,7 @@ module.exports = {
                 allowNull: false,
                 defaultValue: "pending",
                 comment:
-                    "Trạng thái đơn: pending, confirmed, shipped, completed, cancelled",
+                    "Trạng thái đơn hàng: pending, confirmed, shipped, completed, cancelled",
             },
 
             created_at: {
@@ -60,8 +88,13 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("orders");
+
+        // Xóa ENUM types để tránh lỗi khi migrate lại
         await queryInterface.sequelize.query(
-            "DROP TYPE IF EXISTS enum_orders_status;"
+            'DROP TYPE IF EXISTS "enum_orders_status";'
+        );
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_orders_discount_type";'
         );
     },
 };

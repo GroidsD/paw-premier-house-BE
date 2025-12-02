@@ -10,7 +10,7 @@ dotenv.config();
 const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 
-// 🧂 Mã hóa mật khẩu
+// Mã hóa mật khẩu
 let hashPassword = (password) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -22,7 +22,7 @@ let hashPassword = (password) => {
     });
 };
 
-// 👤 Lấy thông tin người dùng theo ID
+//  Lấy thông tin người dùng theo ID
 let getUserById = (user_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -37,7 +37,7 @@ let getUserById = (user_id) => {
     });
 };
 
-// 📋 Lấy tất cả người dùng
+//  Lấy tất cả người dùng
 let getAllUsers = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -52,11 +52,11 @@ let getAllUsers = () => {
     });
 };
 
-// ➕ Tạo người dùng mới
+//  Tạo người dùng mới
 let registerUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if (!data.email || !data.password || !data.name) {
+            if (!data.email || !data.password || !data.fullname) {
                 return reject("Missing required fields");
             }
 
@@ -73,10 +73,10 @@ let registerUser = (data) => {
             const newUser = await db.User.create({
                 email: data.email,
                 password: hashed,
-                name: data.name,
+                fullname: data.fullname,
                 phone: data.phone || "",
                 address: data.address || "",
-                role: data.role || "customer",
+                role: "customer",
                 status: data.status || "active",
             });
 
@@ -129,7 +129,7 @@ let updateUser = (user_id, data) => {
         }
     });
 };
-// 🗑️ Xóa (ẩn) người dùng
+//  Xóa (ẩn) người dùng
 let deleteUserById = (user_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -145,7 +145,7 @@ let deleteUserById = (user_id) => {
     });
 };
 
-// 🔑 Đăng nhập
+//  Đăng nhập
 let login = (email, password) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -304,10 +304,88 @@ let firebaseLogin = async (idToken) => {
             token,
         };
     } catch (error) {
-        console.error("🔥 Firebase login error:", error);
+        console.error(" Firebase login error:", error);
         return { errCode: -1, errMessage: "Firebase login failed" };
     }
 };
+let createUserByAdminOrManager = (creatorRole, data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.email || !data.password || !data.fullname) {
+                return resolve({
+                    errCode: 1,
+                    errMessage: "Missing required fields",
+                });
+            }
+
+            //  Không phải admin hoặc manager
+            if (!["admin", "manager"].includes(creatorRole)) {
+                return resolve({
+                    errCode: 2,
+                    errMessage: "Permission denied",
+                });
+            }
+
+            // -------------------------------------
+            //  Auto-assign role theo quyền creator
+            // -------------------------------------
+            let assignedRole = data.role;
+
+            if (creatorRole === "manager") {
+                assignedRole = "staff"; // manager luôn tạo staff
+            }
+
+            if (creatorRole === "admin") {
+                // Admin tự chọn role, nhưng vẫn check hợp lệ
+                if (
+                    !["admin", "manager", "staff", "customer"].includes(
+                        assignedRole
+                    )
+                ) {
+                    return resolve({
+                        errCode: 3,
+                        errMessage: "Invalid role",
+                    });
+                }
+            }
+
+            // ---------------------------------
+            // Kiểm tra email tồn tại
+            // ---------------------------------
+            const existing = await db.User.findOne({
+                where: { email: data.email },
+            });
+
+            if (existing) {
+                return resolve({
+                    errCode: 4,
+                    errMessage: "Email already exists",
+                });
+            }
+
+            const hashed = await hashPassword(data.password);
+
+            const newUser = await db.User.create({
+                email: data.email,
+                password: hashed,
+                fullname: data.fullname,
+                phone: data.phone || "",
+                address: data.address || "",
+                role: assignedRole, //  role đã được gán ở trên
+                status: "active",
+            });
+
+            resolve({
+                errCode: 0,
+                errMessage: "User created successfully",
+                newUser,
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
 export default {
     getUserById,
     getAllUsers,
@@ -319,4 +397,5 @@ export default {
     resetPassword,
     changeMyPassword,
     firebaseLogin,
+    createUserByAdminOrManager,
 };

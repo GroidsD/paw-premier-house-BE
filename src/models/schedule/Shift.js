@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
                 autoIncrement: true,
                 primaryKey: true,
             },
-            name: DataTypes.STRING,
+            shift_name: DataTypes.STRING,
             start_time: DataTypes.TIME,
             end_time: DataTypes.TIME,
             duration_hours: DataTypes.FLOAT, // VD: 8.0h

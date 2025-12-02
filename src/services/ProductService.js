@@ -1,166 +1,301 @@
-// // src/services/productService.js
-// import db from "../models/index.js"; // hoặc const db = require("../models");
+import db from "../models/index.js";
+import mediaService from "./MediaService.js"; // import MediaService
 
-// let createProduct = (data) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             let { category_id, status, translations } = data;
+// 🟢 Tạo product mới
+let createProduct = async (data) => {
+    try {
+        let {
+            productCategories_id,
+            original_price,
+            discount = 0,
+            discount_type = "percent",
+            quantity = 0,
+            translates = [],
+            media = [],
+        } = data;
 
-//             let product = await db.Product.create(
-//                 {
-//                     category_id,
-//                     status,
-//                     translations,
-//                 },
-//                 {
-//                     include: [
-//                         { model: db.ProductTranslate, as: "translations" },
-//                     ],
-//                 }
-//             );
+        // 1️⃣ Tạo product cùng translations
+        let product = await db.Product.create(
+            {
+                productCategories_id,
+                original_price,
+                discount,
+                discount_type,
+                quantity,
+                translates,
+            },
+            { include: [{ model: db.ProductTranslate, as: "translates" }] }
+        );
 
-//             resolve(product);
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
+        // 2️⃣ Tạo media thông qua MediaService
+        await mediaService.createMediaForEntity(
+            media,
+            product.product_id,
+            "product"
+        );
 
-// let getAllProducts = () => {
-//     return new Promise(async (resolve, reject) => {
-//         console.log("sssssss");
+        // 3️⃣ Lấy lại product có kèm media & translates
+        let productWithRelations = await db.Product.findByPk(
+            product.product_id,
+            {
+                include: [
+                    { model: db.ProductTranslate, as: "translates" },
+                    { model: db.Media, as: "media" },
+                ],
+            }
+        );
 
-//         try {
-//             let products = await db.Product.findAll({
-//                 include: [
-//                     { model: db.ProductTranslate, as: "translations" },
-//                     {
-//                         model: db.Category,
-//                         as: "category",
-//                         attributes: ["category_id", "status"],
-//                         include: [
-//                             {
-//                                 model: db.CategoryTranslate,
-//                                 as: "translations", // phải trùng alias trong model Category
-//                                 attributes: ["lang", "name"],
-//                             },
-//                         ],
-//                     },
-//                     { model: db.Media, as: "media" },
-//                 ],
-//                 order: [["product_id", "ASC"]],
-//             });
-//             resolve(products);
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
+        return {
+            errCode: 0,
+            errMessage: "Product created",
+            product: productWithRelations,
+        };
+    } catch (e) {
+        throw e;
+    }
+};
 
-// let getProductById = (id) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             let product = await db.Product.findByPk(id, {
-//                 include: [
-//                     { model: db.ProductTranslate, as: "translations" },
-//                     {
-//                         model: db.Category,
-//                         as: "category",
-//                         attributes: ["category_id", "status"],
-//                         include: [
-//                             {
-//                                 model: db.CategoryTranslate,
-//                                 as: "translations", // phải trùng alias trong model Category
-//                                 attributes: ["lang", "name"],
-//                             },
-//                         ],
-//                     },
-//                 ],
-//             });
+// 🟢 Lấy tất cả product
+let getAllProducts = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let products = await db.Product.findAll({
+                attributes: [
+                    "product_id",
+                    "productCategories_id",
+                    "price",
+                    "quantity",
+                    "isActive",
+                ],
+                include: [
+                    {
+                        model: db.ProductTranslate,
+                        as: "translates",
+                        attributes: [
+                            "product_id",
+                            "name",
+                            "description",
+                            "language",
+                        ],
+                    },
+                    {
+                        model: db.ProductCategory,
+                        as: "category",
+                        attributes: [
+                            "productCategories_id",
+                            "isActive",
+                            "isDelete",
+                        ],
+                        include: [
+                            {
+                                model: db.ProductCategoryTranslate,
+                                as: "translates",
+                                attributes: ["language", "type"],
+                            },
+                        ],
+                    },
+                    { model: db.Media, as: "media" },
+                ],
+                order: [["product_id", "ASC"]],
+            });
+            resolve(products);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
-//             if (!product) {
-//                 reject("Product not found");
-//             } else {
-//                 resolve(product);
-//             }
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
+// 🟢 Lấy product theo ID
+let getProductById = (product_id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let product = await db.Product.findByPk(product_id, {
+                include: [
+                    { model: db.ProductTranslate, as: "translates" },
+                    {
+                        model: db.ProductCategory,
+                        as: "category",
+                        attributes: [
+                            "productCategories_id",
+                            "isActive",
+                            "isDelete",
+                        ],
+                        include: [
+                            {
+                                model: db.ProductCategoryTranslate,
+                                as: "translates",
+                                attributes: ["language", "type"],
+                            },
+                        ],
+                    },
+                    { model: db.Media, as: "media" },
+                ],
+            });
 
-// let updateProduct = (id, data) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             let { category_id, status, translations } = data;
-//             let product = await db.Product.findByPk(id);
+            if (!product) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Product not found",
+                    product: null,
+                });
+            } else {
+                resolve({
+                    errCode: 0,
+                    errMessage: "Product retrieved successfully",
+                    product,
+                });
+            }
+        } catch (e) {
+            reject({
+                errCode: -1,
+                errMessage: "Server error",
+                details: e.toString(),
+            });
+        }
+    });
+};
 
-//             if (!product) {
-//                 reject("Product not found");
-//             } else {
-//                 await product.update({ category_id, status });
+// 🟢 Cập nhật product
+let updateProduct = async (product_id, data) => {
+    try {
+        let {
+            productCategories_id,
+            original_price,
+            discount,
+            discount_type,
+            quantity,
+            isActive,
+            isDelete,
+            translates,
+            media,
+        } = data;
 
-//                 if (translations && translations.length > 0) {
-//                     for (const t of translations) {
-//                         if (t.productTranslate_id) {
-//                             await db.ProductTranslate.update(
-//                                 {
-//                                     name: t.name,
-//                                     description: t.description,
-//                                     price: t.price,
-//                                 },
-//                                 {
-//                                     where: {
-//                                         productTranslate_id:
-//                                             t.productTranslate_id,
-//                                     },
-//                                 }
-//                             );
-//                         } else {
-//                             await db.ProductTranslate.create({
-//                                 ...t,
-//                                 product_id: product.product_id,
-//                             });
-//                         }
-//                     }
-//                 }
+        let product = await db.Product.findByPk(product_id);
+        if (!product)
+            return {
+                errCode: 1,
+                errMessage: "Product not found",
+                product: null,
+            };
 
-//                 let updated = await db.Product.findByPk(id, {
-//                     include: [
-//                         { model: db.ProductTranslate, as: "translations" },
-//                     ],
-//                 });
-//                 resolve(updated);
-//             }
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
+        // Tính giá finalPrice
+        let finalPrice = original_price;
+        if (discount && discount > 0) {
+            finalPrice =
+                discount_type === "percent"
+                    ? original_price - (original_price * discount) / 100
+                    : original_price - discount;
+        }
+        finalPrice = finalPrice < 0 ? 0 : finalPrice;
 
-// let deleteProduct = (id) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             let product = await db.Product.findByPk(id);
-//             if (!product) {
-//                 reject("Product not found");
-//             } else {
-//                 await db.ProductTranslate.destroy({
-//                     where: { product_id: id },
-//                 });
-//                 await product.destroy();
-//                 resolve("Product deleted successfully");
-//             }
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
+        // Update product cơ bản
+        await product.update({
+            productCategories_id,
+            original_price,
+            discount,
+            discount_type,
+            price: finalPrice,
+            quantity,
+            isActive,
+            isDelete,
+        });
 
-// export default {
-//     createProduct,
-//     getAllProducts,
-//     getProductById,
-//     updateProduct,
-//     deleteProduct,
-// };
+        // Cập nhật translations
+        if (Array.isArray(translates)) {
+            for (let t of translates) {
+                if (t.productTranslates_id) {
+                    await db.ProductTranslate.update(
+                        {
+                            name: t.name,
+                            description: t.description,
+                            language: t.language,
+                        },
+                        {
+                            where: {
+                                productTranslates_id: t.productTranslates_id,
+                            },
+                        }
+                    );
+                } else {
+                    await db.ProductTranslate.create({
+                        product_id: product.product_id,
+                        name: t.name,
+                        description: t.description,
+                        language: t.language,
+                    });
+                }
+            }
+        }
+
+        // Cập nhật media thông qua MediaService
+        if (Array.isArray(media)) {
+            await mediaService.updateMediaForEntity(
+                media,
+                product.product_id,
+                "product"
+            );
+        }
+
+        let updatedProduct = await db.Product.findByPk(product.product_id, {
+            include: [
+                { model: db.ProductTranslate, as: "translates" },
+                { model: db.Media, as: "media" },
+            ],
+        });
+
+        return {
+            errCode: 0,
+            errMessage: "Product updated successfully",
+            product: updatedProduct,
+        };
+    } catch (e) {
+        return {
+            errCode: -1,
+            errMessage: "Server error",
+            details: e.toString(),
+        };
+    }
+};
+
+// 🟢 Xóa product
+let deleteProduct = async (id) => {
+    let product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
+
+    await db.ProductTranslate.destroy({ where: { product_id: id } });
+    await mediaService.deleteMediaByEntity("product", id);
+    await product.destroy();
+
+    return "Product deleted successfully";
+};
+
+// 🟢 Xóa mềm
+let softDeleteProduct = async (id) => {
+    let product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
+
+    await product.update({ isActive: false, isDelete: true });
+    return "Product soft deleted successfully";
+};
+
+// 🟢 Xóa cứng
+let hardDeleteProduct = async (id) => {
+    let product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
+
+    await db.ProductTranslate.destroy({ where: { product_id: id } });
+    await mediaService.deleteMediaByEntity("product", id);
+    await product.destroy();
+
+    return "Product hard deleted successfully";
+};
+
+export default {
+    createProduct,
+    getAllProducts,
+    getProductById,
+    updateProduct,
+    deleteProduct,
+    softDeleteProduct,
+    hardDeleteProduct,
+};

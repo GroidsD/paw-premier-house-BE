@@ -39,10 +39,36 @@ module.exports = {
                 defaultValue: 1,
             },
 
+            // Giá gốc
+            original_price: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Giá gốc của sản phẩm trong đơn (trước khi giảm giá)",
+            },
+
+            // Chiết khấu
+            discount: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                comment:
+                    "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
+            },
+
+            discount_type: {
+                type: Sequelize.ENUM("percent", "fixed"),
+                allowNull: false,
+                defaultValue: "percent",
+                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
+            },
+
+            // Giá sau giảm
             price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
+                comment: "Giá sau khi áp dụng chiết khấu",
             },
 
             created_at: {
@@ -63,5 +89,9 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("orderItems");
+
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_orderItems_discount_type";'
+        );
     },
 };
