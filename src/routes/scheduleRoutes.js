@@ -1,44 +1,64 @@
-// import express from "express";
-// import scheduleController from "../controllers/scheduleController";
-// import authMiddleware from "../middleware/authMiddleware";
-// import adminMiddleware from "../middleware/adminMiddleware";
-// import roleMiddleware from "../middleware/roleMiddleware";
-// let router = express.Router();
+import express from "express";
+import scheduleController from "../controllers/scheduleController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import roleMiddleware from "../middleware/roleMiddleware.js";
 
-// // STAFF xem lịch làm của mình
-// router.get(
-//     "/api/get-my-schedule",
-//     authMiddleware,
-//     scheduleController.getMySchedule
-// );
+const router = express.Router();
 
-// // ADMIN xem tất cả lịch làm (có filter)
-// router.get(
-//     "/api/get-all-schedules",
-//     authMiddleware,
-//     adminMiddleware,
-//     scheduleController.getAll
-// );
+// Lấy schedule
+router.get("/api/schedules/get-all", authMiddleware, scheduleController.getAll);
+router.get(
+    "/api/schedules/:schedule_id",
+    authMiddleware,
+    scheduleController.getById
+);
 
-// // ADMIN hoặc STAFF cập nhật trạng thái ca làm (đã làm / nghỉ)
-// router.put(
-//     "/api/update-schedule-status",
-//     authMiddleware,
-//     roleMiddleware(["admin", "staff"]),
-//     scheduleController.updateStatus
-// );
-// router.post(
-//     "/api/create-schedules",
-//     // authMiddleware,
-//     scheduleController.create
-// );
+router.get(
+    "/api/schedules/my-schedule",
+    authMiddleware,
+    scheduleController.getMySchedule
+);
+// Staff đăng ký
+router.post(
+    "/api/schedules/register",
+    authMiddleware,
+    scheduleController.register
+);
 
-// // ADMIN xác nhận hoặc từ chối ca làm
-// router.put(
-//     "/api/admin/update-schedule/:id",
-//     authMiddleware,
-//     adminMiddleware,
-//     scheduleController.updateScheduleStatusByAdmin
-// );
+router.post(
+    "/api/schedules/create-weekly",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    scheduleController.createWeekly
+);
+// Manager approve/reject
+router.patch(
+    "/api/schedules/:schedule_id/approve",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    scheduleController.approve
+);
 
-// export default router;
+// Manager chuyển ca
+router.patch(
+    "/api/schedules/:schedule_id/replace",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    scheduleController.replace
+);
+
+// Update/Delete (admin/manager)
+router.put(
+    "/api/schedules/:schedule_id",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    scheduleController.update
+);
+router.delete(
+    "/api/schedules/:schedule_id",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    scheduleController.delete
+);
+
+export default router;

@@ -35,6 +35,15 @@ module.exports = (sequelize, DataTypes) => {
                 scope: { entity_type: "user" },
                 as: "media",
             });
+            User.hasMany(models.ScheduleStaff, {
+                foreignKey: "staff_id",
+                as: "registrations",
+            });
+
+            User.hasMany(models.ScheduleStaff, {
+                foreignKey: "replaced_by",
+                as: "replacements",
+            });
         }
     }
 

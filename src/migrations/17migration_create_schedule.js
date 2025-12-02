@@ -1,5 +1,5 @@
 "use strict";
-
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("schedules", {
@@ -8,37 +8,22 @@ module.exports = {
                 autoIncrement: true,
                 primaryKey: true,
             },
-            staff_id: {
-                type: Sequelize.STRING,
-                allowNull: false,
-                references: { model: "users", key: "user_id" },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
-            },
+
             work_date: {
                 type: Sequelize.STRING,
                 allowNull: false,
             },
+
             shift_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
             },
+
             status: {
-                type: Sequelize.ENUM(
-                    "confirmed",
-                    "pending",
-                    "cancelled",
-                    "replaced"
-                ),
-                defaultValue: "pending",
+                type: Sequelize.ENUM("open", "closed"),
+                defaultValue: "open",
             },
-            replaced_by: {
-                type: Sequelize.STRING,
-                allowNull: true,
-                references: { model: "users", key: "user_id" },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
-            },
+
             work_status: {
                 type: Sequelize.ENUM(
                     "not_started",
@@ -53,11 +38,18 @@ module.exports = {
                 type: Sequelize.TEXT,
                 allowNull: true,
             },
+
+            max_people: {
+                type: Sequelize.INTEGER,
+                defaultValue: 1,
+            },
+
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
+
             updated_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
