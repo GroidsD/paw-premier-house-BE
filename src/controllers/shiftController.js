@@ -1,6 +1,7 @@
-const ShiftService = require("../services/ShiftService");
+import ShiftService from "../services/ShiftService.js";
 
-exports.getAll = async (req, res) => {
+// Lấy tất cả ca làm việc
+let getAll = async (req, res) => {
     try {
         const shifts = await ShiftService.getAllShifts();
         res.json(shifts);
@@ -9,7 +10,8 @@ exports.getAll = async (req, res) => {
     }
 };
 
-exports.getById = async (req, res) => {
+// Lấy ca theo ID
+let getById = async (req, res) => {
     try {
         const shift = await ShiftService.getShiftById(req.params.shift_id);
         if (!shift) return res.status(404).json({ message: "Shift not found" });
@@ -19,7 +21,8 @@ exports.getById = async (req, res) => {
     }
 };
 
-exports.create = async (req, res) => {
+// Tạo ca mới
+let create = async (req, res) => {
     try {
         const newShift = await ShiftService.createShift(req.body);
         res.status(201).json(newShift);
@@ -28,7 +31,8 @@ exports.create = async (req, res) => {
     }
 };
 
-exports.update = async (req, res) => {
+// Cập nhật ca
+let update = async (req, res) => {
     try {
         const updatedShift = await ShiftService.updateShift(
             req.params.shift_id,
@@ -40,11 +44,21 @@ exports.update = async (req, res) => {
     }
 };
 
-exports.delete = async (req, res) => {
+// Xóa ca
+let remove = async (req, res) => {
     try {
         const result = await ShiftService.deleteShift(req.params.shift_id);
         res.json({ message: result });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
+};
+
+// Export tất cả functions
+export default {
+    getAll,
+    getById,
+    create,
+    update,
+    delete: remove,
 };
