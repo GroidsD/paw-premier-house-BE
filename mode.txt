@@ -34,3 +34,4 @@ Frontend (nén ảnh)
   chạy lệnh ngrok: ./ngrok http 5050
 
   Lưu SupBase :node src/scripts/embedProducts.js
+npm run embed:all

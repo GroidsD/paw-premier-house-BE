@@ -8,7 +8,7 @@ module.exports = {
                 autoIncrement: true,
                 primaryKey: true,
             },
-            name: {
+            shift_name: {
                 type: Sequelize.STRING,
                 allowNull: false,
             },

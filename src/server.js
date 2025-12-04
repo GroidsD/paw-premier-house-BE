@@ -130,8 +130,8 @@ initWebRoutes(app);
 app.use("/", productRoutes);
 app.use("/", orderRoutes);
 app.use("/", serviceRoutes);
-// app.use("/", scheduleRoutes);
-// app.use("/", shiftRoutes);
+app.use("/", scheduleRoutes);
+app.use("/", shiftRoutes);
 
 // Connect DB
 connectDB();

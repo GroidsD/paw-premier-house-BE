@@ -35,6 +35,15 @@ module.exports = (sequelize, DataTypes) => {
                 scope: { entity_type: "user" },
                 as: "media",
             });
+            User.hasMany(models.ScheduleStaff, {
+                foreignKey: "staff_id",
+                as: "registrations",
+            });
+
+            User.hasMany(models.ScheduleStaff, {
+                foreignKey: "replaced_by",
+                as: "replacements",
+            });
         }
     }
 
@@ -75,7 +84,7 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: "vi",
             },
             role: {
-                type: DataTypes.ENUM("admin", "staff", "customer"),
+                type: DataTypes.ENUM("admin", "staff", "customer", "manager"),
                 defaultValue: "customer",
             },
             isDeleted: {
@@ -87,7 +96,6 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: true,
             },
 
-            // ✅ Thêm 2 cột mới:
             totalFeedback: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,

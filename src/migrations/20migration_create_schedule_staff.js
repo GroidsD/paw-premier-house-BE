@@ -2,52 +2,53 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("schedules", {
-            schedule_id: {
+        await queryInterface.createTable("schedule_staff", {
+            schedule_staff_id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
             },
 
-            work_date: {
-                type: Sequelize.STRING,
-                allowNull: false,
-            },
-
-            shift_id: {
+            schedule_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
                 references: {
-                    model: "shifts",
-                    key: "shift_id",
+                    model: "schedules",
+                    key: "schedule_id",
                 },
+                onDelete: "CASCADE",
                 onUpdate: "CASCADE",
-                onDelete: "RESTRICT",
+            },
+
+            staff_id: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                references: {
+                    model: "users",
+                    key: "user_id",
+                },
+                onDelete: "CASCADE",
+                onUpdate: "CASCADE",
             },
 
             status: {
-                type: Sequelize.ENUM("open", "closed"),
-                defaultValue: "open",
-            },
-
-            work_status: {
                 type: Sequelize.ENUM(
-                    "not_started",
-                    "in_progress",
-                    "completed",
-                    "absent"
+                    "pending",
+                    "confirmed",
+                    "rejected",
+                    "replaced"
                 ),
-                defaultValue: "not_started",
+                defaultValue: "pending",
             },
-
-            work_note: {
-                type: Sequelize.TEXT,
+            replaced_by: {
+                type: Sequelize.STRING,
                 allowNull: true,
-            },
-
-            max_people: {
-                type: Sequelize.INTEGER,
-                defaultValue: 1,
+                references: {
+                    model: "users",
+                    key: "user_id",
+                },
+                onDelete: "SET NULL",
+                onUpdate: "CASCADE",
             },
 
             created_at: {
@@ -67,6 +68,6 @@ module.exports = {
     },
 
     async down(queryInterface) {
-        await queryInterface.dropTable("schedules");
+        await queryInterface.dropTable("schedule_staff");
     },
 };

@@ -52,6 +52,12 @@ let initWebRoutes = (app) => {
         adminMiddleware,
         userController.deleteUserById
     );
+    router.post(
+        "/api/create-user",
+        authMiddleware,
+        roleMiddleware(["admin", "manager"]),
+        userController.createUserByAdminOrManager
+    );
 
     return app.use("/", router);
 };

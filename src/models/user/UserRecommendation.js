@@ -43,7 +43,6 @@ module.exports = (sequelize, DataTypes) => {
                     "Lý do gợi ý (ví dụ: dịch vụ tương tự, đánh giá cao...)",
             },
 
-            // ✅ Thêm 2 cột mới:
             algorithm_type: {
                 type: DataTypes.STRING,
                 allowNull: true,

@@ -5,7 +5,10 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Shift extends Model {
         static associate(models) {
-            Shift.hasMany(models.Schedule, { foreignKey: "shift_id" });
+            Shift.hasMany(models.Schedule, {
+                foreignKey: "shift_id",
+                as: "schedules", // THÊM ALIAS
+            });
         }
     }
 
