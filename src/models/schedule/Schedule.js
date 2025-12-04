@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
                 through: models.ScheduleStaff, // Bảng trung gian
                 foreignKey: "schedule_id",
                 otherKey: "staff_id",
-                as: "staff", // Alias này khớp với getAllSchedules
+                as: "workingStaff", // Alias này khớp với getAllSchedules
             });
         }
     }

@@ -57,11 +57,18 @@ let approve = async (req, res) => {
         if (!["admin", "manager"].includes(req.user.role))
             return res.status(403).json({ message: "Permission denied" });
 
-        const schedule = await ScheduleService.approveSchedule(
-            req.params.schedule_id,
-            req.body.action
+        const { schedule_staff_id } = req.params;
+        const { action } = req.body; // approve | reject
+
+        const result = await ScheduleService.approveSchedule(
+            schedule_staff_id,
+            action
         );
-        res.json(schedule);
+
+        res.json({
+            message: "Updated successfully",
+            data: result,
+        });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -74,7 +81,7 @@ let replace = async (req, res) => {
             return res.status(403).json({ message: "Permission denied" });
 
         const schedule = await ScheduleService.replaceSchedule(
-            req.params.schedule_id,
+            req.params.schedule_staff_id,
             req.body.replacement_staff_id
         );
         res.json(schedule);
@@ -134,7 +141,6 @@ let getMySchedule = async (req, res) => {
     try {
         const staff_id = req.user.user_id; // Lấy từ token
 
-        // ✅ ĐÚNG: Gọi ScheduleService (viết Hoa giống import)
         const result = await ScheduleService.getMySchedule(staff_id);
 
         return res.status(200).json(result);
@@ -143,6 +149,19 @@ let getMySchedule = async (req, res) => {
         return res.status(500).json({ message: e.message });
     }
 };
+let openWeekSchedules = async (req, res) => {
+    try {
+        const { week } = req.query;
+        const result = await ScheduleService.openWeeklySchedule(week);
+
+        return res.status(200).json(result);
+    } catch (err) {
+        return res.status(400).json({
+            error: err.message,
+        });
+    }
+};
+
 export default {
     getAll,
     getById,
@@ -153,4 +172,5 @@ export default {
     delete: remove,
     createWeekly,
     getMySchedule,
+    openWeekSchedules,
 };

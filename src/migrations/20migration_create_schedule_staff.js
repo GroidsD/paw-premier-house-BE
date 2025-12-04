@@ -32,10 +32,14 @@ module.exports = {
             },
 
             status: {
-                type: Sequelize.ENUM("pending", "confirmed", "rejected"),
+                type: Sequelize.ENUM(
+                    "pending",
+                    "confirmed",
+                    "rejected",
+                    "replaced"
+                ),
                 defaultValue: "pending",
             },
-
             replaced_by: {
                 type: Sequelize.STRING,
                 allowNull: true,

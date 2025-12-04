@@ -17,6 +17,12 @@ module.exports = {
             shift_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
+                references: {
+                    model: "shifts",
+                    key: "shift_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "RESTRICT",
             },
 
             status: {

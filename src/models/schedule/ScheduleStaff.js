@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
 
             ScheduleStaff.belongsTo(models.User, {
                 foreignKey: "staff_id",
-                as: "staff",
+                as: "scheduleStaffUser",
             });
 
             ScheduleStaff.belongsTo(models.User, {
@@ -40,7 +40,12 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             status: {
-                type: DataTypes.ENUM("pending", "confirmed", "rejected"),
+                type: DataTypes.ENUM(
+                    "pending",
+                    "confirmed",
+                    "rejected",
+                    "replaced"
+                ),
                 defaultValue: "pending",
             },
 
