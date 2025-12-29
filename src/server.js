@@ -9,6 +9,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import cron from "node-cron";
 import productRoutes from "./routes/productRoutes";
+import productCategoryRoutes from "./routes/productCategoryRoute.js";
 import orderRoutes from "./routes/orderRoutes";
 import serviceRoutes from "./routes/serviceRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
@@ -128,6 +129,7 @@ app.use(
 viewEngine(app);
 initWebRoutes(app);
 app.use("/", productRoutes);
+app.use("/", productCategoryRoutes);
 app.use("/", orderRoutes);
 app.use("/", serviceRoutes);
 app.use("/", scheduleRoutes);

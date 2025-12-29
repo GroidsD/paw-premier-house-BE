@@ -1,9 +1,9 @@
-import orderService from "../services/OrderService.js";
+import OrderService from "../services/OrderService.js";
 
 // CREATE
 let createOrder = async (req, res) => {
     try {
-        const result = await orderService.createOrder(req.body);
+        const result = await OrderService.createOrder(req.body);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
@@ -17,7 +17,7 @@ let createOrder = async (req, res) => {
 // READ ALL
 let getAllOrders = async (req, res) => {
     try {
-        const orders = await orderService.getAllOrders();
+        const orders = await OrderService.getAllOrders();
         return res.status(200).json({ errCode: 0, orders });
     } catch (e) {
         console.error(e);
@@ -32,7 +32,7 @@ let getAllOrders = async (req, res) => {
 let getOrderById = async (req, res) => {
     try {
         const order_id = req.query.order_id;
-        const order = await orderService.getOrderById(order_id);
+        const order = await OrderService.getOrderById(order_id);
         return res.status(200).json({ errCode: 0, order });
     } catch (e) {
         console.error(e);
@@ -49,7 +49,7 @@ let confirmOrder = async (req, res) => {
         const order_id = req.query.order_id;
         console.log(order_id, "sss");
 
-        const result = await orderService.confirmOrder(order_id);
+        const result = await OrderService.confirmOrder(order_id);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
@@ -64,7 +64,7 @@ let confirmOrder = async (req, res) => {
 let cancelOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
-        const result = await orderService.cancelOrder(order_id);
+        const result = await OrderService.cancelOrder(order_id);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
@@ -80,7 +80,7 @@ let updateStatus = async (req, res) => {
     try {
         const order_id = req.query.order_id;
         const { status } = req.body;
-        const result = await orderService.updateOrderStatus(order_id, status);
+        const result = await OrderService.updateOrderStatus(order_id, status);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
@@ -95,7 +95,7 @@ let updateStatus = async (req, res) => {
 let softDeleteOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
-        const result = await orderService.softDeleteOrder(order_id);
+        const result = await OrderService.softDeleteOrder(order_id);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
@@ -109,7 +109,7 @@ let softDeleteOrder = async (req, res) => {
 let hardDeleteOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
-        const result = await orderService.hardDeleteOrder(order_id);
+        const result = await OrderService.hardDeleteOrder(order_id);
         return res.status(200).json(result);
     } catch (e) {
         console.error(e);
@@ -122,7 +122,7 @@ let hardDeleteOrder = async (req, res) => {
 let getAllOrdersByUserId = async (req, res) => {
     try {
         const customer_id = req.query.customer_id;
-        const result = await orderService.getAllOrdersByUserId(customer_id);
+        const result = await OrderService.getAllOrdersByUserId(customer_id);
 
         return res.status(200).json(result);
     } catch (e) {

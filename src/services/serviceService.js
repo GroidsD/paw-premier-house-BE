@@ -17,20 +17,6 @@ const createService = async (data) => {
             { transaction: t }
         );
 
-        // 2️⃣ Tạo translate (nếu có)
-        if (Array.isArray(data.translates) && data.translates.length > 0) {
-            const translateData = data.translates.map((t) => ({
-                service_id: service.service_id,
-                language: t.language,
-                name: t.name,
-                description: t.description,
-            }));
-
-            await db.ServiceTranslate.bulkCreate(translateData, {
-                transaction: t,
-            });
-        }
-
         // 3️⃣ Tạo media (nếu có)
         if (Array.isArray(data.media) && data.media.length > 0) {
             await MediaService.createMediaForEntity(
@@ -72,10 +58,7 @@ const createService = async (data) => {
 const getAllServices = async () => {
     try {
         const services = await db.Service.findAll({
-            include: [
-                { model: db.ServiceTranslate, as: "translates" },
-                { model: db.Media, as: "media" },
-            ],
+            include: [{ model: db.Media, as: "media" }],
         });
 
         return {
@@ -214,10 +197,6 @@ const hardDeleteService = async (id) => {
         if (!service) throw new Error("Service not found");
 
         // 1️⃣ Xóa translate liên quan
-        await db.ServiceTranslate.destroy({
-            where: { service_id: id },
-            transaction: t,
-        });
 
         // 2️⃣ Xóa media liên quan
         await MediaService.deleteMediaByEntity("service", id, t);
