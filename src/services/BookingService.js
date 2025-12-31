@@ -1,12 +1,12 @@
 import db from "../models/index.js";
 
-const createBooking = async (userId, data) => {
+const createBooking = async (user_id, data) => {
     const t = await db.sequelize.transaction();
     try {
         // 1️⃣ Tạo booking
         const booking = await db.Booking.create(
             {
-                customer_id: userId,
+                customer_id: user_id,
                 pet_id: data.pet_id,
                 date: data.date,
                 status: "pending",
@@ -16,7 +16,7 @@ const createBooking = async (userId, data) => {
 
         let totalPrice = 0;
 
-        // 2️⃣ Tạo booking items từ service
+        // 2️⃣ Tạo booking items + tính totalPrice
         for (const item of data.services) {
             const service = await db.Service.findOne({
                 where: {
@@ -26,9 +26,7 @@ const createBooking = async (userId, data) => {
                 },
             });
 
-            if (!service) {
-                throw new Error("Service not found");
-            }
+            if (!service) throw new Error("Service not found");
 
             totalPrice += Number(service.price);
 
@@ -36,14 +34,83 @@ const createBooking = async (userId, data) => {
                 {
                     booking_id: booking.booking_id,
                     service_id: service.service_id,
-                    price: service.price, // snapshot giá
+                    price: service.price,
                 },
                 { transaction: t }
             );
         }
 
-        // 3️⃣ Update tổng tiền
-        await booking.update({ total_price: totalPrice }, { transaction: t });
+        // 3️⃣ Áp voucher SAU KHI đã có totalPrice
+        let discountAmount = 0;
+        let appliedVoucher = null;
+
+        if (data.voucher_code) {
+            const voucher = await db.Voucher.findOne({
+                where: {
+                    code: data.voucher_code,
+                    is_active: true,
+                },
+                transaction: t,
+            });
+
+            if (!voucher) throw new Error("Voucher not found");
+
+            const now = new Date();
+            if (now < voucher.start_date || now > voucher.end_date)
+                throw new Error("Voucher expired");
+
+            if (voucher.quantity <= voucher.used_count)
+                throw new Error("Voucher out of stock");
+
+            if (totalPrice < voucher.min_order_value)
+                throw new Error("Order not eligible for voucher");
+
+            if (voucher.discount_type === "percent") {
+                discountAmount = (totalPrice * voucher.discount) / 100;
+                if (voucher.max_discount) {
+                    discountAmount = Math.min(
+                        discountAmount,
+                        voucher.max_discount
+                    );
+                }
+            } else {
+                discountAmount = voucher.discount;
+            }
+
+            appliedVoucher = voucher;
+        }
+
+        // 4️⃣ Update booking price
+        const finalTotal = totalPrice - discountAmount;
+
+        await booking.update(
+            {
+                original_price: totalPrice,
+                discount: discountAmount,
+                total_price: finalTotal < 0 ? 0 : finalTotal,
+                voucher_id: appliedVoucher?.voucher_id || null,
+            },
+            { transaction: t }
+        );
+
+        await booking.reload({ transaction: t });
+
+        // 5️⃣ Lưu voucher usage
+        if (appliedVoucher) {
+            await db.VoucherUsage.create(
+                {
+                    voucher_id: appliedVoucher.voucher_id,
+                    user_id: user_id,
+                    booking_id: booking.booking_id,
+                },
+                { transaction: t }
+            );
+
+            await appliedVoucher.update(
+                { used_count: appliedVoucher.used_count + 1 },
+                { transaction: t }
+            );
+        }
 
         await t.commit();
 
@@ -60,9 +127,10 @@ const createBooking = async (userId, data) => {
         };
     }
 };
-const getMyBookings = async (userId) => {
+
+const getMyBookings = async (user_id) => {
     const bookings = await db.Booking.findAll({
-        where: { customer_id: userId },
+        where: { customer_id: user_id },
         include: [
             {
                 model: db.BookingItem,

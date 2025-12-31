@@ -17,7 +17,8 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import petRoutes from "./routes/petRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import shiftRoutes from "./routes/shiftRoutes.js";
-import chatRoute from "./routes/chatRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import voucherRoutes from "./routes/voucherRoutes.js";
 
 require("dotenv").config();
 const multer = require("multer");
@@ -115,7 +116,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 //Test route
-app.use("/", chatRoute);
+app.use("/", chatRoutes);
 
 app.use(
     express.static(path.join(__dirname, "build"), {
@@ -140,6 +141,8 @@ app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
 app.use("/", bookingRoutes);
 app.use("/", petRoutes);
+// app.use("/", chatRoutes);
+app.use("/", voucherRoutes);
 // Connect DB
 connectDB();
 
