@@ -44,6 +44,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "replaced_by",
                 as: "replacements",
             });
+            User.hasMany(models.Pet, {
+                foreignKey: "owner_id",
+                sourceKey: "user_id",
+                as: "pets",
+            });
         }
     }
 

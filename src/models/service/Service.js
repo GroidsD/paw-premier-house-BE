@@ -63,6 +63,12 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 defaultValue: 0,
             },
+            duration: {
+                type: DataTypes.INTEGER, // phút
+                allowNull: false,
+                defaultValue: 60,
+                comment: "Duration in minutes",
+            },
 
             isActive: {
                 type: DataTypes.BOOLEAN,

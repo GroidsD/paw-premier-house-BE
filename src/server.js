@@ -3,17 +3,20 @@ import http from "http";
 import { Server as SocketIO } from "socket.io";
 import bodyParser from "body-parser";
 import viewEngine from "./config/viewEngine";
-import initWebRoutes from "./routes/userRoute";
+import initWebRoutes from "./routes/userRoutes";
 import { connectDB } from "./config/connectDB";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import cron from "node-cron";
 import productRoutes from "./routes/productRoutes";
-import productCategoryRoutes from "./routes/productCategoryRoute.js";
+import productCategoryRoutes from "./routes/productCategoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes";
 import serviceRoutes from "./routes/serviceRoutes.js";
+import serviceCategoryRoutes from "./routes/serviceCategoryRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import petRoutes from "./routes/petRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
-import shiftRoutes from "./routes/shiftRoute.js";
+import shiftRoutes from "./routes/shiftRoutes.js";
 import chatRoute from "./routes/chatRoutes.js";
 
 require("dotenv").config();
@@ -132,9 +135,11 @@ app.use("/", productRoutes);
 app.use("/", productCategoryRoutes);
 app.use("/", orderRoutes);
 app.use("/", serviceRoutes);
+app.use("/", serviceCategoryRoutes);
 app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
-
+app.use("/", bookingRoutes);
+app.use("/", petRoutes);
 // Connect DB
 connectDB();
 

@@ -1,9 +1,9 @@
-import serviceService from "../services/serviceService.js";
+import ServiceService from "../services/ServiceService.js";
 
 // CREATE - Tạo service mới
 let createService = async (req, res) => {
     try {
-        const result = await serviceService.createService(req.body);
+        const result = await ServiceService.createService(req.body);
         return res.status(201).json({
             errCode: 0,
             errMessage: "Service created successfully",
@@ -21,7 +21,7 @@ let createService = async (req, res) => {
 // READ ALL - Lấy tất cả service
 let getAllServices = async (req, res) => {
     try {
-        const services = await serviceService.getAllServices();
+        const services = await ServiceService.getAllServices();
         return res.status(200).json({
             errCode: 0,
             services,
@@ -39,7 +39,7 @@ let getAllServices = async (req, res) => {
 let getServiceById = async (req, res) => {
     try {
         const service_id = req.query.service_id;
-        const service = await serviceService.getServiceById(service_id);
+        const service = await ServiceService.getServiceById(service_id);
 
         if (!service) {
             return res.status(404).json({
@@ -65,7 +65,7 @@ let getServiceById = async (req, res) => {
 let updateService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
-        const updated = await serviceService.updateService(
+        const updated = await ServiceService.updateService(
             service_id,
             req.body
         );
@@ -96,7 +96,7 @@ let updateService = async (req, res) => {
 let softDeleteService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
-        const result = await serviceService.softDeleteService(service_id);
+        const result = await ServiceService.softDeleteService(service_id);
 
         return res.status(200).json({
             errCode: 0,
@@ -116,7 +116,7 @@ let softDeleteService = async (req, res) => {
 let hardDeleteService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
-        await serviceService.hardDeleteService(service_id);
+        await ServiceService.hardDeleteService(service_id);
 
         return res.status(200).json({
             errCode: 0,
@@ -135,7 +135,7 @@ let hardDeleteService = async (req, res) => {
 let getServicesByCategory = async (req, res) => {
     try {
         const category_id = req.query.category_id;
-        const result = await serviceService.getServicesByCategory(category_id);
+        const result = await ServiceService.getServicesByCategory(category_id);
 
         if (result.errCode !== 0) {
             return res.status(404).json({

@@ -38,6 +38,12 @@ module.exports = {
                 allowNull: false,
                 defaultValue: 0,
             },
+            duration: {
+                type: Sequelize.INTEGER, // phút
+                allowNull: false,
+                defaultValue: 60,
+                comment: "Duration in minutes",
+            },
 
             isActive: {
                 type: Sequelize.BOOLEAN,

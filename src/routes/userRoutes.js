@@ -3,9 +3,9 @@ import userController from "../controllers/userController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
-const { userSingleUpload } = require("../middleware/uploadImageUsers");
-const { productSingleUpload } = require("../middleware/uploadImageProducts");
-const { auditUpload } = require("../middleware/uploadExcel");
+const { userSingleUpload } = require("../middleware/uploadImageUsers.js");
+const { productSingleUpload } = require("../middleware/uploadImageProducts.js");
+const { auditUpload } = require("../middleware/uploadExcel.js");
 
 let router = express.Router();
 
