@@ -86,6 +86,7 @@ const createVoucher = async (data) => {
         code: data.code,
         discount_type: data.discount_type, // percent | fixed
         discount: data.discount,
+        description: data.description || null,
         max_discount: data.max_discount || null,
         min_order_value: data.min_order_value || 0,
         usage_limit: data.usage_limit || null,

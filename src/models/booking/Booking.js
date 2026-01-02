@@ -108,13 +108,28 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
             status: {
-                type: DataTypes.ENUM("pending", "approved", "rejected"),
+                type: DataTypes.ENUM(
+                    "pending",
+                    "assigned",
+                    "cancelled",
+                    "completed"
+                ),
                 defaultValue: "pending",
             },
             date: {
                 type: DataTypes.DATE,
                 allowNull: false,
             },
+            cancelled_by: {
+                type: DataTypes.ENUM("customer", "staff", "system"),
+                allowNull: true,
+            },
+
+            cancel_reason: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,

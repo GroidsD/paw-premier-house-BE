@@ -19,7 +19,15 @@ module.exports = {
                 onDelete: "CASCADE",
                 onUpdate: "CASCADE",
             },
-
+            booking_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "bookings",
+                    key: "booking_id",
+                },
+                onDelete: "SET NULL",
+            },
             staff_id: {
                 type: Sequelize.STRING,
                 allowNull: false,
@@ -32,13 +40,8 @@ module.exports = {
             },
 
             status: {
-                type: Sequelize.ENUM(
-                    "pending",
-                    "confirmed",
-                    "rejected",
-                    "replaced"
-                ),
-                defaultValue: "pending",
+                type: Sequelize.ENUM("available", "busy", "absent"),
+                defaultValue: "available",
             },
             replaced_by: {
                 type: Sequelize.STRING,

@@ -38,20 +38,23 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-
-            status: {
-                type: DataTypes.ENUM(
-                    "pending",
-                    "confirmed",
-                    "rejected",
-                    "replaced"
-                ),
-                defaultValue: "pending",
+            booking_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "bookings",
+                    key: "booking_id",
+                },
+                onDelete: "SET NULL",
             },
 
             replaced_by: {
                 type: DataTypes.STRING,
                 allowNull: true,
+            },
+            status: {
+                type: DataTypes.ENUM("available", "busy", "absent"),
+                defaultValue: "available",
             },
         },
         {

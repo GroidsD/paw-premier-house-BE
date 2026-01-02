@@ -14,14 +14,14 @@ module.exports = (sequelize, DataTypes) => {
                 as: "user",
             });
 
-            VoucherUsage.belongsTo(models.Order, {
-                foreignKey: "order_id",
-                as: "order",
-            });
-
             VoucherUsage.belongsTo(models.Booking, {
                 foreignKey: "booking_id",
                 as: "booking",
+            });
+
+            VoucherUsage.belongsTo(models.Order, {
+                foreignKey: "order_id",
+                as: "order",
             });
         }
     }
@@ -33,22 +33,55 @@ module.exports = (sequelize, DataTypes) => {
                 autoIncrement: true,
                 primaryKey: true,
             },
-            voucher_id: DataTypes.INTEGER,
-            user_id: DataTypes.STRING,
-            order_id: DataTypes.INTEGER,
-            booking_id: DataTypes.INTEGER,
+
+            voucher_id: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+
+            user_id: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+
+            booking_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+
+            order_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+
+            status: {
+                type: DataTypes.ENUM("used", "refunded"),
+                defaultValue: "used",
+            },
+
             used_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
+            },
+
+            refunded_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
             },
         },
         {
             sequelize,
             modelName: "VoucherUsage",
-            tableName: "voucherUsages",
+            tableName: "voucher_usages",
             timestamps: false,
+
+            indexes: [
+                {
+                    unique: true,
+                    fields: ["voucher_id", "user_id"],
+                },
+            ],
         }
     );
-
     return VoucherUsage;
 };

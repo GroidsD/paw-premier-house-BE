@@ -7,7 +7,7 @@ let router = express.Router();
 
 // CREATE SHIFT (admin + manager)
 router.post(
-    "/api/create-shift",
+    "/api/create-shifts",
     authMiddleware,
     roleMiddleware(["admin", "manager"]),
     shiftController.create

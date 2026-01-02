@@ -36,5 +36,16 @@ router.put(
     roleMiddleware(["admin", "staff"]),
     bookingController.updateBookingStatus
 );
+router.post(
+    "/api/booking/:bookingId/cancel",
+    authMiddleware,
+    bookingController.custonerCancelBooking
+);
+router.post(
+    "/booking/:bookingId/assign",
+    authMiddleware,
+    roleMiddleware(["staff"]),
+    bookingController.assignBooking
+);
 
 export default router;

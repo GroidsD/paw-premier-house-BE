@@ -31,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("percent", "fixed"),
                 defaultValue: "percent",
             },
+            description: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
             max_discount: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,

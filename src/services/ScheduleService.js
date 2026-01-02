@@ -53,7 +53,11 @@ let getScheduleById = async (schedule_id) => {
 
 // Staff đăng ký ca
 let registerSchedule = async (staff_id, shift_id, work_date) => {
-    // 1. Tìm schedule theo shift + date
+    // 🔥 VALIDATE INPUT
+    if (!staff_id) throw new Error("Missing staff_id");
+    if (!shift_id) throw new Error("Missing shift_id");
+    if (!work_date) throw new Error("Missing work_date");
+
     const schedule = await db.Schedule.findOne({
         where: {
             shift_id,
@@ -61,7 +65,11 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
         },
     });
 
-    if (!schedule) throw new Error("Schedule not found");
+    if (!schedule) {
+        throw new Error(
+            `Schedule not found for shift_id=${shift_id}, work_date=${work_date}`
+        );
+    }
 
     // 2. Không cho đăng ký nếu closed
     if (schedule.status !== "open") {
@@ -82,7 +90,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
     });
 
     if (existingRegistration) {
-        if (["pending", "confirmed"].includes(existingRegistration.status)) {
+        if (["available", "confirmed"].includes(existingRegistration.status)) {
             throw new Error("Already registered");
         } else if (existingRegistration.status === "replaced") {
             throw new Error("You were registered but have been replaced");
@@ -94,7 +102,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
     const count = await db.ScheduleStaff.count({
         where: {
             schedule_id: schedule.schedule_id,
-            status: { [Op.in]: ["pending", "confirmed"] },
+            status: { [Op.in]: ["available", "confirmed"] },
         },
     });
 
@@ -104,7 +112,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
     return await db.ScheduleStaff.create({
         schedule_id: schedule.schedule_id,
         staff_id,
-        status: "pending",
+        status: "available",
     });
 };
 
@@ -131,7 +139,7 @@ let replaceSchedule = async (schedule_staff_id, replacement_staff_id) => {
         where: {
             schedule_id: reg.schedule_id,
             staff_id: replacement_staff_id,
-            status: { [Op.in]: ["pending", "confirmed"] },
+            status: { [Op.in]: ["available", "confirmed"] },
         },
     });
 
@@ -269,7 +277,7 @@ let getMySchedule = async (staff_id) => {
         const mySchedules = await db.ScheduleStaff.findAll({
             where: {
                 staff_id,
-                status: { [Op.in]: ["pending", "confirmed"] },
+                status: { [Op.in]: ["available", "confirmed"] },
             },
             include: [
                 {

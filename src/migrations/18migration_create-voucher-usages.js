@@ -1,8 +1,8 @@
 "use strict";
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("voucherUsages", {
+        await queryInterface.createTable("voucher_usages", {
             voucher_usage_id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
@@ -16,7 +16,6 @@ module.exports = {
                     model: "vouchers",
                     key: "voucher_id",
                 },
-                onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             },
 
@@ -27,19 +26,7 @@ module.exports = {
                     model: "users",
                     key: "user_id",
                 },
-                onUpdate: "CASCADE",
                 onDelete: "CASCADE",
-            },
-
-            order_id: {
-                type: Sequelize.INTEGER,
-                allowNull: true,
-                references: {
-                    model: "orders",
-                    key: "order_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
             },
 
             booking_id: {
@@ -49,8 +36,22 @@ module.exports = {
                     model: "bookings",
                     key: "booking_id",
                 },
-                onUpdate: "CASCADE",
                 onDelete: "SET NULL",
+            },
+
+            order_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "orders",
+                    key: "order_id",
+                },
+                onDelete: "SET NULL",
+            },
+
+            status: {
+                type: Sequelize.ENUM("used", "refunded"),
+                defaultValue: "used",
             },
 
             used_at: {
@@ -58,23 +59,20 @@ module.exports = {
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
 
-            created_at: {
-                allowNull: false,
+            refunded_at: {
                 type: Sequelize.DATE,
-                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+                allowNull: true,
             },
+        });
 
-            updated_at: {
-                allowNull: false,
-                type: Sequelize.DATE,
-                defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-                ),
-            },
+        await queryInterface.addConstraint("voucher_usages", {
+            fields: ["voucher_id", "user_id"],
+            type: "unique",
+            name: "unique_user_voucher",
         });
     },
 
-    async down(queryInterface, Sequelize) {
+    async down(queryInterface) {
         await queryInterface.dropTable("voucher_usages");
     },
 };
