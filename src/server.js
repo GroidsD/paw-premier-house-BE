@@ -33,9 +33,7 @@ const server = http.createServer(app);
 const corsOptions = {
     origin: [
         process.env.URL_REACT,
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
+        "http://localhost:5173",
         // "https://pet-sanctuary-7f78f.web.app",,
     ],
     methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],

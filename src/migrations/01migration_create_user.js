@@ -10,12 +10,12 @@ module.exports = {
                 unique: true,
                 primaryKey: true,
             },
-            firebase_uid: {
-                type: Sequelize.STRING,
-                allowNull: true,
-                unique: true,
-                comment: "Firebase UID nếu user đăng nhập bằng Firebase",
-            },
+            // firebase_uid: {
+            //     type: Sequelize.STRING,
+            //     allowNull: true,
+            //     unique: true,
+            //     comment: "Firebase UID nếu user đăng nhập bằng Firebase",
+            // },
             email: {
                 type: Sequelize.STRING,
                 unique: true,
@@ -49,6 +49,11 @@ module.exports = {
                 type: Sequelize.ENUM("admin", "staff", "customer", "manager"),
                 allowNull: false,
                 defaultValue: "customer",
+            },
+            auth_provider: {
+                type: Sequelize.ENUM("local", "google", "facebook", "firebase"),
+                allowNull: false,
+                defaultValue: "firebase",
             },
             isDeleted: {
                 type: Sequelize.BOOLEAN,
