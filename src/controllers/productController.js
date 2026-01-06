@@ -1,9 +1,9 @@
-import productService from "../services/ProductService.js";
+import ProductService from "../services/ProductService.js";
 
 // CREATE - Tạo sản phẩm mới
 let createProduct = async (req, res) => {
     try {
-        const result = await productService.createProduct(req.body);
+        const result = await ProductService.createProduct(req.body);
         return res.status(201).json({
             errCode: 0,
             errMessage: "Product created successfully",
@@ -21,7 +21,7 @@ let createProduct = async (req, res) => {
 // READ ALL - Lấy tất cả sản phẩm
 let getAllProducts = async (req, res) => {
     try {
-        const products = await productService.getAllProducts();
+        const products = await ProductService.getAllProducts();
         return res.status(200).json({
             errCode: 0,
             products,
@@ -39,7 +39,7 @@ let getAllProducts = async (req, res) => {
 let getProductById = async (req, res) => {
     try {
         const product_id = req.query.product_id;
-        const product = await productService.getProductById(product_id);
+        const product = await ProductService.getProductById(product_id);
 
         if (!product) {
             return res.status(404).json({
@@ -65,7 +65,7 @@ let getProductById = async (req, res) => {
 let updateProduct = async (req, res) => {
     try {
         const product_id = req.query.product_id;
-        const updated = await productService.updateProduct(
+        const updated = await ProductService.updateProduct(
             product_id,
             req.body
         );
@@ -94,7 +94,7 @@ let updateProduct = async (req, res) => {
 let softDeleteProduct = async (req, res) => {
     try {
         const product_id = req.query.product_id;
-        const result = await productService.softDeleteProduct(product_id);
+        const result = await ProductService.softDeleteProduct(product_id);
 
         return res.status(200).json({
             errCode: 0,
@@ -114,7 +114,7 @@ let softDeleteProduct = async (req, res) => {
 let hardDeleteProduct = async (req, res) => {
     try {
         const product_id = req.query.product_id;
-        const result = await productService.hardDeleteProduct(product_id);
+        const result = await ProductService.hardDeleteProduct(product_id);
 
         return res.status(200).json({
             errCode: 0,

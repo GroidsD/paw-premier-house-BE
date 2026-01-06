@@ -190,7 +190,7 @@ let login = (email, password) => {
     });
 };
 
-// 🔍 Lấy danh sách người dùng theo vai trò
+//  Lấy danh sách người dùng theo vai trò
 let getUsersByRole = (role) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -206,7 +206,7 @@ let getUsersByRole = (role) => {
     });
 };
 
-// 🔄 Reset mật khẩu (Admin)
+//  Reset mật khẩu (Admin)
 let resetPassword = (user_id, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -224,7 +224,7 @@ let resetPassword = (user_id, newPassword) => {
     });
 };
 
-// 🔐 Đổi mật khẩu cá nhân
+//  Đổi mật khẩu cá nhân
 let changeMyPassword = (user_id, oldPassword, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -253,29 +253,26 @@ let changeMyPassword = (user_id, oldPassword, newPassword) => {
 };
 let firebaseLogin = async (idToken) => {
     try {
-        if (!idToken)
+        if (!idToken) {
             return { errCode: 1, errMessage: "Missing Firebase ID token" };
+        }
 
-        // ✅ Xác thực token với Firebase Admin
         const decoded = await admin.auth().verifyIdToken(idToken);
 
-        // Thông tin từ Firebase
         const firebaseUser = {
             uid: decoded.uid,
             email: decoded.email,
             fullname: decoded.name || "",
-            avatar: decoded.picture || "",
+            avatar: decoded.avatar || "",
         };
 
-        // ✅ Kiểm tra có user nào trong DB chưa
-        let user = await db.User.findOne({
-            where: { firebase_uid: firebaseUser.uid },
-        });
+        // ✅ Tìm user theo user_id = firebase uid
+        let user = await db.User.findByPk(firebaseUser.uid);
 
+        // ✅ Nếu chưa có → tạo mới
         if (!user) {
-            // Nếu chưa có thì tạo mới
             user = await db.User.create({
-                firebase_uid: firebaseUser.uid,
+                user_id: firebaseUser.uid, // 🔥 QUAN TRỌNG
                 email: firebaseUser.email,
                 fullname: firebaseUser.fullname,
                 avatar: firebaseUser.avatar,
@@ -284,10 +281,10 @@ let firebaseLogin = async (idToken) => {
             });
         }
 
-        // ✅ Tạo JWT cho backend
+        // ✅ Tạo JWT
         const token = jwt.sign(
             {
-                user_id: user.user_id,
+                user_id: user.user_id, // = firebase uid
                 email: user.email,
                 role: user.role,
             },
@@ -304,10 +301,11 @@ let firebaseLogin = async (idToken) => {
             token,
         };
     } catch (error) {
-        console.error(" Firebase login error:", error);
+        console.error("Firebase login error:", error);
         return { errCode: -1, errMessage: "Firebase login failed" };
     }
 };
+
 let createUserByAdminOrManager = (creatorRole, data) => {
     return new Promise(async (resolve, reject) => {
         try {

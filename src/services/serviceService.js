@@ -7,31 +7,17 @@ import MediaService from "./MediaService.js";
 const createService = async (data) => {
     const t = await db.sequelize.transaction();
     try {
-        // 1️⃣ Tạo service chính
         const service = await db.Service.create(
             {
                 serviceCategories_id: data.serviceCategories_id || null,
+                name: data.name,
+                description: data.description,
                 price: data.price,
-                duration: data.duration,
+                duration: data.duration, // ✅ đã có trong model
             },
             { transaction: t }
         );
 
-        // 2️⃣ Tạo translate (nếu có)
-        if (Array.isArray(data.translates) && data.translates.length > 0) {
-            const translateData = data.translates.map((t) => ({
-                service_id: service.service_id,
-                language: t.language,
-                name: t.name,
-                description: t.description,
-            }));
-
-            await db.ServiceTranslate.bulkCreate(translateData, {
-                transaction: t,
-            });
-        }
-
-        // 3️⃣ Tạo media (nếu có)
         if (Array.isArray(data.media) && data.media.length > 0) {
             await MediaService.createMediaForEntity(
                 data.media,
@@ -43,12 +29,8 @@ const createService = async (data) => {
 
         await t.commit();
 
-        // 4️⃣ Trả về service đã tạo kèm include
         const created = await db.Service.findByPk(service.service_id, {
-            include: [
-                { model: db.ServiceTranslate, as: "translates" },
-                { model: db.Media, as: "media" },
-            ],
+            include: [{ model: db.Media, as: "media" }],
         });
 
         return {
@@ -59,10 +41,7 @@ const createService = async (data) => {
     } catch (error) {
         await t.rollback();
         console.error("❌ Error in createService:", error);
-        return {
-            errCode: 1,
-            errMessage: error.message || "Failed to create service",
-        };
+        return { errCode: 1, errMessage: error.message };
     }
 };
 
@@ -72,15 +51,25 @@ const createService = async (data) => {
 const getAllServices = async () => {
     try {
         const services = await db.Service.findAll({
+            where: {
+                isDeleted: false,
+                isActive: true,
+            },
             include: [
-                { model: db.ServiceTranslate, as: "translates" },
-                { model: db.Media, as: "media" },
+                {
+                    model: db.ServiceCategory,
+                    as: "category",
+                },
+                {
+                    model: db.Media,
+                    as: "media",
+                },
             ],
+            order: [["created_at", "DESC"]],
         });
 
         return {
             errCode: 0,
-            errMessage: "Fetched all services successfully",
             services,
         };
     } catch (error) {
@@ -97,10 +86,20 @@ const getAllServices = async () => {
 // ============================
 const getServiceById = async (id) => {
     try {
-        const service = await db.Service.findByPk(id, {
+        const service = await db.Service.findOne({
+            where: {
+                service_id: id,
+                isDeleted: false,
+            },
             include: [
-                { model: db.ServiceTranslate, as: "translates" },
-                { model: db.Media, as: "media" },
+                {
+                    model: db.ServiceCategory,
+                    as: "category",
+                },
+                {
+                    model: db.Media,
+                    as: "media",
+                },
             ],
         });
 
@@ -112,7 +111,10 @@ const getServiceById = async (id) => {
             };
         }
 
-        return { errCode: 0, errMessage: "Fetched service", service };
+        return {
+            errCode: 0,
+            service,
+        };
     } catch (error) {
         console.error("❌ Error in getServiceById:", error);
         return {
@@ -129,13 +131,14 @@ const updateService = async (id, data) => {
     const t = await db.sequelize.transaction();
     try {
         const service = await db.Service.findByPk(id);
-        if (!service) {
+        if (!service || service.isDeleted) {
             return { errCode: 1, errMessage: "Service not found" };
         }
 
-        // 1️⃣ Cập nhật thông tin chính
         await service.update(
             {
+                name: data.name ?? service.name,
+                description: data.description ?? service.description,
                 price: data.price ?? service.price,
                 duration: data.duration ?? service.duration,
                 serviceCategories_id:
@@ -144,22 +147,6 @@ const updateService = async (id, data) => {
             { transaction: t }
         );
 
-        // 2️⃣ Cập nhật translate
-        if (Array.isArray(data.translates)) {
-            for (const tData of data.translates) {
-                await db.ServiceTranslate.upsert(
-                    {
-                        service_id: id,
-                        language: tData.language,
-                        name: tData.name,
-                        description: tData.description,
-                    },
-                    { transaction: t }
-                );
-            }
-        }
-
-        // 3️⃣ Cập nhật media (tự động thêm/sửa/xóa)
         if (Array.isArray(data.media)) {
             await MediaService.updateMediaForEntity(
                 data.media,
@@ -172,10 +159,7 @@ const updateService = async (id, data) => {
         await t.commit();
 
         const updated = await db.Service.findByPk(id, {
-            include: [
-                { model: db.ServiceTranslate, as: "translates" },
-                { model: db.Media, as: "media" },
-            ],
+            include: [{ model: db.Media, as: "media" }],
         });
 
         return {
@@ -188,49 +172,69 @@ const updateService = async (id, data) => {
         console.error("❌ Error in updateService:", error);
         return {
             errCode: 1,
-            errMessage: "Failed to update service",
+            errMessage: error.message,
         };
     }
 };
 
 // ============================
-// 🟢 Soft delete service
+// 🟢 SOFT DELETE SERVICE
 // ============================
 const softDeleteService = async (id) => {
-    const service = await db.Service.findByPk(id);
-    if (!service) throw new Error("Service not found");
+    try {
+        const service = await db.Service.findByPk(id);
+        if (!service) {
+            return { errCode: 1, errMessage: "Service not found" };
+        }
 
-    await service.update({ isActive: false, isDeleted: true });
-    return "Service soft deleted successfully";
+        await service.update({
+            isActive: false,
+            isDeleted: true,
+        });
+
+        return {
+            errCode: 0,
+            errMessage: "Service soft deleted successfully",
+        };
+    } catch (error) {
+        console.error("❌ Error in softDeleteService:", error);
+        return {
+            errCode: 1,
+            errMessage: error.message,
+        };
+    }
 };
 
 // ============================
-// 🔴 Hard delete service
+// 🔴 HARD DELETE SERVICE
 // ============================
 const hardDeleteService = async (id) => {
     const t = await db.sequelize.transaction();
     try {
         const service = await db.Service.findByPk(id, { transaction: t });
-        if (!service) throw new Error("Service not found");
+        if (!service) {
+            throw new Error("Service not found");
+        }
 
-        // 1️⃣ Xóa translate liên quan
-        await db.ServiceTranslate.destroy({
-            where: { service_id: id },
-            transaction: t,
-        });
-
-        // 2️⃣ Xóa media liên quan
+        // Xóa media liên quan
         await MediaService.deleteMediaByEntity("service", id, t);
 
-        // 3️⃣ Xóa service chính
+        // Xóa service
         await service.destroy({ transaction: t });
 
         await t.commit();
-        return "Service hard deleted successfully";
+
+        return {
+            errCode: 0,
+            errMessage: "Service hard deleted successfully",
+        };
     } catch (error) {
         await t.rollback();
         console.error("❌ Error in hardDeleteService:", error);
-        throw new Error("Failed to hard delete service");
+        return {
+            errCode: 1,
+            errMessage: "Failed to hard delete service",
+        };
     }
 };
 

@@ -11,7 +11,7 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "This is the backend service for the IAMS (Internal Audit Management System) project. It is built with Node.js, Express, and Sequelize ORM, providing RESTful APIs and real-time socket communication for the IAMS frontend.",
+  "description": " It is built with Node.js, Express, and Sequelize ORM, providing RESTful APIs and real-time socket communication for the IAMS frontend.",
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
     "axios": "^1.9.0",

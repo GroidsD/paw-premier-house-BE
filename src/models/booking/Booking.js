@@ -34,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "booking_id",
                 as: "bookingItems",
             });
+            Booking.belongsTo(models.Voucher, {
+                foreignKey: "voucher_id",
+                as: "voucher",
+            });
         }
     }
 
@@ -75,19 +79,57 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+            original_price: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+            },
+
+            discount: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+            },
+
+            voucher_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "vouchers",
+                    key: "voucher_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "SET NULL",
+            },
+
             total_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
                 defaultValue: 0,
             },
             status: {
-                type: DataTypes.ENUM("pending", "approved", "rejected"),
+                type: DataTypes.ENUM(
+                    "pending",
+                    "assigned",
+                    "cancelled",
+                    "completed"
+                ),
                 defaultValue: "pending",
             },
             date: {
                 type: DataTypes.DATE,
                 allowNull: false,
             },
+            cancelled_by: {
+                type: DataTypes.ENUM("customer", "staff", "system"),
+                allowNull: true,
+            },
+
+            cancel_reason: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,

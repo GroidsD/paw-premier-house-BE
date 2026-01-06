@@ -18,7 +18,6 @@ let createOrder = (data) => {
             const productIds = items.map((it) => it.product_id);
             const products = await db.Product.findAll({
                 where: { product_id: productIds },
-                include: [{ model: db.ProductTranslate, as: "translates" }],
             });
 
             if (!products || products.length === 0) {
@@ -122,75 +121,32 @@ let createOrder = (data) => {
 };
 
 // GET ALL ORDERS
-let getAllOrders = () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let orders = await db.Order.findAll({
-                attributes: [
-                    "order_id",
-                    "customer_id",
-                    "original_price",
-                    "discount",
-                    "discount_type",
-                    "total_price",
-                    "status",
-                    "created_at",
-                    "updated_at",
-                ],
+let getAllOrders = async () => {
+    const orders = await db.Order.findAll({
+        include: [
+            {
+                model: db.User,
+                as: "customer",
+                attributes: ["user_id", "email", "role"],
+            },
+            {
+                model: db.OrderItem,
+                as: "orderItems",
                 include: [
                     {
-                        model: db.User,
-                        as: "customer",
-                        attributes: ["fullname", "email", "phone", "address"],
-                    },
-                    {
-                        model: db.OrderItem,
-                        as: "orderItems",
-                        attributes: [
-                            "product_id",
-                            "quantity",
-                            "price",
-                            "original_price",
-                            "discount",
-                            "discount_type",
-                            "total_price",
-                        ],
-                        include: [
-                            {
-                                model: db.Product,
-                                as: "product",
-                                attributes: [
-                                    "product_id",
-                                    "quantity",
-                                    "original_price",
-                                    "price",
-                                    "isActive",
-                                    "isDelete",
-                                ],
-                                include: [
-                                    {
-                                        model: db.ProductTranslate,
-                                        as: "translates",
-                                        attributes: [
-                                            "product_id",
-                                            "name",
-                                            "description",
-                                            "language",
-                                        ],
-                                    },
-                                ],
-                            },
-                        ],
+                        model: db.Product,
+                        as: "product",
+                        include: [{ model: db.Media, as: "media" }],
                     },
                 ],
-                order: [["order_id", "DESC"]],
-            });
-
-            resolve(orders);
-        } catch (e) {
-            reject(e);
-        }
+            },
+        ],
     });
+
+    return {
+        errCode: 0,
+        orders,
+    };
 };
 
 // GET ORDER BY ID

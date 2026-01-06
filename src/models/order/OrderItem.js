@@ -88,12 +88,12 @@ module.exports = (sequelize, DataTypes) => {
                 comment: "Giá sau khi áp dụng chiết khấu",
             },
 
-            total_price: {
-                type: DataTypes.DECIMAL(10, 2),
-                allowNull: false,
-                defaultValue: 0,
-                comment: "Tổng tiền của item (quantity * price)",
-            },
+            // total_price: {
+            //     type: DataTypes.DECIMAL(10, 2),
+            //     allowNull: false,
+            //     defaultValue: 0,
+            //     comment: "Tổng tiền của item (quantity * price)",
+            // },
 
             created_at: {
                 type: DataTypes.DATE,

@@ -44,6 +44,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "replaced_by",
                 as: "replacements",
             });
+            User.hasMany(models.Pet, {
+                foreignKey: "owner_id",
+                sourceKey: "user_id",
+                as: "pets",
+            });
         }
     }
 
@@ -53,14 +58,9 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 primaryKey: true,
                 allowNull: false,
-                defaultValue: () => uuidv4(),
+                // defaultValue: () => uuidv4(),
             },
-            firebase_uid: {
-                type: DataTypes.STRING,
-                allowNull: true,
-                unique: true,
-                comment: "Firebase UID nếu user đăng nhập bằng Firebase",
-            },
+
             email: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -86,6 +86,10 @@ module.exports = (sequelize, DataTypes) => {
             role: {
                 type: DataTypes.ENUM("admin", "staff", "customer", "manager"),
                 defaultValue: "customer",
+            },
+            auth_provider: {
+                type: DataTypes.ENUM("firebase", "local"),
+                defaultValue: "firebase",
             },
             isDeleted: {
                 type: DataTypes.BOOLEAN,

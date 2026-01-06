@@ -3,61 +3,56 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("bookings", {
-            booking_id: {
+        await queryInterface.createTable("services", {
+            service_id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
                 allowNull: false,
             },
 
-            customer_id: {
-                type: Sequelize.STRING,
-                allowNull: true,
-                references: {
-                    model: "users",
-                    key: "user_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
-            },
-
-            staff_id: {
-                type: Sequelize.STRING,
-                allowNull: true,
-                references: {
-                    model: "users",
-                    key: "user_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
-            },
-
-            pet_id: {
+            serviceCategories_id: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
                 references: {
-                    model: "pets",
-                    key: "pet_id",
+                    model: "serviceCategories",
+                    key: "serviceCategories_id",
                 },
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
 
-            total_price: {
-                type: Sequelize.DECIMAL(10, 2),
+            /* ===== Thông tin dịch vụ ===== */
+            name: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+
+            description: {
+                type: Sequelize.TEXT,
                 allowNull: true,
+            },
+
+            price: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
                 defaultValue: 0,
             },
-
-            status: {
-                type: Sequelize.ENUM("pending", "approved", "rejected"),
-                defaultValue: "pending",
+            duration: {
+                type: Sequelize.INTEGER, // phút
+                allowNull: false,
+                defaultValue: 60,
+                comment: "Duration in minutes",
             },
 
-            date: {
-                type: Sequelize.DATE,
-                allowNull: false,
+            isActive: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: true,
+            },
+
+            isDeleted: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
             },
 
             created_at: {
@@ -76,7 +71,7 @@ module.exports = {
         });
     },
 
-    async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable("bookings");
+    async down(queryInterface) {
+        await queryInterface.dropTable("services");
     },
 };

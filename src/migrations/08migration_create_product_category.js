@@ -11,6 +11,12 @@ module.exports = {
                 allowNull: false,
             },
 
+            type: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                comment: "Tên loại sản phẩm",
+            },
+
             isActive: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: true,

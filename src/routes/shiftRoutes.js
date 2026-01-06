@@ -1,13 +1,13 @@
 import express from "express";
-import shiftController from "../controllers/shiftController";
-import authMiddleware from "../middleware/authMiddleware";
+import shiftController from "../controllers/shiftController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
 
 let router = express.Router();
 
 // CREATE SHIFT (admin + manager)
 router.post(
-    "/api/create-shift",
+    "/api/create-shifts",
     authMiddleware,
     roleMiddleware(["admin", "manager"]),
     shiftController.create

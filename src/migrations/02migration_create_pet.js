@@ -10,6 +10,7 @@ module.exports = {
                 allowNull: false,
                 primaryKey: true,
             },
+
             owner_id: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -20,23 +21,60 @@ module.exports = {
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
+            /* ===== Thông tin pet ===== */
+            name: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+
+            species: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+
+            gender: {
+                type: Sequelize.ENUM("male", "female", "unknown"),
+                defaultValue: "unknown",
+            },
+
+            status: {
+                type: Sequelize.ENUM("active", "inactive", "draft"),
+                defaultValue: "active",
+            },
+
+            /* ===== Thông tin vật lý ===== */
             pet_image: {
                 type: Sequelize.STRING,
+                allowNull: true,
             },
+
             weight: {
                 type: Sequelize.FLOAT,
+                allowNull: true,
             },
+
             age: {
                 type: Sequelize.INTEGER,
+                allowNull: true,
             },
+
             breed: {
                 type: Sequelize.STRING,
+                allowNull: true,
             },
+
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
+
             updated_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
@@ -47,7 +85,15 @@ module.exports = {
         });
     },
 
-    async down(queryInterface) {
+    async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("pets");
+
+        // ⚠️ Quan trọng: drop ENUM (MySQL / Postgres)
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_pets_gender";'
+        );
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_pets_status";'
+        );
     },
 };
