@@ -49,6 +49,17 @@ module.exports = (sequelize, DataTypes) => {
                 sourceKey: "user_id",
                 as: "pets",
             });
+            User.belongsToMany(models.Role, {
+                through: models.UserRole,
+                foreignKey: "user_id",
+                otherKey: "role_id",
+                as: "roles",
+            });
+
+            User.hasMany(models.UserPermission, {
+                foreignKey: "user_id",
+                as: "permissionOverrides",
+            });
         }
     }
 
@@ -58,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 primaryKey: true,
                 allowNull: false,
-                // defaultValue: () => uuidv4(),
+                defaultValue: () => uuidv4(),
             },
 
             email: {
@@ -73,9 +84,10 @@ module.exports = (sequelize, DataTypes) => {
             },
             fullname: DataTypes.STRING,
             gender: {
-                type: DataTypes.ENUM("male", "female"),
+                type: DataTypes.ENUM("male", "female", "other"),
                 defaultValue: "male",
             },
+            dob: DataTypes.DATEONLY,
             avatar: DataTypes.STRING,
             address: DataTypes.STRING,
             phone: DataTypes.STRING,
@@ -106,7 +118,7 @@ module.exports = (sequelize, DataTypes) => {
                 comment:
                     "Tổng số feedback nhận được (chỉ áp dụng cho staff trở lên)",
             },
-            totalStarFeedback: {
+            feedbackScore: {
                 type: DataTypes.FLOAT,
                 defaultValue: 0,
                 comment:
