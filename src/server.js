@@ -19,6 +19,7 @@ import scheduleRoutes from "./routes/scheduleRoutes.js";
 import shiftRoutes from "./routes/shiftRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
+import rbacRoutes from "./routes/rbacRoutes.js";
 
 require("dotenv").config();
 const multer = require("multer");
@@ -141,6 +142,7 @@ app.use("/", bookingRoutes);
 app.use("/", petRoutes);
 // app.use("/", chatRoutes);
 app.use("/", voucherRoutes);
+app.use("/", rbacRoutes);
 // Connect DB
 connectDB();
 

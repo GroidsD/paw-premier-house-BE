@@ -3,6 +3,8 @@ import userController from "../controllers/userController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 const { userSingleUpload } = require("../middleware/uploadImageUsers.js");
 const { productSingleUpload } = require("../middleware/uploadImageProducts.js");
 const { auditUpload } = require("../middleware/uploadExcel.js");
@@ -30,12 +32,14 @@ let initWebRoutes = (app) => {
     router.get(
         "/api/get-users-role",
         authMiddleware,
+        rbacMiddleware,
         userController.getUsersByRole
     );
     router.get(
         "/api/get-all-users",
         authMiddleware,
-        adminMiddleware,
+        // adminMiddleware,
+        permissionMiddleware(["dashboard.view"]),
         userController.getAllUsers
     );
 

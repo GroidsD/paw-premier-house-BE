@@ -1,4 +1,5 @@
 import db from "../models/index.js";
+import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js"; // import MediaService
 
 // 🟢 Tạo product mới
@@ -13,12 +14,29 @@ let createProduct = async (data) => {
             discount_type = "percent",
             quantity = 0,
             media = [],
+            tags = [], // 👈 thêm tag từ FE
         } = data;
 
-        // 1️⃣ Tạo product
+        /* =======================
+           1️⃣ Tạo slug cho product
+        ======================= */
+        let baseSlug = generateSlug(name);
+        let slug = baseSlug;
+        let count = 1;
+
+        // tránh trùng slug
+        while (await db.Product.findOne({ where: { slug } })) {
+            slug = `${baseSlug}-${count}`;
+            count++;
+        }
+
+        /* =======================
+           2️⃣ Tạo product
+        ======================= */
         let product = await db.Product.create({
             productCategories_id,
             name,
+            slug,
             description,
             original_price,
             discount,
@@ -26,18 +44,53 @@ let createProduct = async (data) => {
             quantity,
         });
 
-        // 2️⃣ Tạo media
+        /* =======================
+           3️⃣ Tạo media
+        ======================= */
         await mediaService.createMediaForEntity(
             media,
             product.product_id,
             "product"
         );
 
-        // 3️⃣ Lấy lại product kèm media
+        /* =======================
+           4️⃣ Xử lý tag
+        ======================= */
+        for (const tagName of tags) {
+            let tagSlug = generateSlug(tagName);
+
+            // tìm hoặc tạo tag
+            const [tag] = await db.Tag.findOrCreate({
+                where: { slug: tagSlug },
+                defaults: {
+                    name: tagName,
+                    slug: tagSlug,
+                },
+            });
+
+            // gắn tag cho product (DB sẽ chặn nếu trùng)
+            await db.ProductTag.findOrCreate({
+                where: {
+                    product_id: product.product_id,
+                    tag_id: tag.tag_id,
+                },
+            });
+        }
+
+        /* =======================
+           5️⃣ Lấy lại product đầy đủ
+        ======================= */
         let productWithRelations = await db.Product.findByPk(
             product.product_id,
             {
-                include: [{ model: db.Media, as: "media" }],
+                include: [
+                    { model: db.Media, as: "media" },
+                    {
+                        model: db.Tag,
+                        as: "tags",
+                        through: { attributes: [] },
+                    },
+                ],
             }
         );
 
@@ -51,7 +104,6 @@ let createProduct = async (data) => {
     }
 };
 
-// 🟢 Lấy tất cả product
 let getAllProducts = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -59,6 +111,8 @@ let getAllProducts = () => {
                 attributes: [
                     "product_id",
                     "productCategories_id",
+                    "name",
+                    "slug", // 👈 thêm slug
                     "price",
                     "quantity",
                     "isActive",
@@ -67,17 +121,22 @@ let getAllProducts = () => {
                     {
                         model: db.ProductCategory,
                         as: "category",
-                        attributes: [
-                            "productCategories_id",
-                            "type",
-                            // "isActive",
-                            // "isDelete",
-                        ],
+                        attributes: ["productCategories_id", "type"],
                     },
-                    { model: db.Media, as: "media" },
+                    {
+                        model: db.Tag,
+                        as: "tags", // 👈 thêm tag
+                        attributes: ["tag_id", "name", "slug"],
+                        through: { attributes: [] }, // 👈 ẩn bảng trung gian
+                    },
+                    {
+                        model: db.Media,
+                        as: "media",
+                    },
                 ],
                 order: [["product_id", "ASC"]],
             });
+
             resolve(products);
         } catch (e) {
             reject(e);
@@ -85,39 +144,52 @@ let getAllProducts = () => {
     });
 };
 
-// 🟢 Lấy product theo ID
 let getProductById = (product_id) => {
     return new Promise(async (resolve, reject) => {
         try {
             let product = await db.Product.findByPk(product_id, {
+                attributes: [
+                    "product_id",
+                    "productCategories_id",
+                    "name",
+                    "slug",
+                    "price",
+                    "quantity",
+                    "isActive",
+                    "description",
+                ],
                 include: [
                     {
                         model: db.ProductCategory,
                         as: "category",
-                        attributes: [
-                            "productCategories_id",
-                            "type",
-                            // "isActive",
-                            // "isDelete",
-                        ],
+                        attributes: ["productCategories_id", "type"],
                     },
-                    { model: db.Media, as: "media" },
+                    {
+                        model: db.Tag,
+                        as: "tags",
+                        attributes: ["tag_id", "name", "slug"],
+                        through: { attributes: [] }, // ẩn bảng product_tags
+                    },
+                    {
+                        model: db.Media,
+                        as: "media",
+                    },
                 ],
             });
 
             if (!product) {
-                resolve({
+                return resolve({
                     errCode: 1,
                     errMessage: "Product not found",
                     product: null,
                 });
-            } else {
-                resolve({
-                    errCode: 0,
-                    errMessage: "Product retrieved successfully",
-                    product,
-                });
             }
+
+            resolve({
+                errCode: 0,
+                errMessage: "Product retrieved successfully",
+                product,
+            });
         } catch (e) {
             reject({
                 errCode: -1,

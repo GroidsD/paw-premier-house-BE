@@ -24,6 +24,12 @@ module.exports = (sequelize, DataTypes) => {
                 scope: { entity_type: "product" },
                 as: "media",
             });
+            Product.belongsToMany(models.Tag, {
+                through: models.ProductTag,
+                foreignKey: "product_id",
+                otherKey: "tag_id",
+                as: "tags",
+            });
         }
     }
 
@@ -55,6 +61,11 @@ module.exports = (sequelize, DataTypes) => {
             description: {
                 type: DataTypes.TEXT,
                 allowNull: true,
+            },
+            slug: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                unique: true,
             },
 
             /* ===== Giá ===== */

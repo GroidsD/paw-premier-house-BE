@@ -29,7 +29,8 @@ module.exports = (sequelize, DataTypes) => {
             sequelize,
             modelName: "UserRole",
             tableName: "user_roles",
-            timestamps: false,
+            timestamps: true, // bật timestamps
+            underscored: true, // created_at, updated_at
         }
     );
 

@@ -33,7 +33,8 @@ module.exports = (sequelize, DataTypes) => {
             sequelize,
             modelName: "UserPermission",
             tableName: "user_permissions",
-            timestamps: false,
+            timestamps: true, // bật timestamps
+            underscored: true, // created_at, updated_at
         }
     );
 
