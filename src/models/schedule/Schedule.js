@@ -1,19 +1,25 @@
-// models/schedule.js
 "use strict";
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class Schedule extends Model {
         static associate(models) {
-            Schedule.belongsTo(models.User, {
-                foreignKey: "staff_id",
-                as: "staff",
+            // Một schedule có N nhân viên đăng ký
+            Schedule.hasMany(models.ScheduleStaff, {
+                foreignKey: "schedule_id",
+                as: "registrations",
             });
-            Schedule.belongsTo(models.Shift, { foreignKey: "shift_id" });
 
-            Schedule.belongsTo(models.User, {
-                foreignKey: "replaced_by",
-                as: "replacement",
+            // Ca làm thuộc 1 shift
+            Schedule.belongsTo(models.Shift, {
+                foreignKey: "shift_id",
+                as: "shift",
+            });
+            Schedule.belongsToMany(models.User, {
+                through: models.ScheduleStaff, // Bảng trung gian
+                foreignKey: "schedule_id",
+                otherKey: "staff_id",
+                as: "workingStaff", // Alias này khớp với getAllSchedules
             });
         }
     }
@@ -25,18 +31,20 @@ module.exports = (sequelize, DataTypes) => {
                 autoIncrement: true,
                 primaryKey: true,
             },
-            staff_id: { type: DataTypes.STRING, allowNull: false },
+
             work_date: { type: DataTypes.STRING, allowNull: false },
             shift_id: { type: DataTypes.INTEGER, allowNull: false },
+
             status: {
-                type: DataTypes.ENUM(
-                    "confirmed",
-                    "pending",
-                    "cancelled",
-                    "replaced"
-                ),
-                defaultValue: "pending",
+                type: DataTypes.ENUM("open", "closed"),
+                defaultValue: "open",
             },
+
+            max_people: {
+                type: DataTypes.INTEGER,
+                defaultValue: 1,
+            },
+
             work_status: {
                 type: DataTypes.ENUM(
                     "not_started",
@@ -52,9 +60,25 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
 
-            replaced_by: { type: DataTypes.STRING, allowNull: true },
+            created_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+
+            updated_at: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
         },
-        { sequelize, modelName: "Schedule", tableName: "schedules" }
+        {
+            sequelize,
+            modelName: "Schedule",
+            tableName: "schedules",
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        }
     );
 
     return Schedule;

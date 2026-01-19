@@ -10,7 +10,7 @@ dotenv.config();
 const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 
-// 🧂 Mã hóa mật khẩu
+// Mã hóa mật khẩu
 let hashPassword = (password) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -22,41 +22,188 @@ let hashPassword = (password) => {
     });
 };
 
-// 👤 Lấy thông tin người dùng theo ID
+//  Lấy thông tin người dùng theo ID
+// let getUserById = (user_id) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             const user = await db.User.findByPk(user_id, {
+//                 attributes: { exclude: ["password"] },
+//             });
+//             if (!user) return reject("User not found");
+//             resolve(user);
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 let getUserById = (user_id) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const user = await db.User.findByPk(user_id, {
+            const u = await db.User.findByPk(user_id, {
                 attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: db.Role,
+                        as: "roles",
+                        attributes: ["id", "name"],
+                        through: { attributes: [] },
+                        include: [
+                            {
+                                model: db.Permission,
+                                as: "permissions",
+                                attributes: ["id", "action"],
+                                through: { attributes: [] },
+                            },
+                        ],
+                    },
+                    {
+                        model: db.UserPermission,
+                        as: "permissionOverrides",
+                        attributes: ["allowed"],
+                        include: [
+                            {
+                                model: db.Permission,
+                                attributes: ["action"],
+                            },
+                        ],
+                    },
+                ],
             });
-            if (!user) return reject("User not found");
-            resolve(user);
+
+            if (!u) return reject("User not found");
+
+            // ===== Build permission map =====
+            const permissionMap = new Map();
+
+            // từ role
+            u.roles.forEach((role) => {
+                role.permissions.forEach((p) => {
+                    permissionMap.set(p.action, true);
+                });
+            });
+
+            // override
+            u.permissionOverrides.forEach((o) => {
+                permissionMap.set(o.Permission.action, o.allowed);
+            });
+
+            const finalPermissions = [...permissionMap.entries()]
+                .filter(([_, allowed]) => allowed)
+                .map(([action]) => action);
+
+            const plain = u.toJSON();
+
+            // expose roles dạng ["admin","staff"]
+            plain.roles = plain.roles.map((r) => r.name);
+
+            // expose permission final
+            plain.permissions = finalPermissions;
+
+            // xoá RBAC nội bộ
+            delete plain.permissionOverrides;
+
+            resolve(plain);
         } catch (e) {
             reject(e);
         }
     });
 };
 
-// 📋 Lấy tất cả người dùng
+//  Lấy tất cả người dùng
+// let getAllUsers = () => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             const users = await db.User.findAll({
+//                 attributes: { exclude: ["password"] },
+//                 order: [["user_id", "ASC"]],
+//             });
+//             resolve(users);
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 let getAllUsers = () => {
     return new Promise(async (resolve, reject) => {
         try {
             const users = await db.User.findAll({
                 attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: db.Role,
+                        as: "roles",
+                        attributes: ["id", "name"],
+                        through: { attributes: [] },
+                        include: [
+                            {
+                                model: db.Permission,
+                                as: "permissions",
+                                attributes: ["id", "action"],
+                                through: { attributes: [] },
+                            },
+                        ],
+                    },
+                    {
+                        model: db.UserPermission,
+                        as: "permissionOverrides",
+                        attributes: ["allowed"],
+                        include: [
+                            {
+                                model: db.Permission,
+                                attributes: ["action"],
+                            },
+                        ],
+                    },
+                ],
                 order: [["user_id", "ASC"]],
             });
-            resolve(users);
+
+            const result = users.map((u) => {
+                const permissionMap = new Map();
+
+                // permissions từ role
+                u.roles.forEach((role) => {
+                    role.permissions.forEach((p) => {
+                        permissionMap.set(p.action, true);
+                    });
+                });
+
+                // override
+                u.permissionOverrides.forEach((o) => {
+                    permissionMap.set(o.Permission.action, o.allowed);
+                });
+
+                const finalPermissions = [...permissionMap.entries()]
+                    .filter(([_, allowed]) => allowed)
+                    .map(([action]) => action);
+
+                const plain = u.toJSON();
+
+                // chỉ expose final permissions
+                plain.permissions = finalPermissions;
+                // Chỉ giữ tên role
+                if (plain.roles) {
+                    plain.roles = plain.roles.map((r) => r.name);
+                }
+                // 🔥 xoá toàn bộ RBAC internal
+                // delete plain.roles;
+                delete plain.permissionOverrides;
+
+                return plain;
+            });
+
+            resolve(result);
         } catch (e) {
             reject(e);
         }
     });
 };
 
-// ➕ Tạo người dùng mới
+//  Tạo người dùng mới
 let registerUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if (!data.email || !data.password || !data.name) {
+            if (!data.email || !data.password || !data.fullname) {
                 return reject("Missing required fields");
             }
 
@@ -73,10 +220,10 @@ let registerUser = (data) => {
             const newUser = await db.User.create({
                 email: data.email,
                 password: hashed,
-                name: data.name,
+                fullname: data.fullname,
                 phone: data.phone || "",
                 address: data.address || "",
-                role: data.role || "customer",
+                role: "customer",
                 status: data.status || "active",
             });
 
@@ -109,7 +256,7 @@ let updateUser = (user_id, data) => {
             }
 
             await user.update({
-                name: data.name || user.name,
+                fullname: data.fullname || user.fullname,
                 email: data.email || user.email,
                 phone: data.phone || user.phone,
                 address: data.address || user.address,
@@ -129,7 +276,7 @@ let updateUser = (user_id, data) => {
         }
     });
 };
-// 🗑️ Xóa (ẩn) người dùng
+//  Xóa (ẩn) người dùng
 let deleteUserById = (user_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -145,43 +292,159 @@ let deleteUserById = (user_id) => {
     });
 };
 
-// 🔑 Đăng nhập
+//  Đăng nhập
+// let login = (email, password) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             if (!email || !password)
+//                 return resolve({
+//                     errCode: 1,
+//                     errMessage: "Missing email or password",
+//                 });
+
+//             const user = await db.User.findOne({ where: { email } });
+//             if (!user)
+//                 return resolve({ errCode: 2, errMessage: "User not found" });
+
+//             const isMatch = await bcrypt.compare(password, user.password);
+//             if (!isMatch)
+//                 return resolve({
+//                     errCode: 3,
+//                     errMessage: "Incorrect password",
+//                 });
+
+//             const token = jwt.sign(
+//                 {
+//                     user_id: user.user_id,
+//                     email: user.email,
+//                     role: user.role,
+//                 },
+//                 process.env.JWT_SECRET,
+//                 { expiresIn: "1d" }
+//             );
+
+//             const { password: pw, ...userWithoutPassword } = user.dataValues;
+
+//             resolve({
+//                 errCode: 0,
+//                 errMessage: "Login successful",
+//                 user: userWithoutPassword,
+//                 token,
+//             });
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
 let login = (email, password) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if (!email || !password)
+            if (!email || !password) {
                 return resolve({
                     errCode: 1,
                     errMessage: "Missing email or password",
                 });
+            }
 
-            const user = await db.User.findOne({ where: { email } });
-            if (!user)
-                return resolve({ errCode: 2, errMessage: "User not found" });
+            const user = await db.User.findOne({
+                where: { email },
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: db.Role,
+                        as: "roles",
+                        attributes: ["id", "name"],
+                        through: { attributes: [] },
+                        include: [
+                            {
+                                model: db.Permission,
+                                as: "permissions",
+                                attributes: ["action"],
+                                through: { attributes: [] },
+                            },
+                        ],
+                    },
+                    {
+                        model: db.UserPermission,
+                        as: "permissionOverrides",
+                        attributes: ["allowed"],
+                        include: [
+                            {
+                                model: db.Permission,
+                                attributes: ["action"],
+                            },
+                        ],
+                    },
+                ],
+            });
 
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch)
+            if (!user) {
+                return resolve({
+                    errCode: 2,
+                    errMessage: "User not found",
+                });
+            }
+
+            // cần query password riêng vì exclude ở trên
+            const userWithPassword = await db.User.findOne({
+                where: { email },
+                attributes: ["password"],
+            });
+
+            const isMatch = await bcrypt.compare(
+                password,
+                userWithPassword.password
+            );
+
+            if (!isMatch) {
                 return resolve({
                     errCode: 3,
                     errMessage: "Incorrect password",
                 });
+            }
 
+            /* ================= MERGE PERMISSIONS ================= */
+            const permissionMap = new Map();
+
+            // từ role
+            user.roles.forEach((role) => {
+                role.permissions.forEach((p) => {
+                    permissionMap.set(p.action, true);
+                });
+            });
+
+            // override từ user
+            user.permissionOverrides.forEach((o) => {
+                permissionMap.set(o.Permission.action, o.allowed);
+            });
+
+            const finalPermissions = [...permissionMap.entries()]
+                .filter(([_, allowed]) => allowed)
+                .map(([action]) => action);
+
+            /* ================= JWT ================= */
             const token = jwt.sign(
                 {
                     user_id: user.user_id,
                     email: user.email,
-                    role: user.role,
+                    permissions: finalPermissions,
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: "1d" }
             );
 
-            const { password: pw, ...userWithoutPassword } = user.dataValues;
+            const plain = user.toJSON();
+
+            plain.permissions = finalPermissions;
+            plain.roles = plain.roles.map((r) => r.name);
+
+            // xoá internal RBAC
+            delete plain.permissionOverrides;
 
             resolve({
                 errCode: 0,
                 errMessage: "Login successful",
-                user: userWithoutPassword,
+                user: plain,
                 token,
             });
         } catch (e) {
@@ -190,23 +453,75 @@ let login = (email, password) => {
     });
 };
 
-// 🔍 Lấy danh sách người dùng theo vai trò
-let getUsersByRole = (role) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            if (!role) return reject("Missing role parameter");
-            const users = await db.User.findAll({
-                where: { role },
-                attributes: ["user_id", "name", "email"],
+//  Lấy danh sách người dùng theo vai trò
+// let getUsersByRole = (role) => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+//             if (!role) return reject("Missing role parameter");
+//             const users = await db.User.findAll({
+//                 where: { role },
+//                 attributes: ["user_id", "fullname", "email"],
+//             });
+//             resolve(users);
+//         } catch (e) {
+//             reject(e);
+//         }
+//     });
+// };
+//  Lấy danh sách người dùng theo vai trò + permissions
+let getUsersByRole = async (roleName) => {
+    try {
+        if (!roleName) throw "Missing role parameter";
+
+        const users = await db.User.findAll({
+            include: [
+                {
+                    model: db.Role,
+                    as: "roles",
+                    where: { name: "admin" }, // lọc theo role
+                    attributes: ["id", "name"],
+                    through: { attributes: [] }, // bỏ bảng trung gian UserRole
+                    include: [
+                        {
+                            model: db.Permission,
+                            as: "permissions",
+                            attributes: ["id", "action"],
+                            through: { attributes: [] }, // bỏ RolePermission
+                        },
+                    ],
+                },
+            ],
+            attributes: ["user_id", "fullname", "email"],
+        });
+
+        // Chuẩn hoá output
+        const result = users.map((u) => {
+            const user = u.toJSON();
+
+            const permissionSet = new Set();
+
+            user.roles.forEach((role) => {
+                role.permissions.forEach((p) => {
+                    permissionSet.add(p.action);
+                });
             });
-            resolve(users);
-        } catch (e) {
-            reject(e);
-        }
-    });
+
+            return {
+                user_id: user.user_id,
+                fullname: user.fullname,
+                email: user.email,
+                roles: user.roles.map((r) => r.name),
+                permissions: [...permissionSet],
+            };
+        });
+
+        return result;
+    } catch (e) {
+        throw e;
+    }
 };
 
-// 🔄 Reset mật khẩu (Admin)
+//  Reset mật khẩu (Admin)
 let resetPassword = (user_id, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -224,7 +539,7 @@ let resetPassword = (user_id, newPassword) => {
     });
 };
 
-// 🔐 Đổi mật khẩu cá nhân
+//  Đổi mật khẩu cá nhân
 let changeMyPassword = (user_id, oldPassword, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -253,29 +568,26 @@ let changeMyPassword = (user_id, oldPassword, newPassword) => {
 };
 let firebaseLogin = async (idToken) => {
     try {
-        if (!idToken)
+        if (!idToken) {
             return { errCode: 1, errMessage: "Missing Firebase ID token" };
+        }
 
-        // ✅ Xác thực token với Firebase Admin
         const decoded = await admin.auth().verifyIdToken(idToken);
 
-        // Thông tin từ Firebase
         const firebaseUser = {
             uid: decoded.uid,
             email: decoded.email,
             fullname: decoded.name || "",
-            avatar: decoded.picture || "",
+            avatar: decoded.avatar || "",
         };
 
-        // ✅ Kiểm tra có user nào trong DB chưa
-        let user = await db.User.findOne({
-            where: { firebase_uid: firebaseUser.uid },
-        });
+        // ✅ Tìm user theo user_id = firebase uid
+        let user = await db.User.findByPk(firebaseUser.uid);
 
+        // ✅ Nếu chưa có → tạo mới
         if (!user) {
-            // Nếu chưa có thì tạo mới
             user = await db.User.create({
-                firebase_uid: firebaseUser.uid,
+                user_id: firebaseUser.uid, // 🔥 QUAN TRỌNG
                 email: firebaseUser.email,
                 fullname: firebaseUser.fullname,
                 avatar: firebaseUser.avatar,
@@ -284,10 +596,10 @@ let firebaseLogin = async (idToken) => {
             });
         }
 
-        // ✅ Tạo JWT cho backend
+        // ✅ Tạo JWT
         const token = jwt.sign(
             {
-                user_id: user.user_id,
+                user_id: user.user_id, // = firebase uid
                 email: user.email,
                 role: user.role,
             },
@@ -304,10 +616,89 @@ let firebaseLogin = async (idToken) => {
             token,
         };
     } catch (error) {
-        console.error("🔥 Firebase login error:", error);
+        console.error("Firebase login error:", error);
         return { errCode: -1, errMessage: "Firebase login failed" };
     }
 };
+
+let createUserByAdminOrManager = (creatorRole, data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.email || !data.password || !data.fullname) {
+                return resolve({
+                    errCode: 1,
+                    errMessage: "Missing required fields",
+                });
+            }
+
+            //  Không phải admin hoặc manager
+            if (!["admin", "manager"].includes(creatorRole)) {
+                return resolve({
+                    errCode: 2,
+                    errMessage: "Permission denied",
+                });
+            }
+
+            // -------------------------------------
+            //  Auto-assign role theo quyền creator
+            // -------------------------------------
+            let assignedRole = data.role;
+
+            if (creatorRole === "manager") {
+                assignedRole = "staff"; // manager luôn tạo staff
+            }
+
+            if (creatorRole === "admin") {
+                // Admin tự chọn role, nhưng vẫn check hợp lệ
+                if (
+                    !["admin", "manager", "staff", "customer"].includes(
+                        assignedRole
+                    )
+                ) {
+                    return resolve({
+                        errCode: 3,
+                        errMessage: "Invalid role",
+                    });
+                }
+            }
+
+            // ---------------------------------
+            // Kiểm tra email tồn tại
+            // ---------------------------------
+            const existing = await db.User.findOne({
+                where: { email: data.email },
+            });
+
+            if (existing) {
+                return resolve({
+                    errCode: 4,
+                    errMessage: "Email already exists",
+                });
+            }
+
+            const hashed = await hashPassword(data.password);
+
+            const newUser = await db.User.create({
+                email: data.email,
+                password: hashed,
+                fullname: data.fullname,
+                phone: data.phone || "",
+                address: data.address || "",
+                role: assignedRole, //  role đã được gán ở trên
+                status: "active",
+            });
+
+            resolve({
+                errCode: 0,
+                errMessage: "User created successfully",
+                newUser,
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
 export default {
     getUserById,
     getAllUsers,
@@ -319,4 +710,5 @@ export default {
     resetPassword,
     changeMyPassword,
     firebaseLogin,
+    createUserByAdminOrManager,
 };

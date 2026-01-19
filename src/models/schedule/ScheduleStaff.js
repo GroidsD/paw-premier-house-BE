@@ -1,0 +1,71 @@
+"use strict";
+const { Model } = require("sequelize");
+
+module.exports = (sequelize, DataTypes) => {
+    class ScheduleStaff extends Model {
+        static associate(models) {
+            ScheduleStaff.belongsTo(models.Schedule, {
+                foreignKey: "schedule_id",
+                as: "schedule",
+            });
+
+            ScheduleStaff.belongsTo(models.User, {
+                foreignKey: "staff_id",
+                as: "scheduleStaffUser",
+            });
+
+            ScheduleStaff.belongsTo(models.User, {
+                foreignKey: "replaced_by",
+                as: "replacedBy",
+            });
+        }
+    }
+
+    ScheduleStaff.init(
+        {
+            schedule_staff_id: {
+                type: DataTypes.INTEGER,
+                autoIncrement: true,
+                primaryKey: true,
+            },
+
+            schedule_id: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+
+            staff_id: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+            booking_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "bookings",
+                    key: "booking_id",
+                },
+                onDelete: "SET NULL",
+            },
+
+            replaced_by: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            status: {
+                type: DataTypes.ENUM("available", "busy", "absent"),
+                defaultValue: "available",
+            },
+        },
+        {
+            sequelize,
+            modelName: "ScheduleStaff",
+            tableName: "schedule_staff",
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        }
+    );
+
+    return ScheduleStaff;
+};

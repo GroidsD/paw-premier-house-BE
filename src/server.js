@@ -3,17 +3,23 @@ import http from "http";
 import { Server as SocketIO } from "socket.io";
 import bodyParser from "body-parser";
 import viewEngine from "./config/viewEngine";
-import initWebRoutes from "./routes/userRoute";
+import initWebRoutes from "./routes/userRoutes";
 import { connectDB } from "./config/connectDB";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import cron from "node-cron";
 import productRoutes from "./routes/productRoutes";
+import productCategoryRoutes from "./routes/productCategoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes";
-import spaRoutes from "./routes/spaRoutes";
+import serviceRoutes from "./routes/serviceRoutes.js";
+import serviceCategoryRoutes from "./routes/serviceCategoryRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import petRoutes from "./routes/petRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
-import shiftRoutes from "./routes/shiftRoute.js";
-import chatRoute from "./routes/chat.js";
+import shiftRoutes from "./routes/shiftRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import voucherRoutes from "./routes/voucherRoutes.js";
+import rbacRoutes from "./routes/rbacRoutes.js";
 
 require("dotenv").config();
 const multer = require("multer");
@@ -28,9 +34,7 @@ const server = http.createServer(app);
 const corsOptions = {
     origin: [
         process.env.URL_REACT,
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
+        "http://localhost:5173",
         // "https://pet-sanctuary-7f78f.web.app",,
     ],
     methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
@@ -91,6 +95,10 @@ app.use(
     "/uploadImageProducts",
     express.static(path.join(__dirname, "public/uploadImageProducts"))
 );
+app.use(
+    "/uploadMedia",
+    express.static(path.join(__dirname, "public/uploadMedia"))
+);
 // Token Cookie
 app.use(cookieParser());
 app.use((err, req, res, next) => {
@@ -105,12 +113,9 @@ app.use((err, req, res, next) => {
 // Parse request
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// app.use("/", chatRoutes);
-// app.use("/", searchRoutes);
 
 //Test route
-app.use("/", chatRoute);
-// app.use("/", testRoute);
+app.use("/", chatRoutes);
 
 app.use(
     express.static(path.join(__dirname, "build"), {
@@ -127,11 +132,17 @@ app.use(
 viewEngine(app);
 initWebRoutes(app);
 app.use("/", productRoutes);
+app.use("/", productCategoryRoutes);
 app.use("/", orderRoutes);
-app.use("/", spaRoutes);
+app.use("/", serviceRoutes);
+app.use("/", serviceCategoryRoutes);
 app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
-
+app.use("/", bookingRoutes);
+app.use("/", petRoutes);
+// app.use("/", chatRoutes);
+app.use("/", voucherRoutes);
+app.use("/", rbacRoutes);
 // Connect DB
 connectDB();
 

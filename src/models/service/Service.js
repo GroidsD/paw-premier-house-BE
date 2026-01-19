@@ -18,13 +18,7 @@ module.exports = (sequelize, DataTypes) => {
                 as: "bookingItems",
             });
 
-            // Dịch vụ có thể có nhiều bản dịch (vi/en)
-            Service.hasMany(models.ServiceTranslate, {
-                foreignKey: "service_id",
-                as: "translates",
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
-            });
+            // Media đa hình
             Service.hasMany(models.Media, {
                 foreignKey: "entity_id",
                 constraints: false,
@@ -40,8 +34,8 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
-                allowNull: false,
             },
+
             serviceCategories_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
@@ -52,23 +46,45 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
+            /* ===== Thông tin dịch vụ ===== */
+            name: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+
+            description: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+
             price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
             },
+            duration: {
+                type: DataTypes.INTEGER, // phút
+                allowNull: false,
+                defaultValue: 60,
+                comment: "Duration in minutes",
+            },
+
             isActive: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,
             },
+
             isDeleted: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: false,
             },
+
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
             },
+
             updated_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
@@ -84,14 +100,6 @@ module.exports = (sequelize, DataTypes) => {
             updatedAt: "updated_at",
         }
     );
-    Service.afterDestroy(async (service, options) => {
-        await sequelize.models.Media.destroy({
-            where: {
-                entity_type: "service",
-                entity_id: service.service_id,
-            },
-        });
-    });
 
     return Service;
 };

@@ -1,45 +1,46 @@
 // src/routes/productRoutes.js
 import express from "express";
-import productController from "../controllers/productController";
-import authMiddleware from "../middleware/authMiddleware";
-import adminMiddleware from "../middleware/adminMiddleware";
-import roleMiddleware from "../middleware/roleMiddleware";
+import productController from "../controllers/productController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import roleMiddleware from "../middleware/roleMiddleware.js";
 
-let router = express.Router();
+const router = express.Router();
 
-// CREATE
+// CREATE - Tạo sản phẩm mới
 router.post(
-  "/api/create-new-product",
-  // authMiddleware,
-  productController.createProduct
+    "/api/products/create",
+    authMiddleware,
+    productController.createProduct
 );
 
-// READ ALL
-router.get(
-  "/api/get-all-products",
-  //   authMiddleware,
-  productController.getAllProducts
+// READ ALL - Lấy tất cả sản phẩm
+router.get("/api/products/get-all", productController.getAllProducts);
+
+// READ ONE - Lấy sản phẩm theo ID
+router.get("/api/products/get-by-id", productController.getProductById);
+
+// UPDATE - Cập nhật sản phẩm
+router.put(
+    "/api/products/update",
+    authMiddleware,
+    roleMiddleware(["admin", "staff"]),
+    productController.updateProduct
 );
 
-// READ ONE
-router.get(
-  "/api/get-product-by-id",
-  // authMiddleware,
-  productController.getProductById
+// SOFT DELETE - đổi status thành deleted
+router.delete(
+    "/api/products/soft-delete",
+    authMiddleware,
+    roleMiddleware(["admin"]),
+    productController.softDeleteProduct
 );
 
-// UPDATE
-router.get(
-  "/api/update-product",
-  // authMiddleware,
-  productController.updateProduct
-);
-
-// DELETE
-router.get(
-  "/api/delete-product",
-  adminMiddleware,
-  productController.deleteProduct
+// HARD DELETE - xóa hoàn toàn sản phẩm
+router.delete(
+    "/api/products/hard-delete",
+    authMiddleware,
+    roleMiddleware(["admin"]),
+    productController.hardDeleteProduct
 );
 
 export default router;
