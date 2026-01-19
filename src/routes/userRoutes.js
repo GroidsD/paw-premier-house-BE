@@ -12,58 +12,58 @@ const { auditUpload } = require("../middleware/uploadExcel.js");
 let router = express.Router();
 
 let initWebRoutes = (app) => {
-    router.post("/api/login", userController.login);
-    router.post("/api/auth/firebase-login", userController.firebaseLogin);
-    router.post("/api/logout", userController.logout);
+  router.post("/api/login", userController.login);
+  router.post("/api/auth/firebase-login", userController.firebaseLogin);
+  router.post("/api/logout", userController.logout);
 
-    router.post(
-        "/api/change-password",
-        authMiddleware,
-        userController.changeMyPassword
-    );
-    router.post(
-        "/api/reset-password",
-        authMiddleware,
-        adminMiddleware,
-        userController.resetUserPassword
-    );
+  router.post(
+    "/api/change-password",
+    authMiddleware,
+    userController.changeMyPassword,
+  );
+  router.post(
+    "/api/reset-password",
+    authMiddleware,
+    adminMiddleware,
+    userController.resetUserPassword,
+  );
 
-    router.get("/api/me", authMiddleware, userController.getCurrentUser);
-    router.get(
-        "/api/get-users-role",
-        authMiddleware,
-        rbacMiddleware,
-        userController.getUsersByRole
-    );
-    router.get(
-        "/api/get-all-users",
-        authMiddleware,
-        // adminMiddleware,
-        permissionMiddleware(["dashboard.view"]),
-        userController.getAllUsers
-    );
+  router.get("/api/me", authMiddleware, userController.getCurrentUser);
+  router.get(
+    "/api/get-users-role",
+    authMiddleware,
+    rbacMiddleware,
+    userController.getUsersByRole,
+  );
+  router.get(
+    "/api/get-all-users",
+    authMiddleware,
+    // adminMiddleware,
+    // permissionMiddleware(["dashboard.view"]),
+    userController.getAllUsers,
+  );
 
-    router.post(
-        "/api/update-user",
-        authMiddleware,
-        userSingleUpload,
-        userController.updateUser
-    );
-    router.post("/api/register", userController.registerUser);
-    router.get(
-        "/api/delete-user",
-        authMiddleware,
-        adminMiddleware,
-        userController.deleteUserById
-    );
-    router.post(
-        "/api/create-user",
-        authMiddleware,
-        roleMiddleware(["admin", "manager"]),
-        userController.createUserByAdminOrManager
-    );
+  router.post(
+    "/api/update-user",
+    authMiddleware,
+    userSingleUpload,
+    userController.updateUser,
+  );
+  router.post("/api/register", userController.registerUser);
+  router.delete(
+    "/api/delete-user/:id",
+    authMiddleware,
+    adminMiddleware,
+    userController.deleteUserById,
+  );
+  router.post(
+    "/api/create-user",
+    authMiddleware,
+    roleMiddleware(["admin", "manager"]),
+    userController.createUserByAdminOrManager,
+  );
 
-    return app.use("/", router);
+  return app.use("/", router);
 };
 
 module.exports = initWebRoutes;
