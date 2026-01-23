@@ -3,6 +3,7 @@ import db from "../models/index.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import admin from "../config/firebaseAdmin.js";
+import { log } from "console";
 const fs = require("fs");
 const path = require("path");
 dotenv.config();
@@ -204,33 +205,60 @@ let registerUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.email || !data.password || !data.fullname) {
-                return reject("Missing required fields");
+                return resolve({
+                    errCode: 1,
+                    errMessage: "Missing required fields",
+                });
             }
 
+            // 1. Check email tồn tại
             const existing = await db.User.findOne({
                 where: { email: data.email },
             });
-            if (existing)
+            if (existing) {
                 return resolve({
-                    errCode: 1,
+                    errCode: 2,
                     errMessage: "Email already exists",
                 });
+            }
 
+            // 2. Hash password
             const hashed = await hashPassword(data.password);
+
+            // 3. Tạo user
             const newUser = await db.User.create({
                 email: data.email,
                 password: hashed,
                 fullname: data.fullname,
                 phone: data.phone || "",
                 address: data.address || "",
-                role: "customer",
                 status: data.status || "active",
+            });
+
+            // 4. Lấy role mặc định (customer)
+            const defaultRole = await db.Role.findOne({
+                where: { name: "customer" },
+            });
+
+            if (!defaultRole) {
+                return resolve({
+                    errCode: 3,
+                    errMessage: "Default role not found",
+                });
+            }
+            console.log(newUser.user_id);
+            console.log(defaultRole);
+
+            // 5. Gán role cho user
+            await db.UserRole.create({
+                user_id: newUser.user_id,
+                role_id: defaultRole.id,
             });
 
             resolve({
                 errCode: 0,
                 errMessage: "User created successfully",
-                newUser,
+                userId: newUser,
             });
         } catch (e) {
             reject(e);
@@ -238,40 +266,89 @@ let registerUser = (data) => {
     });
 };
 
+//
 let updateUser = (user_id, data) => {
     return new Promise(async (resolve, reject) => {
+        const transaction = await db.sequelize.transaction();
         try {
-            const user = await db.User.findByPk(user_id);
-            if (!user)
-                return resolve({ errCode: 1, errMessage: "User not found" });
+            const user = await db.User.findByPk(user_id, { transaction });
 
-            // 🧹 Nếu có ảnh mới & user có ảnh cũ → xóa ảnh cũ
+            if (!user) {
+                await transaction.rollback();
+                return resolve({
+                    errCode: 1,
+                    errMessage: "User not found",
+                });
+            }
+
+            /* ================= IMAGE ================= */
             if (data.img && user.img && user.img !== data.img) {
                 const oldFileName = path.basename(user.img);
                 const oldImagePath = path.join(
                     __dirname,
                     "../public/uploadImageUsers",
-                    oldFileName
+                    oldFileName,
+                );
+
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+
+            /* ================= UPDATE USER INFO ================= */
+            await user.update(
+                {
+                    fullname: data.fullname ?? user.fullname,
+                    email: data.email ?? user.email,
+                    phone: data.phone ?? user.phone,
+                    address: data.address ?? user.address,
+                    gender: data.gender ?? user.gender,
+                    status: data.status ?? user.status,
+                    img: data.img ?? user.img,
+                },
+                { transaction },
+            );
+
+            /* ================= UPDATE ROLE (RBAC) ================= */
+            if (data.role) {
+                // 1. check role tồn tại
+                const role = await db.Role.findOne({
+                    where: { name: data.role },
+                    transaction,
+                });
+
+                if (!role) {
+                    await transaction.rollback();
+                    return resolve({
+                        errCode: 2,
+                        errMessage: "Invalid role",
+                    });
+                }
+
+                // 2. xóa role cũ
+                await db.UserRole.destroy({
+                    where: { user_id },
+                    transaction,
+                });
+
+                // 3. gán role mới
+                await db.UserRole.create(
+                    {
+                        user_id,
+                        role_id: role.id,
+                    },
+                    { transaction },
                 );
             }
 
-            await user.update({
-                fullname: data.fullname || user.fullname,
-                email: data.email || user.email,
-                phone: data.phone || user.phone,
-                address: data.address || user.address,
-                gender: data.gender || user.gender,
-                role: data.role || user.role,
-                status: data.status || user.status,
-                img: data.img || user.img,
-            });
+            await transaction.commit();
 
             resolve({
                 errCode: 0,
                 errMessage: "User updated successfully",
-                img: data.img,
             });
         } catch (e) {
+            await transaction.rollback();
             reject(e);
         }
     });
@@ -393,7 +470,7 @@ let login = (email, password) => {
 
             const isMatch = await bcrypt.compare(
                 password,
-                userWithPassword.password
+                userWithPassword.password,
             );
 
             if (!isMatch) {
@@ -430,7 +507,7 @@ let login = (email, password) => {
                     permissions: finalPermissions,
                 },
                 process.env.JWT_SECRET,
-                { expiresIn: "1d" }
+                { expiresIn: "1d" },
             );
 
             const plain = user.toJSON();
@@ -604,7 +681,7 @@ let firebaseLogin = async (idToken) => {
                 role: user.role,
             },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+            { expiresIn: "7d" },
         );
 
         const { password, ...userData } = user.dataValues;
@@ -621,9 +698,12 @@ let firebaseLogin = async (idToken) => {
     }
 };
 
-let createUserByAdminOrManager = (creatorRole, data) => {
+let createUserByAdminOrManager = (permission, data) => {
     return new Promise(async (resolve, reject) => {
         try {
+            console.log(permission);
+            console.log(data);
+
             if (!data.email || !data.password || !data.fullname) {
                 return resolve({
                     errCode: 1,
@@ -631,8 +711,9 @@ let createUserByAdminOrManager = (creatorRole, data) => {
                 });
             }
 
+            // check permission
             //  Không phải admin hoặc manager
-            if (!["admin", "manager"].includes(creatorRole)) {
+            if (!permission.includes("user:create")) {
                 return resolve({
                     errCode: 2,
                     errMessage: "Permission denied",
@@ -643,24 +724,6 @@ let createUserByAdminOrManager = (creatorRole, data) => {
             //  Auto-assign role theo quyền creator
             // -------------------------------------
             let assignedRole = data.role;
-
-            if (creatorRole === "manager") {
-                assignedRole = "staff"; // manager luôn tạo staff
-            }
-
-            if (creatorRole === "admin") {
-                // Admin tự chọn role, nhưng vẫn check hợp lệ
-                if (
-                    !["admin", "manager", "staff", "customer"].includes(
-                        assignedRole
-                    )
-                ) {
-                    return resolve({
-                        errCode: 3,
-                        errMessage: "Invalid role",
-                    });
-                }
-            }
 
             // ---------------------------------
             // Kiểm tra email tồn tại
@@ -684,8 +747,26 @@ let createUserByAdminOrManager = (creatorRole, data) => {
                 fullname: data.fullname,
                 phone: data.phone || "",
                 address: data.address || "",
-                role: assignedRole, //  role đã được gán ở trên
                 status: "active",
+            });
+
+            // -----------------------------
+            // Gán RBAC role
+            // -----------------------------
+            const role = await db.Role.findOne({
+                where: { name: assignedRole },
+            });
+
+            if (!role) {
+                return resolve({
+                    errCode: 5,
+                    errMessage: "Role not found in system",
+                });
+            }
+
+            await db.UserRole.create({
+                user_id: newUser.user_id,
+                role_id: role.id,
             });
 
             resolve({

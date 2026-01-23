@@ -5,12 +5,15 @@ const permissionMiddleware = (requiredPermissions = []) => {
         }
 
         const hasPermission = requiredPermissions.every((p) =>
-            req.user.permissions.includes(p)
+            req.user.permissions.includes(p),
         );
 
         if (!hasPermission) {
             return res.status(403).json({ message: "Permission denied" });
         }
+        // console.log("PERMISSION middleware");
+        // console.log("Required:", requiredPermissions);
+        // console.log("User has:", req.user.permissions);
 
         next();
     };

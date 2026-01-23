@@ -133,7 +133,7 @@ let changeMyPassword = async (req, res) => {
         const result = await userService.changeMyPassword(
             req.user.user_id,
             oldPassword,
-            newPassword
+            newPassword,
         );
         return res.status(200).json(result);
     } catch (e) {
@@ -168,10 +168,12 @@ let createUserByAdminOrManager = async (req, res) => {
     try {
         const creator = req.user; // token chứa role
         const data = req.body;
+        // console.log(creator);
+        // console.log(data);
 
         const result = await userService.createUserByAdminOrManager(
-            creator.role,
-            data
+            creator.permissions,
+            data,
         );
 
         return res.status(200).json(result);

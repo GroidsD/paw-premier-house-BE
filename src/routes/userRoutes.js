@@ -19,13 +19,13 @@ let initWebRoutes = (app) => {
     router.post(
         "/api/change-password",
         authMiddleware,
-        userController.changeMyPassword
+        userController.changeMyPassword,
     );
     router.post(
         "/api/reset-password",
         authMiddleware,
         adminMiddleware,
-        userController.resetUserPassword
+        userController.resetUserPassword,
     );
 
     router.get("/api/me", authMiddleware, userController.getCurrentUser);
@@ -33,34 +33,53 @@ let initWebRoutes = (app) => {
         "/api/get-users-role",
         authMiddleware,
         rbacMiddleware,
-        userController.getUsersByRole
+        userController.getUsersByRole,
     );
     router.get(
         "/api/get-all-users",
         authMiddleware,
         // adminMiddleware,
+        rbacMiddleware,
         permissionMiddleware(["dashboard.view"]),
-        userController.getAllUsers
+        userController.getAllUsers,
     );
+    // const trace = (label) => (req, res, next) => {
+    //     console.log(`➡️ ${label}`);
+    //     next();
+    // };
+
+    // router.get(
+    //     "/api/get-all-users",
+    //     trace("ROUTE ENTER"),
+    //     authMiddleware,
+    //     trace("AFTER AUTH"),
+    //     rbacMiddleware,
+    //     trace("AFTER RBAC"),
+    //     permissionMiddleware(["dashboard.view"]),
+    //     trace("AFTER PERMISSION"),
+    //     userController.getAllUsers,
+    // );
 
     router.post(
         "/api/update-user",
         authMiddleware,
         userSingleUpload,
-        userController.updateUser
+        userController.updateUser,
     );
     router.post("/api/register", userController.registerUser);
     router.get(
         "/api/delete-user",
         authMiddleware,
         adminMiddleware,
-        userController.deleteUserById
+        userController.deleteUserById,
     );
     router.post(
         "/api/create-user",
         authMiddleware,
-        roleMiddleware(["admin", "manager"]),
-        userController.createUserByAdminOrManager
+        // roleMiddleware(["admin", "manager"]),
+        // rbacMiddleware,
+        // permissionMiddleware(["user:create"]),
+        userController.createUserByAdminOrManager,
     );
 
     return app.use("/", router);
