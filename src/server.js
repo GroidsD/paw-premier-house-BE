@@ -20,6 +20,7 @@ import shiftRoutes from "./routes/shiftRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
 import rbacRoutes from "./routes/rbacRoutes.js";
+import { initRedis } from "./config/redis.js";
 
 require("dotenv").config();
 const multer = require("multer");
@@ -127,6 +128,11 @@ app.use(
         },
     })
 );
+
+// Connect Redis khi Node.js start
+// initRedis()
+//     .then(() => console.log("Redis connected successfully"))
+//     .catch((err) => console.error("Redis connect failed:", err));
 
 // View engine & routes
 viewEngine(app);

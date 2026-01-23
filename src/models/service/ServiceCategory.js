@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
             type: {
-                type: DataTypes.ENUM("spa", "hotel", "training", "grooming"),
+                type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: "spa",
                 comment: "Loại dịch vụ: spa, hotel, training, grooming, ...",
@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return ServiceCategory;
