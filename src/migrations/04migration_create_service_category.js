@@ -12,7 +12,7 @@ module.exports = {
             },
 
             type: {
-                type: Sequelize.ENUM("spa", "hotel", "training", "grooming"),
+                type: Sequelize.STRING,
                 allowNull: false,
                 defaultValue: "spa",
                 comment: "Loại dịch vụ: spa, hotel, training, grooming, ...",
@@ -38,7 +38,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });
@@ -47,7 +47,7 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("serviceCategories");
         await queryInterface.sequelize.query(
-            "DROP TYPE IF EXISTS enum_serviceCategories_type;"
+            "DROP TYPE IF EXISTS enum_serviceCategories_type;",
         );
     },
 };
