@@ -133,7 +133,7 @@ const getServicesByCategory = async (category_id) => {
       where: {
         serviceCategories_id: category_id,
         isDeleted: false,
-        isActive: true,
+        // isActive: true,
       },
       include: [
         {
@@ -180,6 +180,8 @@ const updateService = async (id, data) => {
         duration: data.duration ?? service.duration,
         serviceCategories_id:
           data.serviceCategories_id ?? service.serviceCategories_id,
+        isActive:
+          data.isActive !== undefined ? data.isActive : service.isActive,
       },
       { transaction: t },
     );
