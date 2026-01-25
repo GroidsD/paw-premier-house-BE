@@ -56,6 +56,12 @@ let initWebRoutes = (app) => {
     adminMiddleware,
     userController.deleteUserById,
   );
+  router.delete(
+    "/api/delete-user/hard/:id",
+    authMiddleware,
+    adminMiddleware,
+    userController.hardDeleteUserById,
+  );
   router.post(
     "/api/create-user",
     authMiddleware,
