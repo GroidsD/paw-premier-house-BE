@@ -261,7 +261,7 @@ let updateUser = (user_id, data) => {
         address: data.address || user.address,
         gender: data.gender || user.gender,
         role: data.role || user.role,
-        isActive: data.isActive || user.isActive,
+        isActive: data.isActive !== undefined ? data.isActive : user.isActive,
         img: data.img || user.img,
       });
 
@@ -296,6 +296,37 @@ let deleteUserById = async (user_id) => {
     };
   } catch (e) {
     console.error("SERVICE DELETE ERROR:", e);
+    throw e;
+  }
+};
+
+let hardDeleteUserById = async (user_id) => {
+  try {
+    const user = await db.User.findByPk(user_id);
+    if (!user) {
+      return { errCode: 1, errMessage: "User not found" };
+    }
+
+    if (
+      user.auth_provider === "firebase" ||
+      user.auth_provider === "Firebase"
+    ) {
+      try {
+        await admin.auth().deleteUser(user_id);
+        console.log("Firebase user deleted:", user_id);
+      } catch (firebaseError) {
+        console.error("Error deleting Firebase user:", firebaseError);
+      }
+    }
+
+    await user.destroy();
+
+    return {
+      errCode: 0,
+      errMessage: "User permanently deleted successfully",
+    };
+  } catch (e) {
+    console.error("SERVICE HARD DELETE ERROR:", e);
     throw e;
   }
 };
@@ -729,6 +760,7 @@ export default {
   registerUser,
   updateUser,
   deleteUserById,
+  hardDeleteUserById,
   login,
   getUsersByRole,
   resetPassword,

@@ -68,6 +68,17 @@ let deleteUserById = async (req, res) => {
   }
 };
 
+let hardDeleteUserById = async (req, res) => {
+  try {
+    const user_id = req.params.id;
+    const result = await userService.hardDeleteUserById(user_id);
+    return res.status(200).json(result);
+  } catch (e) {
+    console.error("Error in hardDeleteUserById:", e);
+    return res.status(500).json({ error: e.message || "Server error" });
+  }
+};
+
 let login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -185,6 +196,7 @@ export default {
   registerUser,
   updateUser,
   deleteUserById,
+  hardDeleteUserById,
   login,
   logout,
   getUsersByRole,
