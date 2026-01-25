@@ -587,22 +587,37 @@ let firebaseLogin = async (idToken) => {
     // ✅ Tìm user theo user_id = firebase uid
     let user = await db.User.findByPk(firebaseUser.uid);
 
+    if (!user && firebaseUser.email) {
+      user = await db.User.findOne({
+        where: { email: firebaseUser.email },
+      });
+
+      if (user) {
+        await user.update({
+          user_id: firebaseUser.uid,
+          auth_provider: "firebase",
+        });
+      }
+    }
+
     // ✅ Nếu chưa có → tạo mới
     if (!user) {
       user = await db.User.create({
-        user_id: firebaseUser.uid, // 🔥 QUAN TRỌNG
+        user_id: firebaseUser.uid,
         email: firebaseUser.email,
         fullname: firebaseUser.fullname,
         avatar: firebaseUser.avatar,
         role: "customer",
+        status: "active",
         isActive: true,
+        auth_provider: "firebase",
       });
     }
 
     // ✅ Tạo JWT
     const token = jwt.sign(
       {
-        user_id: user.user_id, // = firebase uid
+        user_id: user.user_id,
         email: user.email,
         role: user.role,
       },
@@ -677,20 +692,30 @@ let createUserByAdminOrManager = (creatorRole, data) => {
 
       const hashed = await hashPassword(data.password);
 
-      const newUser = await db.User.create({
+      const userData = {
         email: data.email,
         password: hashed,
         fullname: data.fullname,
         phone: data.phone || "",
         address: data.address || "",
-        role: assignedRole, //  role đã được gán ở trên
+        role: assignedRole,
         status: "active",
-      });
+        isActive: data.isActive !== undefined ? data.isActive : 1,
+        auth_provider: data.firebaseUid ? "firebase" : "local",
+      };
+
+      if (data.firebaseUid) {
+        userData.user_id = data.firebaseUid;
+      }
+
+      const newUser = await db.User.create(userData);
+
+      const { password: _, ...userWithoutPassword } = newUser.dataValues;
 
       resolve({
         errCode: 0,
         errMessage: "User created successfully",
-        newUser,
+        newUser: userWithoutPassword,
       });
     } catch (e) {
       reject(e);
