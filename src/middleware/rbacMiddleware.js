@@ -124,6 +124,28 @@ const rbacMiddleware = async (req, res, next) => {
         // }
         // req.user.permissions = finalPermissions;
 
+        // console.log("RBAC middleware START");
+        // console.log("User from token:", req.user);
+
+        // console.log(
+        //     "Roles:",
+        //     user.roles.map((r) => r.name),
+        // );
+        // console.log(
+        //     "Role permissions:",
+        //     user.roles.flatMap((r) => r.permissions.map((p) => p.action)),
+        // );
+
+        // console.log(
+        //     "User overrides:",
+        //     overrides.map((o) => ({
+        //         action: o.Permission.action,
+        //         allowed: o.allowed,
+        //     })),
+        // );
+
+        // console.log("FINAL permissions:", req.user.permissions);
+
         next();
     } catch (err) {
         console.error(err);

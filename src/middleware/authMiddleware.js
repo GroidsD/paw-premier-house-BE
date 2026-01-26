@@ -15,6 +15,9 @@ const authMiddleware = (req, res, next) => {
         }
 
         req.user = decoded; // add user in req
+        // console.log("AUTH middleware");
+        // console.log("JWT payload:", req.user);
+
         next();
     } catch (err) {
         if (err.name === "TokenExpiredError") {
