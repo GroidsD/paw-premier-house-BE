@@ -340,6 +340,7 @@ let updateUser = (user_id, data) => {
                     { transaction },
                 );
             }
+            // console.log(roleName, "ssss");
 
             await transaction.commit();
 
@@ -549,13 +550,14 @@ let login = (email, password) => {
 let getUsersByRole = async (roleName) => {
     try {
         if (!roleName) throw "Missing role parameter";
+        // console.log(roleName, "ssss");
 
         const users = await db.User.findAll({
             include: [
                 {
                     model: db.Role,
                     as: "roles",
-                    where: { name: "admin" }, // lọc theo role
+                    where: { name: roleName }, // lọc theo role
                     attributes: ["id", "name"],
                     through: { attributes: [] }, // bỏ bảng trung gian UserRole
                     include: [
