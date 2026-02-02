@@ -38,10 +38,9 @@ let getAllCategories = async (req, res) => {
 // READ ONE
 let getCategoryById = async (req, res) => {
     try {
-        const { category_id } = req.query;
-        const category = await ProductCategoryService.getCategoryById(
-            category_id
-        );
+        const { productCategories_id } = req.query;
+        const category =
+            await ProductCategoryService.getCategoryById(productCategories_id);
 
         if (!category) {
             return res.status(404).json({
@@ -66,10 +65,10 @@ let getCategoryById = async (req, res) => {
 // UPDATE
 let updateCategory = async (req, res) => {
     try {
-        const { category_id } = req.query;
+        const { productCategories_id } = req.query;
         const result = await ProductCategoryService.updateCategory(
-            category_id,
-            req.body
+            productCategories_id,
+            req.body,
         );
 
         return res.status(200).json(result);
@@ -86,9 +85,8 @@ let updateCategory = async (req, res) => {
 let softDeleteCategory = async (req, res) => {
     try {
         const { category_id } = req.query;
-        const result = await ProductCategoryService.softDeleteCategory(
-            category_id
-        );
+        const result =
+            await ProductCategoryService.softDeleteCategory(category_id);
 
         return res.status(200).json(result);
     } catch (e) {
@@ -103,8 +101,8 @@ let softDeleteCategory = async (req, res) => {
 // HARD DELETE
 let hardDeleteCategory = async (req, res) => {
     try {
-        const { category_id } = req.query;
-        await ProductCategoryService.hardDeleteCategory(category_id);
+        const { productCategories_id } = req.query;
+        await ProductCategoryService.hardDeleteCategory(productCategories_id);
 
         return res.status(200).json({
             errCode: 0,

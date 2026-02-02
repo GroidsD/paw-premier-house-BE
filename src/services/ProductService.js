@@ -1,8 +1,7 @@
 import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
-import mediaService from "./MediaService.js"; // import MediaService
+import mediaService from "./MediaService.js";
 
-// 🟢 Tạo product mới
 let createProduct = async (data) => {
     try {
         let {
@@ -14,25 +13,18 @@ let createProduct = async (data) => {
             discount_type = "percent",
             quantity = 0,
             media = [],
-            tags = [], // 👈 thêm tag từ FE
+            tags = [],
         } = data;
 
-        /* =======================
-           1️⃣ Tạo slug cho product
-        ======================= */
         let baseSlug = generateSlug(name);
         let slug = baseSlug;
         let count = 1;
 
-        // tránh trùng slug
         while (await db.Product.findOne({ where: { slug } })) {
             slug = `${baseSlug}-${count}`;
             count++;
         }
 
-        /* =======================
-           2️⃣ Tạo product
-        ======================= */
         let product = await db.Product.create({
             productCategories_id,
             name,
@@ -44,18 +36,12 @@ let createProduct = async (data) => {
             quantity,
         });
 
-        /* =======================
-           3️⃣ Tạo media
-        ======================= */
         await mediaService.createMediaForEntity(
             media,
             product.product_id,
-            "product"
+            "product",
         );
 
-        /* =======================
-           4️⃣ Xử lý tag
-        ======================= */
         for (const tagName of tags) {
             let tagSlug = generateSlug(tagName);
 
@@ -91,7 +77,7 @@ let createProduct = async (data) => {
                         through: { attributes: [] },
                     },
                 ],
-            }
+            },
         );
 
         return {
@@ -112,7 +98,7 @@ let getAllProducts = () => {
                     "product_id",
                     "productCategories_id",
                     "name",
-                    "slug", // 👈 thêm slug
+                    "slug",
                     "price",
                     "quantity",
                     "isActive",
@@ -244,24 +230,24 @@ let updateProduct = async (product_id, data) => {
 
         // ✅ Update product
         await product.update({
-            productCategories_id,
-            name,
-            description,
+            productCategories_id:
+                productCategories_id ?? product.productCategories_id,
+            name: name ?? product.name,
+            description: description ?? product.description,
             original_price: basePrice,
-            discount,
-            discount_type,
+            discount: newDiscount,
+            discount_type: newDiscountType,
             price: finalPrice,
-            quantity,
-            isActive,
-            isDelete,
+            quantity: quantity ?? product.quantity,
+            isActive: isActive ?? product.isActive,
+            isDelete: isDelete ?? product.isDelete,
         });
 
-        // ✅ Update media
         if (Array.isArray(media)) {
             await mediaService.updateMediaForEntity(
                 media,
                 product.product_id,
-                "product"
+                "product",
             );
         }
 
@@ -296,8 +282,8 @@ let deleteProduct = async (id) => {
 };
 
 // 🟢 Xóa mềm
-let softDeleteProduct = async (id) => {
-    let product = await db.Product.findByPk(id);
+let softDeleteProduct = async (product_id) => {
+    let product = await db.Product.findByPk(product_id);
     if (!product) throw "Product not found";
 
     await product.update({ isActive: false, isDelete: true });
@@ -305,12 +291,11 @@ let softDeleteProduct = async (id) => {
 };
 
 // 🟢 Xóa cứng
-let hardDeleteProduct = async (id) => {
-    let product = await db.Product.findByPk(id);
+let hardDeleteProduct = async (product_id) => {
+    let product = await db.Product.findByPk(product_id);
     if (!product) throw "Product not found";
 
-    await db.Product.destroy({ where: { product_id: id } });
-    await mediaService.deleteMediaByEntity("product", id);
+    await mediaService.deleteMediaByEntity("product", product_id);
     await product.destroy();
 
     return "Product hard deleted successfully";

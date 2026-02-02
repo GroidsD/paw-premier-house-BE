@@ -21,13 +21,13 @@ let getAllCategories = async () => {
 };
 
 // READ ONE
-let getCategoryById = async (category_id) => {
-    return await db.ProductCategory.findByPk(category_id);
+let getCategoryById = async (productCategories_id) => {
+    return await db.ProductCategory.findByPk(productCategories_id);
 };
 
 // UPDATE
-let updateCategory = async (category_id, data) => {
-    const category = await db.ProductCategory.findByPk(category_id);
+let updateCategory = async (productCategories_id, data) => {
+    const category = await db.ProductCategory.findByPk(productCategories_id);
     if (!category) {
         return {
             errCode: 1,
@@ -48,8 +48,8 @@ let updateCategory = async (category_id, data) => {
 };
 
 // SOFT DELETE
-let softDeleteCategory = async (category_id) => {
-    const category = await db.ProductCategory.findByPk(category_id);
+let softDeleteCategory = async (productCategories_id) => {
+    const category = await db.ProductCategory.findByPk(productCategories_id);
     if (!category) throw "Category not found";
 
     await category.update({
@@ -64,10 +64,9 @@ let softDeleteCategory = async (category_id) => {
 };
 
 // HARD DELETE
-let hardDeleteCategory = async (category_id) => {
-    const category = await db.ProductCategory.findByPk(category_id);
+let hardDeleteCategory = async (productCategories_id) => {
+    const category = await db.ProductCategory.findByPk(productCategories_id);
     if (!category) throw "Category not found";
-
     await category.destroy();
 };
 
