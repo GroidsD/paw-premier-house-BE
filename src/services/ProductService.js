@@ -1,7 +1,7 @@
 import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js";
-
+import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
 let createProduct = async (data) => {
     try {
         let {
@@ -16,7 +16,7 @@ let createProduct = async (data) => {
             tags = [],
         } = data;
 
-        let baseSlug = generateSlug(name);
+        let baseSlug = generateSlug(data.slug || name);
         let slug = baseSlug;
         let count = 1;
 
@@ -62,10 +62,6 @@ let createProduct = async (data) => {
                 },
             });
         }
-
-        /* =======================
-           5️⃣ Lấy lại product đầy đủ
-        ======================= */
         let productWithRelations = await db.Product.findByPk(
             product.product_id,
             {
@@ -99,7 +95,9 @@ let getAllProducts = () => {
                     "productCategories_id",
                     "name",
                     "slug",
+                    "description",
                     "price",
+                    "original_price",
                     "quantity",
                     "isActive",
                 ],
@@ -186,8 +184,7 @@ let getProductById = (product_id) => {
     });
 };
 
-// 🟢 Cập nhật product
-let updateProduct = async (product_id, data) => {
+let updateProduct = async (product_id, data, files) => {
     try {
         let {
             productCategories_id,
@@ -199,10 +196,28 @@ let updateProduct = async (product_id, data) => {
             quantity,
             isActive,
             isDelete,
-            media,
+
+            removedMediaIds = [],
+            replaceAllImages = false,
+            mainIndex = 0, // main index trong files mới
+            mainOldId = null, // nếu chọn main là ảnh cũ (media_id)
         } = data;
 
-        let product = await db.Product.findByPk(product_id);
+        // ✅ normalize removedMediaIds -> number[]
+        if (typeof removedMediaIds === "string") {
+            try {
+                removedMediaIds = JSON.parse(removedMediaIds);
+            } catch {}
+        }
+        if (Array.isArray(removedMediaIds)) {
+            removedMediaIds = removedMediaIds
+                .map((x) => Number(x))
+                .filter((x) => Number.isFinite(x));
+        } else {
+            removedMediaIds = [];
+        }
+
+        const product = await db.Product.findByPk(product_id);
         if (!product) {
             return {
                 errCode: 1,
@@ -211,24 +226,30 @@ let updateProduct = async (product_id, data) => {
             };
         }
 
-        // ⚠️ fallback giá cũ nếu không gửi
-        let basePrice =
+        // ===== PRICE CALC =====
+        const basePrice =
             original_price !== undefined
-                ? original_price
-                : product.original_price;
+                ? Number(original_price)
+                : Number(product.original_price);
+
+        const newDiscount =
+            discount !== undefined
+                ? Number(discount)
+                : Number(product.discount);
+
+        const newDiscountType =
+            discount_type !== undefined ? discount_type : product.discount_type;
 
         let finalPrice = basePrice;
-
-        if (discount > 0) {
+        if (Number(newDiscount) > 0) {
             finalPrice =
-                discount_type === "percent"
-                    ? basePrice - (basePrice * discount) / 100
-                    : basePrice - discount;
+                newDiscountType === "percent"
+                    ? basePrice - (basePrice * newDiscount) / 100
+                    : basePrice - newDiscount;
         }
-
         finalPrice = finalPrice < 0 ? 0 : finalPrice;
 
-        // ✅ Update product
+        // ===== UPDATE PRODUCT INFO =====
         await product.update({
             productCategories_id:
                 productCategories_id ?? product.productCategories_id,
@@ -243,16 +264,133 @@ let updateProduct = async (product_id, data) => {
             isDelete: isDelete ?? product.isDelete,
         });
 
-        if (Array.isArray(media)) {
-            await mediaService.updateMediaForEntity(
-                media,
-                product.product_id,
-                "product",
+        // ===== MEDIA UPDATE =====
+        // helper: set main cho 1 media_id cụ thể
+        const setMainById = async (media_id) => {
+            await db.Media.update(
+                { is_main: false },
+                {
+                    where: {
+                        entity_type: "product",
+                        entity_id: String(product_id),
+                    },
+                },
             );
+            await db.Media.update(
+                { is_main: true },
+                {
+                    where: {
+                        media_id: Number(media_id),
+                        entity_type: "product",
+                        entity_id: String(product_id),
+                    },
+                },
+            );
+        };
+
+        // 1) replaceAllImages => xóa hết media cũ (DB + file)
+        if (replaceAllImages) {
+            const oldMedia = await db.Media.findAll({
+                where: {
+                    entity_type: "product",
+                    entity_id: String(product_id),
+                },
+            });
+
+            for (const m of oldMedia) {
+                await safeUnlinkByUrl(m.url);
+            }
+
+            await db.Media.destroy({
+                where: {
+                    entity_type: "product",
+                    entity_id: String(product_id),
+                },
+                force: true, // ✅ đúng chỗ
+            });
         }
 
-        let updatedProduct = await db.Product.findByPk(product.product_id, {
-            include: [{ model: db.Media, as: "media" }],
+        // 2) xóa 1 phần theo removedMediaIds (DB + file)
+        if (!replaceAllImages && removedMediaIds.length > 0) {
+            const removeList = await db.Media.findAll({
+                where: {
+                    media_id: removedMediaIds,
+                    entity_type: "product",
+                    entity_id: String(product_id),
+                },
+            });
+
+            for (const m of removeList) {
+                await safeUnlinkByUrl(m.url);
+            }
+
+            await db.Media.destroy({
+                where: {
+                    media_id: removedMediaIds,
+                    entity_type: "product",
+                    entity_id: String(product_id),
+                },
+                force: true, // ✅ đúng chỗ
+            });
+
+            // nếu mainOldId nằm trong removedMediaIds thì bỏ mainOldId
+            if (mainOldId && removedMediaIds.includes(Number(mainOldId))) {
+                mainOldId = null;
+            }
+        }
+
+        // 3) nếu có files mới => thêm media mới + set main theo mainIndex
+        if (Array.isArray(files) && files.length > 0) {
+            // set hết is_main = false trước
+            await db.Media.update(
+                { is_main: false },
+                {
+                    where: {
+                        entity_type: "product",
+                        entity_id: String(product_id),
+                    },
+                },
+            );
+
+            for (let i = 0; i < files.length; i++) {
+                const f = files[i];
+                const url = `/uploadImageProducts/${f.filename}`;
+                await db.Media.create({
+                    entity_type: "product",
+                    entity_id: String(product_id),
+                    url,
+                    is_main: i === Number(mainIndex),
+                    alt_text: name || product.name,
+                });
+            }
+        } else if (mainOldId) {
+            // 4) không upload file mới nhưng set main là ảnh cũ
+            await setMainById(mainOldId);
+        } else {
+            // 5) không upload + không set mainOldId
+            // nếu sau khi xóa mà không còn main => auto set main = ảnh đầu tiên còn lại
+            const remaining = await db.Media.findAll({
+                where: {
+                    entity_type: "product",
+                    entity_id: String(product_id),
+                },
+                order: [["media_id", "ASC"]],
+            });
+
+            if (remaining.length > 0) {
+                const hasMain = remaining.some((m) => !!m.is_main);
+                if (!hasMain) {
+                    await setMainById(remaining[0].media_id);
+                }
+            }
+        }
+
+        // ===== RETURN =====
+        const updatedProduct = await db.Product.findByPk(product_id, {
+            include: [
+                { model: db.Media, as: "media" },
+                { model: db.ProductCategory, as: "category" },
+            ],
         });
 
         return {
@@ -264,7 +402,7 @@ let updateProduct = async (product_id, data) => {
         return {
             errCode: -1,
             errMessage: "Server error",
-            details: e.toString(),
+            details: e?.message || e.toString(),
         };
     }
 };
@@ -291,14 +429,25 @@ let softDeleteProduct = async (product_id) => {
 };
 
 // 🟢 Xóa cứng
+// 🟢 Xóa cứng (xóa file + media DB + product)
 let hardDeleteProduct = async (product_id) => {
-    let product = await db.Product.findByPk(product_id);
-    if (!product) throw "Product not found";
+    return await db.sequelize.transaction(async (t) => {
+        const product = await db.Product.findByPk(product_id, {
+            transaction: t,
+        });
+        if (!product) throw "Product not found";
 
-    await mediaService.deleteMediaByEntity("product", product_id);
-    await product.destroy();
+        // xóa media (file + DB)
+        await mediaService.deleteMediaByEntity("product", product_id, {
+            transaction: t,
+            force: true,
+        });
 
-    return "Product hard deleted successfully";
+        // cuối cùng xóa product
+        await product.destroy({ force: true, transaction: t });
+
+        return "Product hard deleted successfully";
+    });
 };
 
 export default {

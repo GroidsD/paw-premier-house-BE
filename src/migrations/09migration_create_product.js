@@ -32,6 +32,11 @@ module.exports = {
                 type: Sequelize.TEXT,
                 allowNull: true,
             },
+            slug: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: true,
+            },
 
             /* ===== Giá ===== */
             original_price: {
@@ -91,7 +96,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });
@@ -102,7 +107,7 @@ module.exports = {
 
         // Dọn ENUM (Postgres/MySQL safe)
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_products_discount_type";'
+            'DROP TYPE IF EXISTS "enum_products_discount_type";',
         );
     },
 };
