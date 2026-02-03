@@ -100,6 +100,7 @@ let getAllProducts = () => {
                     "original_price",
                     "quantity",
                     "isActive",
+                    "created_at",
                 ],
                 include: [
                     {
@@ -141,6 +142,7 @@ let getProductById = (product_id) => {
                     "quantity",
                     "isActive",
                     "description",
+                    "created_at",
                 ],
                 include: [
                     {
