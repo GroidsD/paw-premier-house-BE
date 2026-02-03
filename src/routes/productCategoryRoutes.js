@@ -23,6 +23,7 @@ router.post(
 // READ ALL - Lấy tất cả category
 router.get(
     "/api/product-categories/get-all",
+    authMiddleware,
     permissionMiddleware({
         all: ["category:read"],
     }),

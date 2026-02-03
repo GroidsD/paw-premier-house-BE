@@ -28,6 +28,7 @@ router.get("/api/service/get-by-id", serviceController.getServiceById);
 // GET BY CATEGORY
 router.get(
     "/api/service/get-by-category",
+    authMiddleware,
     permissionMiddleware({
         all: ["service:read"],
     }),

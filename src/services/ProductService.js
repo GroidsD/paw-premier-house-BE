@@ -430,24 +430,24 @@ let softDeleteProduct = async (product_id) => {
 
 // 🟢 Xóa cứng
 // 🟢 Xóa cứng (xóa file + media DB + product)
-let hardDeleteProduct = async (product_id) => {
-    return await db.sequelize.transaction(async (t) => {
-        const product = await db.Product.findByPk(product_id, {
-            transaction: t,
-        });
-        if (!product) throw "Product not found";
+let hardDeleteProduct = async (id) => {
+    const product = await db.Product.findByPk(id);
+    if (!product) throw "Product not found";
 
-        // xóa media (file + DB)
-        await mediaService.deleteMediaByEntity("product", product_id, {
-            transaction: t,
-            force: true,
-        });
-
-        // cuối cùng xóa product
-        await product.destroy({ force: true, transaction: t });
-
-        return "Product hard deleted successfully";
+    const mediaList = await db.Media.findAll({
+        where: { entity_type: "product", entity_id: String(id) },
     });
+
+    for (const m of mediaList) await safeUnlinkByUrl(m.url);
+
+    await db.Media.destroy({
+        where: { entity_type: "product", entity_id: String(id) },
+        force: true,
+    });
+
+    await product.destroy({ force: true });
+
+    return "Product deleted successfully";
 };
 
 export default {

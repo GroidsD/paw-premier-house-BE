@@ -9,7 +9,7 @@ check seeder :npx sequelize-cli db:seed:all
  BackEnd:Node.js(Database) Database=> data object-> json object(key , value)
  FontEnd:React.js(interface)
  
-node src/scripts/seedPermissions.js : run insert permission to db
+node src/scripts/seedPermissions.js :chạy insertt role permission vô database 
 
  npm i error :npm i --legacy-peer-deps
 

@@ -18,7 +18,6 @@ const ROLE_DEFINITIONS = [
 
 const permissionMap = {
     // ================== DASHBOARD ==================
-    "dashboard:view": "View Dashboard",
     "dashboard:admin": "Admin Dashboard",
     "dashboard:manager": "Manager Dashboard",
     "dashboard:staff": "Staff Dashboard",
@@ -97,6 +96,13 @@ const permissionMap = {
     "user:update": "Update user",
     "user:delete": "Delete user",
     "user:restore": "Restore deleted user",
+
+    // ================== SERVICE ==================
+    "service:create": "Create service",
+    "service:read": "View services",
+    "service:update": "Update service",
+    "service:delete": "Delete service (soft/hard)",
+    "service:restore": "Restore deleted service",
 };
 
 const actions = Object.keys(permissionMap);
@@ -154,19 +160,16 @@ const seed = async () => {
         await roleMap.admin.setPermissions(
             permissions.filter(
                 (p) =>
-                    // dashboard
                     ["dashboard:view", "dashboard:admin"].includes(p.action) ||
-                    // business
                     p.action.startsWith("booking:") ||
                     p.action.startsWith("order:") ||
                     p.action.startsWith("product:") ||
                     p.action.startsWith("category:") ||
                     p.action.startsWith("voucher:") ||
                     p.action.startsWith("pet:") ||
-                    // staff ops
+                    p.action.startsWith("service:") || // ✅ ADD
                     p.action.startsWith("shift:") ||
                     p.action.startsWith("schedule:") ||
-                    // system
                     p.action.startsWith("rbac:") ||
                     p.action.startsWith("user:"),
             ),
@@ -178,15 +181,14 @@ const seed = async () => {
             permissions.filter(
                 (p) =>
                     // dashboard
-                    ["dashboard:view", "dashboard:manager"].includes(
-                        p.action,
-                    ) ||
+                    ["dashboard:manager"].includes(p.action) ||
                     // business
                     p.action.startsWith("booking:") ||
                     p.action.startsWith("order:") ||
                     p.action.startsWith("product:") ||
                     p.action.startsWith("category:") ||
                     p.action.startsWith("voucher:") ||
+                    p.action.startsWith("service:") ||
                     p.action.startsWith("pet:") ||
                     p.action.startsWith("shift:") ||
                     // schedule (no delete)
@@ -211,7 +213,6 @@ const seed = async () => {
         await roleMap.staff.setPermissions(
             permissions.filter((p) =>
                 [
-                    "dashboard:view",
                     "dashboard:staff",
 
                     "booking:create",
@@ -239,6 +240,9 @@ const seed = async () => {
 
                     "user:read",
                     "user:update",
+
+                    "service:read",
+                    "service:update",
                 ].includes(p.action),
             ),
             { transaction },
