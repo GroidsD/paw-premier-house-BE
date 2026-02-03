@@ -5,6 +5,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
+import { multiUpload } from "./../middleware/uploadImageProducts.js";
 const router = express.Router();
 
 // CREATE - Tạo sản phẩm mới
@@ -15,6 +16,7 @@ router.post(
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["product:create"],
     }),
+    multiUpload,
     productController.createProduct,
 );
 
@@ -32,6 +34,7 @@ router.put(
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["product:update"],
     }),
+    multiUpload,
     productController.updateProduct,
 );
 
