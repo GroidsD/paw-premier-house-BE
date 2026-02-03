@@ -12,83 +12,91 @@ const { auditUpload } = require("../middleware/uploadExcel.js");
 let router = express.Router();
 
 let initWebRoutes = (app) => {
-  router.post("/api/login", userController.login);
-  router.post("/api/auth/firebase-login", userController.firebaseLogin);
-  router.post("/api/logout", userController.logout);
+    router.post("/api/login", userController.login);
+    router.post("/api/auth/firebase-login", userController.firebaseLogin);
+    router.post("/api/logout", userController.logout);
 
-  router.post(
-    "/api/change-password",
-    authMiddleware,
-    userController.changeMyPassword,
-  );
-  router.post(
-    "/api/reset-password",
-    authMiddleware,
-    adminMiddleware,
-    userController.resetUserPassword,
-  );
+    router.post(
+        "/api/change-password",
+        authMiddleware,
+        userController.changeMyPassword,
+    );
+    router.post(
+        "/api/reset-password",
+        authMiddleware,
+        userController.resetUserPassword,
+    );
 
-  router.get("/api/me", authMiddleware, userController.getCurrentUser);
-  router.get(
-    "/api/get-users-role",
-    authMiddleware,
-    rbacMiddleware,
-    userController.getUsersByRole,
-  );
-  router.get(
-    "/api/get-all-users",
-    authMiddleware,
-    // adminMiddleware,
-    rbacMiddleware,
-    // permissionMiddleware(["dashboard.view"]),
-    userController.getAllUsers,
-  );
-  // const trace = (label) => (req, res, next) => {
-  //     console.log(`➡️ ${label}`);
-  //     next();
-  // };
+    router.get("/api/me", authMiddleware, userController.getCurrentUser);
+    router.get(
+        "/api/get-users-role",
+        authMiddleware,
+        permissionMiddleware({
+            all: ["rbac:role:read"],
+        }),
+        userController.getUsersByRole,
+    );
+    router.get(
+        "/api/get-all-users",
+        authMiddleware,
+        permissionMiddleware({
+            any: ["dashboard:admin", "dashboard:manager"],
+            all: ["user:read"],
+        }),
+        userController.getAllUsers,
+    );
+    // const trace = (label) => (req, res, next) => {
+    //     console.log(`➡️ ${label}`);
+    //     next();
+    // };
 
-  // router.get(
-  //     "/api/get-all-users",
-  //     trace("ROUTE ENTER"),
-  //     authMiddleware,
-  //     trace("AFTER AUTH"),
-  //     rbacMiddleware,
-  //     trace("AFTER RBAC"),
-  //     permissionMiddleware(["dashboard.view"]),
-  //     trace("AFTER PERMISSION"),
-  //     userController.getAllUsers,
-  // );
+    // router.get(
+    //     "/api/get-all-users",
+    //     trace("ROUTE ENTER"),
+    //     authMiddleware,
+    //     trace("AFTER AUTH"),
+    //     rbacMiddleware,
+    //     trace("AFTER RBAC"),
+    //     permissionMiddleware(["dashboard.view"]),
+    //     trace("AFTER PERMISSION"),
+    //     userController.getAllUsers,
+    // );
 
-  router.post(
-    "/api/update-user",
-    authMiddleware,
-    userSingleUpload,
-    userController.updateUser,
-  );
-  router.post("/api/register", userController.registerUser);
-  router.delete(
-    "/api/delete-user/:id",
-    authMiddleware,
-    adminMiddleware,
-    userController.deleteUserById,
-  );
-  router.delete(
-    "/api/delete-user/hard/:id",
-    authMiddleware,
-    adminMiddleware,
-    userController.hardDeleteUserById,
-  );
-  router.post(
-    "/api/create-user",
-    authMiddleware,
-    // roleMiddleware(["admin", "manager"]),
-    rbacMiddleware,
-    permissionMiddleware(["create_user"]),
-    userController.createUserByAdminOrManager,
-  );
+    router.post(
+        "/api/update-user",
+        authMiddleware,
+        userSingleUpload,
+        permissionMiddleware({
+            all: ["user:update"],
+        }),
+        userController.updateUser,
+    );
+    router.post("/api/register", userController.registerUser);
+    router.delete(
+        "/api/delete-user/:id",
+        authMiddleware,
+        permissionMiddleware(["user:delete"]),
+        userController.deleteUserById,
+    );
+    router.delete(
+        "/api/delete-user/hard/:id",
+        authMiddleware,
+        permissionMiddleware({
+            all: ["user:delete", "dashboard:admin"],
+        }),
+        userController.hardDeleteUserById,
+    );
+    router.post(
+        "/api/create-user",
+        authMiddleware,
+        permissionMiddleware({
+            any: ["dashboard:admin", "dashboard:manager"],
+            all: ["user:create"],
+        }),
+        userController.createUserByAdminOrManager,
+    );
 
-  return app.use("/", router);
+    return app.use("/", router);
 };
 
 module.exports = initWebRoutes;

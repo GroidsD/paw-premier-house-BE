@@ -1,9 +1,13 @@
 import express from "express";
 import serviceCategoryController from "../controllers/serviceCategoryController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
+
+/* ======================================================
+   SERVICE CATEGORY ROUTES (RBAC - permission based)
+====================================================== */
 
 // ============================
 // CREATE
@@ -11,8 +15,11 @@ const router = express.Router();
 router.post(
     "/api/service-category/create",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    serviceCategoryController.createServiceCategory
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["category:create"],
+    }),
+    serviceCategoryController.createServiceCategory,
 );
 
 // ============================
@@ -20,7 +27,7 @@ router.post(
 // ============================
 router.get(
     "/api/service-category/get-all",
-    serviceCategoryController.getAllServiceCategories
+    serviceCategoryController.getAllServiceCategories,
 );
 
 // ============================
@@ -28,7 +35,7 @@ router.get(
 // ============================
 router.get(
     "/api/service-category/get-by-id",
-    serviceCategoryController.getServiceCategoryById
+    serviceCategoryController.getServiceCategoryById,
 );
 
 // ============================
@@ -37,8 +44,11 @@ router.get(
 router.put(
     "/api/service-category/update",
     authMiddleware,
-    roleMiddleware(["admin", "staff"]),
-    serviceCategoryController.updateServiceCategory
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["category:update"],
+    }),
+    serviceCategoryController.updateServiceCategory,
 );
 
 // ============================
@@ -47,8 +57,11 @@ router.put(
 router.delete(
     "/api/service-category/soft-delete",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    serviceCategoryController.softDeleteServiceCategory
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["category:delete"],
+    }),
+    serviceCategoryController.softDeleteServiceCategory,
 );
 
 // ============================
@@ -57,8 +70,10 @@ router.delete(
 router.delete(
     "/api/service-category/hard-delete",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    serviceCategoryController.hardDeleteServiceCategory
+    permissionMiddleware({
+        all: ["dashboard:admin", "category:delete"],
+    }),
+    serviceCategoryController.hardDeleteServiceCategory,
 );
 
 export default router;
