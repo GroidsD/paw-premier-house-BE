@@ -1,19 +1,30 @@
-const permissionMiddleware = (requiredPermissions = []) => {
+const permissionMiddleware = ({ any = [], all = [] }) => {
     return (req, res, next) => {
         if (!req.user || !req.user.permissions) {
+            console.log("❌ No user or permissions on request");
             return res.status(403).json({ message: "Access denied" });
         }
 
-        const hasPermission = requiredPermissions.every((p) =>
-            req.user.permissions.includes(p),
-        );
+        const userPermissions = req.user.permissions;
 
-        if (!hasPermission) {
+        const hasAny =
+            any.length === 0 || any.some((p) => userPermissions.includes(p));
+
+        const hasAll =
+            all.length === 0 || all.every((p) => userPermissions.includes(p));
+
+        /* ================= DEBUG LOG ================= */
+        // console.log("🛂 PERMISSION CHECK");
+        // console.log("➡️ ANY required :", any);
+        // console.log("➡️ ALL required :", all);
+        // console.log("👤 USER perms  :", userPermissions);
+        // console.log("✅ hasAny :", hasAny);
+        // console.log("✅ hasAll :", hasAll);
+        // console.log("================================");
+
+        if (!hasAny || !hasAll) {
             return res.status(403).json({ message: "Permission denied" });
         }
-        // console.log("PERMISSION middleware");
-        // console.log("Required:", requiredPermissions);
-        // console.log("User has:", req.user.permissions);
 
         next();
     };

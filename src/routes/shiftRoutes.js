@@ -1,38 +1,73 @@
 import express from "express";
 import shiftController from "../controllers/shiftController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
-let router = express.Router();
+const router = express.Router();
 
-// CREATE SHIFT (admin + manager)
+/* ======================================================
+   CREATE SHIFT
+   Permission: shift:create
+====================================================== */
 router.post(
     "/api/create-shifts",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    shiftController.create
+    permissionMiddleware({
+        all: ["shift:create"],
+    }),
+    shiftController.create,
 );
 
-// GET ALL SHIFTS (ai cũng xem được)
-router.get("/api/get-all-shifts", authMiddleware, shiftController.getAll);
+/* ======================================================
+   GET ALL SHIFTS
+   Permission: shift:read
+====================================================== */
+router.get(
+    "/api/get-all-shifts",
+    authMiddleware,
+    permissionMiddleware({
+        all: ["shift:read"],
+    }),
+    shiftController.getAll,
+);
 
-// GET SHIFT BY ID
-router.get("/api/get-shift/:shift_id", authMiddleware, shiftController.getById);
+/* ======================================================
+   GET SHIFT BY ID
+   Permission: shift:read
+====================================================== */
+router.get(
+    "/api/get-shift/:shift_id",
+    authMiddleware,
+    permissionMiddleware({
+        all: ["shift:read"],
+    }),
+    shiftController.getById,
+);
 
-// UPDATE SHIFT (admin + manager)
+/* ======================================================
+   UPDATE SHIFT
+   Permission: shift:update
+====================================================== */
 router.put(
     "/api/update-shift/:shift_id",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    shiftController.update
+    permissionMiddleware({
+        all: ["shift:update"],
+    }),
+    shiftController.update,
 );
 
-// DELETE SHIFT (admin + manager)
+/* ======================================================
+   DELETE SHIFT
+   Permission: shift:delete
+====================================================== */
 router.delete(
     "/api/delete-shift/:shift_id",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    shiftController.delete
+    permissionMiddleware({
+        all: ["shift:delete"],
+    }),
+    shiftController.delete,
 );
 
 export default router;

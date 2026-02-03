@@ -24,11 +24,11 @@ const updateBookingStatus = async (req, res) => {
     const result = await BookingService.updateBookingStatus(
         booking_id,
         status,
-        staffId
+        staffId,
     );
     return res.status(200).json(result);
 };
-const custonerCancelBooking = async (req, res) => {
+const customerCancelBooking = async (req, res) => {
     const { bookingId } = req.params;
     const { reason } = req.body;
 
@@ -73,7 +73,7 @@ export default {
     getMyBookings,
     getAllBookings,
     updateBookingStatus,
-    custonerCancelBooking,
+    customerCancelBooking,
     staffCancelBooking,
     assignBooking,
 };

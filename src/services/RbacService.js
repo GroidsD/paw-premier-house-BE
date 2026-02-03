@@ -9,6 +9,40 @@ UserRole
 RolePermission
 UserPermission
 */
+const PERMISSION_ORDER = [
+    "dashboard",
+    "booking",
+    "order",
+    "pet",
+    "product",
+    "category",
+    "voucher",
+    "shift",
+    "schedule",
+    "user",
+    "rbac",
+];
+const sortPermissions = (permissions) => {
+    return permissions.sort((a, b) => {
+        const [resA, actA] = a.split(":");
+        const [resB, actB] = b.split(":");
+
+        const indexA = PERMISSION_ORDER.indexOf(resA);
+        const indexB = PERMISSION_ORDER.indexOf(resB);
+
+        // resource không nằm trong list → đẩy xuống cuối
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+
+        // cùng resource → sort theo action
+        if (indexA === indexB) {
+            return actA.localeCompare(actB);
+        }
+
+        return indexA - indexB;
+    });
+};
 
 /* ======================================================
    PERMISSIONS
@@ -53,19 +87,57 @@ const deletePermission = async (id) => {
 /* ======================================================
    ROLES
 ====================================================== */
+// const getAllRoles = async () => {
+//     const roles = await db.Role.findAll({
+//         attributes: ["id", "name"],
+//         include: [
+//             {
+//                 model: db.Permission,
+//                 as: "permissions",
+//                 attributes: ["action"],
+//                 through: { attributes: [] },
+//             },
+//         ],
+//     });
+
+//     const mappedRoles = roles.map((role) => ({
+//         id: role.id,
+//         name: role.name,
+//         permissions: role.permissions.map((p) => p.action),
+//     }));
+
+//     return {
+//         errCode: 0,
+//         roles: mappedRoles,
+//     };
+// };
 const getAllRoles = async () => {
     const roles = await db.Role.findAll({
+        attributes: ["id", "name"],
         include: [
             {
                 model: db.Permission,
                 as: "permissions",
-                attributes: ["id", "action"],
+                attributes: ["action"],
                 through: { attributes: [] },
             },
         ],
     });
 
-    return { errCode: 0, roles };
+    const mappedRoles = roles.map((role) => {
+        const permissions = role.permissions.map((p) => p.action);
+
+        return {
+            id: role.id,
+            name: role.name,
+            permissions: sortPermissions(permissions),
+        };
+    });
+
+    return {
+        errCode: 0,
+        roles: mappedRoles,
+    };
 };
 
 const createRole = async (data) => {

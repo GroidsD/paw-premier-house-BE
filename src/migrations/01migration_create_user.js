@@ -53,12 +53,6 @@ module.exports = {
                 defaultValue: "vi",
             },
 
-            role: {
-                type: Sequelize.ENUM("admin", "staff", "customer", "manager"),
-                allowNull: false,
-                defaultValue: "customer",
-            },
-
             auth_provider: {
                 type: Sequelize.ENUM("firebase", "local"),
                 allowNull: false,
@@ -95,7 +89,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });

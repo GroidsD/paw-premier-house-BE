@@ -24,7 +24,6 @@ let initWebRoutes = (app) => {
     router.post(
         "/api/reset-password",
         authMiddleware,
-        adminMiddleware,
         userController.resetUserPassword,
     );
 
@@ -32,15 +31,18 @@ let initWebRoutes = (app) => {
     router.get(
         "/api/get-users-role",
         authMiddleware,
-        rbacMiddleware,
+        permissionMiddleware({
+            all: ["rbac:role:read"],
+        }),
         userController.getUsersByRole,
     );
     router.get(
         "/api/get-all-users",
         authMiddleware,
-        // adminMiddleware,
-        rbacMiddleware,
-        permissionMiddleware(["dashboard.view"]),
+        permissionMiddleware({
+            any: ["dashboard:admin", "dashboard:manager"],
+            all: ["user:read"],
+        }),
         userController.getAllUsers,
     );
     // const trace = (label) => (req, res, next) => {
@@ -64,27 +66,33 @@ let initWebRoutes = (app) => {
         "/api/update-user",
         authMiddleware,
         userSingleUpload,
+        permissionMiddleware({
+            all: ["user:update"],
+        }),
         userController.updateUser,
     );
     router.post("/api/register", userController.registerUser);
     router.delete(
         "/api/delete-user/:id",
         authMiddleware,
-        adminMiddleware,
+        permissionMiddleware(["user:delete"]),
         userController.deleteUserById,
     );
     router.delete(
         "/api/delete-user/hard/:id",
         authMiddleware,
-        adminMiddleware,
+        permissionMiddleware({
+            all: ["user:delete", "dashboard:admin"],
+        }),
         userController.hardDeleteUserById,
     );
     router.post(
         "/api/create-user",
         authMiddleware,
-        // roleMiddleware(["admin", "manager"]),
-        // rbacMiddleware,
-        // permissionMiddleware(["user:create"]),
+        permissionMiddleware({
+            any: ["dashboard:admin", "dashboard:manager"],
+            all: ["user:create"],
+        }),
         userController.createUserByAdminOrManager,
     );
 

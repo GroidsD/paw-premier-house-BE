@@ -95,10 +95,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("vi", "en"),
                 defaultValue: "vi",
             },
-            role: {
-                type: DataTypes.ENUM("admin", "staff", "customer", "manager"),
-                defaultValue: "customer",
-            },
+
             auth_provider: {
                 type: DataTypes.ENUM("firebase", "local"),
                 defaultValue: "firebase",
@@ -136,7 +133,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     // Xóa media khi xóa user

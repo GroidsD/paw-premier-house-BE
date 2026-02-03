@@ -1,83 +1,143 @@
 import express from "express";
 import scheduleController from "../controllers/scheduleController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
-// SCHEDULE (bảng schedules)
-// Lấy toàn bộ schedule
-router.get("/api/schedules/get-all", authMiddleware, scheduleController.getAll);
+/* ======================================================
+   SCHEDULE ROUTES (RBAC - permission based)
+====================================================== */
 
-// Lấy lịch của chính staff đang đăng nhập
+// ============================
+// GET ALL SCHEDULES
+// ============================
+router.get(
+    "/api/schedules/get-all",
+    authMiddleware,
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:read"],
+    }),
+    scheduleController.getAll,
+);
+
+// ============================
+// GET MY SCHEDULE (STAFF)
+// ============================
 router.get(
     "/api/schedules/my-schedule",
     authMiddleware,
-    scheduleController.getMySchedule
+    permissionMiddleware({
+        all: ["schedule:read"],
+    }),
+    scheduleController.getMySchedule,
 );
 
-// Lấy chi tiết 1 schedule
+// ============================
+// GET SCHEDULE BY ID
+// ============================
 router.get(
     "/api/schedules/:schedule_id",
     authMiddleware,
-    scheduleController.getById
+    permissionMiddleware({
+        all: ["schedule:read"],
+    }),
+    scheduleController.getById,
 );
 
-// Staff đăng ký ca
+// ============================
+// STAFF REGISTER SHIFT
+// ============================
 router.post(
     "/api/schedules/register",
     authMiddleware,
-    scheduleController.register
+    permissionMiddleware({
+        all: ["schedule:create"],
+    }),
+    scheduleController.register,
 );
 
-// Tạo lịch theo tuần
+// ============================
+// CREATE WEEKLY SCHEDULE
+// ============================
 router.post(
     "/api/schedules/create-weekly",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    scheduleController.createWeekly
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:create"],
+    }),
+    scheduleController.createWeekly,
 );
 
-// Mở lịch theo tuần (open schedule)
+// ============================
+// OPEN WEEK SCHEDULE
+// ============================
 router.put(
     "/api/schedules/open-week",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    scheduleController.openWeekSchedules
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:update"],
+    }),
+    scheduleController.openWeekSchedules,
 );
 
-// Update schedule
+// ============================
+// UPDATE SCHEDULE
+// ============================
 router.put(
     "/api/schedules/:schedule_id",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    scheduleController.update
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:update"],
+    }),
+    scheduleController.update,
 );
 
-// Xóa schedule
+// ============================
+// DELETE SCHEDULE
+// ============================
 router.delete(
     "/api/schedules/:schedule_id",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    scheduleController.delete
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:delete"],
+    }),
+    scheduleController.delete,
 );
 
-//  SCHEDULE STAFF (bảng schedule_staff)
+// ======================================================
+// SCHEDULE STAFF (schedule_staff table)
+// ======================================================
 
-// Approve / Reject đăng ký
+// ============================
+// APPROVE / REJECT STAFF
+// ============================
 router.patch(
     "/api/schedule-staff/:schedule_staff_id/approve",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    scheduleController.approve
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:approve"],
+    }),
+    scheduleController.approve,
 );
 
-// Replace staff (thay thế nhân viên)
+// ============================
+// REPLACE STAFF
+// ============================
 router.patch(
     "/api/schedule-staff/:schedule_staff_id/replace",
     authMiddleware,
-    roleMiddleware(["admin", "manager"]),
-    scheduleController.replace
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:replace"],
+    }),
+    scheduleController.replace,
 );
 
 export default router;

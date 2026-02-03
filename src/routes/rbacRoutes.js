@@ -12,22 +12,30 @@ const router = express.Router();
 router.get(
     "/api/permission/get-all",
     authMiddleware,
-    permissionMiddleware(["permission.read"]),
-    rbacController.getAllPermissions
+    permissionMiddleware({
+        all: ["rbac:permission:read"],
+    }),
+    rbacController.getAllPermissions,
 );
 
 router.post(
     "/api/permission/create",
     authMiddleware,
-    permissionMiddleware(["permission.create"]),
-    rbacController.createPermission
+    permissionMiddleware({
+        all: ["rbac:permission:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.createPermission,
 );
 
 router.delete(
     "/api/permission/delete",
     authMiddleware,
-    permissionMiddleware(["permission.delete"]),
-    rbacController.deletePermission
+    permissionMiddleware({
+        all: ["rbac:permission:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.deletePermission,
 );
 
 /* ======================================================
@@ -37,22 +45,30 @@ router.delete(
 router.get(
     "/api/role/get-all",
     authMiddleware,
-    // permissionMiddleware(["role.read"]),
-    rbacController.getAllRoles
+    permissionMiddleware({
+        all: ["rbac:role:read"],
+    }),
+    rbacController.getAllRoles,
 );
 
 router.post(
     "/api/role/create",
     authMiddleware,
-    permissionMiddleware(["role.create"]),
-    rbacController.createRole
+    permissionMiddleware({
+        all: ["rbac:role:create"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.createRole,
 );
 
 router.delete(
     "/api/role/delete",
     authMiddleware,
-    permissionMiddleware(["role.delete"]),
-    rbacController.deleteRole
+    permissionMiddleware({
+        all: ["rbac:role:delete"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.deleteRole,
 );
 
 /* ======================================================
@@ -62,8 +78,11 @@ router.delete(
 router.post(
     "/api/role/set-permissions",
     authMiddleware,
-    permissionMiddleware(["role.assign.permission"]),
-    rbacController.setPermissionsForRole
+    permissionMiddleware({
+        all: ["rbac:permission:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.setPermissionsForRole,
 );
 
 /* ======================================================
@@ -73,8 +92,11 @@ router.post(
 router.post(
     "/api/user/set-roles",
     authMiddleware,
-    permissionMiddleware(["user.assign.role"]),
-    rbacController.setRolesForUser
+    permissionMiddleware({
+        all: ["rbac:user-role:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.setRolesForUser,
 );
 
 /* ======================================================
@@ -84,8 +106,11 @@ router.post(
 router.post(
     "/api/user/set-permission",
     authMiddleware,
-    permissionMiddleware(["user.assign.permission"]),
-    rbacController.setUserPermission
+    permissionMiddleware({
+        all: ["rbac:user-permission:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.setUserPermission,
 );
 
 export default router;

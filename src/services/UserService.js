@@ -111,94 +111,94 @@ let getUserById = (user_id) => {
 };
 
 //  Lấy tất cả người dùng
-let getAllUsers = () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const users = await db.User.findAll({
-                attributes: { exclude: ["password"] },
-                order: [["user_id", "ASC"]],
-            });
-            resolve(users);
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
 // let getAllUsers = () => {
 //     return new Promise(async (resolve, reject) => {
 //         try {
 //             const users = await db.User.findAll({
 //                 attributes: { exclude: ["password"] },
-//                 include: [
-//                     {
-//                         model: db.Role,
-//                         as: "roles",
-//                         attributes: ["id", "name"],
-//                         through: { attributes: [] },
-//                         include: [
-//                             {
-//                                 model: db.Permission,
-//                                 as: "permissions",
-//                                 attributes: ["id", "action"],
-//                                 through: { attributes: [] },
-//                             },
-//                         ],
-//                     },
-//                     {
-//                         model: db.UserPermission,
-//                         as: "permissionOverrides",
-//                         attributes: ["allowed"],
-//                         include: [
-//                             {
-//                                 model: db.Permission,
-//                                 attributes: ["action"],
-//                             },
-//                         ],
-//                     },
-//                 ],
 //                 order: [["user_id", "ASC"]],
 //             });
-
-//             const result = users.map((u) => {
-//                 const permissionMap = new Map();
-
-//                 // permissions từ role
-//                 u.roles.forEach((role) => {
-//                     role.permissions.forEach((p) => {
-//                         permissionMap.set(p.action, true);
-//                     });
-//                 });
-
-//                 // override
-//                 u.permissionOverrides.forEach((o) => {
-//                     permissionMap.set(o.Permission.action, o.allowed);
-//                 });
-
-//                 const finalPermissions = [...permissionMap.entries()]
-//                     .filter(([_, allowed]) => allowed)
-//                     .map(([action]) => action);
-
-//                 const plain = u.toJSON();
-
-//                 // chỉ expose final permissions
-//                 plain.permissions = finalPermissions;
-//                 // Chỉ giữ tên role
-//                 if (plain.roles) {
-//                     plain.roles = plain.roles.map((r) => r.name);
-//                 }
-//                 // 🔥 xoá toàn bộ RBAC internal
-//                 // delete plain.roles;
-//                 delete plain.permissionOverrides;
-
-//                 return plain;
-//             });
-
-//             resolve(result);
+//             resolve(users);
 //         } catch (e) {
 //             reject(e);
 //         }
 //     });
 // };
+let getAllUsers = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const users = await db.User.findAll({
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: db.Role,
+                        as: "roles",
+                        attributes: ["id", "name"],
+                        through: { attributes: [] },
+                        include: [
+                            {
+                                model: db.Permission,
+                                as: "permissions",
+                                attributes: ["id", "action"],
+                                through: { attributes: [] },
+                            },
+                        ],
+                    },
+                    {
+                        model: db.UserPermission,
+                        as: "permissionOverrides",
+                        attributes: ["allowed"],
+                        include: [
+                            {
+                                model: db.Permission,
+                                attributes: ["action"],
+                            },
+                        ],
+                    },
+                ],
+                order: [["user_id", "ASC"]],
+            });
+
+            const result = users.map((u) => {
+                const permissionMap = new Map();
+
+                // permissions từ role
+                u.roles.forEach((role) => {
+                    role.permissions.forEach((p) => {
+                        permissionMap.set(p.action, true);
+                    });
+                });
+
+                // override
+                u.permissionOverrides.forEach((o) => {
+                    permissionMap.set(o.Permission.action, o.allowed);
+                });
+
+                const finalPermissions = [...permissionMap.entries()]
+                    .filter(([_, allowed]) => allowed)
+                    .map(([action]) => action);
+
+                const plain = u.toJSON();
+
+                // chỉ expose final permissions
+                plain.permissions = finalPermissions;
+                // Chỉ giữ tên role
+                if (plain.roles) {
+                    plain.roles = plain.roles.map((r) => r.name);
+                }
+                // 🔥 xoá toàn bộ RBAC internal
+                // delete plain.roles;
+                delete plain.permissionOverrides;
+
+                return plain;
+            });
+
+            resolve(result);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
 
 //  Tạo người dùng mới
 let registerUser = (data) => {
@@ -684,22 +684,92 @@ let changeMyPassword = (user_id, oldPassword, newPassword) => {
         }
     });
 };
+// let firebaseLogin = async (idToken) => {
+//     try {
+//         if (!idToken) {
+//             return { errCode: 1, errMessage: "Missing Firebase ID token" };
+//         }
+
+//         const decoded = await admin.auth().verifyIdToken(idToken);
+
+//         const firebaseUser = {
+//             uid: decoded.uid,
+//             email: decoded.email,
+//             fullname: decoded.name || "",
+//             avatar: decoded.avatar || "",
+//         };
+
+//         // ✅ Tìm user theo user_id = firebase uid
+//         let user = await db.User.findByPk(firebaseUser.uid);
+
+//         if (!user && firebaseUser.email) {
+//             user = await db.User.findOne({
+//                 where: { email: firebaseUser.email },
+//             });
+
+//             if (user) {
+//                 await user.update({
+//                     user_id: firebaseUser.uid,
+//                     auth_provider: "firebase",
+//                 });
+//             }
+//         }
+
+//         // ✅ Nếu chưa có → tạo mới
+//         if (!user) {
+//             user = await db.User.create({
+//                 user_id: firebaseUser.uid,
+//                 email: firebaseUser.email,
+//                 fullname: firebaseUser.fullname,
+//                 avatar: firebaseUser.avatar,
+//                 role: "customer",
+//                 status: "active",
+//                 isActive: true,
+//                 auth_provider: "firebase",
+//             });
+//         }
+
+//         // ✅ Tạo JWT
+//         const token = jwt.sign(
+//             {
+//                 user_id: user.user_id,
+//                 email: user.email,
+//                 role: user.role,
+//             },
+//             process.env.JWT_SECRET,
+//             { expiresIn: "7d" },
+//         );
+
+//         const { password, ...userData } = user.dataValues;
+
+//         return {
+//             errCode: 0,
+//             errMessage: "Firebase login successful",
+//             user: userData,
+//             token,
+//         };
+//     } catch (error) {
+//         console.error("Firebase login error:", error);
+//         return { errCode: -1, errMessage: "Firebase login failed" };
+//     }
+// };
 let firebaseLogin = async (idToken) => {
     try {
         if (!idToken) {
             return { errCode: 1, errMessage: "Missing Firebase ID token" };
         }
 
+        /* ================= VERIFY FIREBASE TOKEN ================= */
         const decoded = await admin.auth().verifyIdToken(idToken);
 
         const firebaseUser = {
             uid: decoded.uid,
             email: decoded.email,
             fullname: decoded.name || "",
-            avatar: decoded.avatar || "",
+            avatar: decoded.picture || "",
         };
 
-        // ✅ Tìm user theo user_id = firebase uid
+        /* ================= FIND USER ================= */
         let user = await db.User.findByPk(firebaseUser.uid);
 
         if (!user && firebaseUser.email) {
@@ -715,7 +785,7 @@ let firebaseLogin = async (idToken) => {
             }
         }
 
-        // ✅ Nếu chưa có → tạo mới
+        /* ================= CREATE NEW USER ================= */
         if (!user) {
             user = await db.User.create({
                 user_id: firebaseUser.uid,
@@ -729,23 +799,82 @@ let firebaseLogin = async (idToken) => {
             });
         }
 
-        // ✅ Tạo JWT
+        /* ================= LOAD RBAC PERMISSIONS ================= */
+        const fullUser = await db.User.findOne({
+            where: { user_id: user.user_id },
+            attributes: { exclude: ["password"] },
+            include: [
+                {
+                    model: db.Role,
+                    as: "roles",
+                    attributes: ["id", "name"],
+                    through: { attributes: [] },
+                    include: [
+                        {
+                            model: db.Permission,
+                            as: "permissions",
+                            attributes: ["action"],
+                            through: { attributes: [] },
+                        },
+                    ],
+                },
+                {
+                    model: db.UserPermission,
+                    as: "permissionOverrides",
+                    attributes: ["allowed"],
+                    include: [
+                        {
+                            model: db.Permission,
+                            attributes: ["action"],
+                        },
+                    ],
+                },
+            ],
+        });
+
+        /* ================= MERGE PERMISSIONS ================= */
+        const permissionMap = new Map();
+
+        // permissions từ role
+        fullUser.roles.forEach((role) => {
+            role.permissions.forEach((p) => {
+                permissionMap.set(p.action, true);
+            });
+        });
+
+        // override permissions từ userPermission
+        fullUser.permissionOverrides.forEach((o) => {
+            permissionMap.set(o.Permission.action, o.allowed);
+        });
+
+        const finalPermissions = [...permissionMap.entries()]
+            .filter(([_, allowed]) => allowed)
+            .map(([action]) => action);
+
+        /* ================= CREATE JWT ================= */
         const token = jwt.sign(
             {
-                user_id: user.user_id,
-                email: user.email,
-                role: user.role,
+                user_id: fullUser.user_id,
+                email: fullUser.email,
+                permissions: finalPermissions,
             },
             process.env.JWT_SECRET,
             { expiresIn: "7d" },
         );
 
-        const { password, ...userData } = user.dataValues;
+        /* ================= RESPONSE ================= */
+        const plain = fullUser.toJSON();
+
+        plain.permissions = finalPermissions;
+        plain.roles = plain.roles.map((r) => r.name);
+
+        // remove internal RBAC override object
+        delete plain.permissionOverrides;
 
         return {
             errCode: 0,
             errMessage: "Firebase login successful",
-            user: userData,
+            user: plain,
             token,
         };
     } catch (error) {

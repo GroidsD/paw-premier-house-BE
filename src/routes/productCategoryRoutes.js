@@ -1,52 +1,72 @@
 import express from "express";
 import productCategoryController from "../controllers/productCategoryController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
+
+/* ======================================================
+   PRODUCT CATEGORY ROUTES (RBAC - permission based)
+====================================================== */
 
 // CREATE - Tạo category mới
 router.post(
     "/api/product-categories/create",
     authMiddleware,
-    roleMiddleware(["admin", "staff"]),
-    productCategoryController.createCategory
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["category:create"],
+    }),
+    productCategoryController.createCategory,
 );
 
 // READ ALL - Lấy tất cả category
 router.get(
     "/api/product-categories/get-all",
-    productCategoryController.getAllCategories
+    permissionMiddleware({
+        all: ["category:read"],
+    }),
+    productCategoryController.getAllCategories,
 );
 
 // READ ONE - Lấy category theo ID
 router.get(
     "/api/product-categories/get-by-id",
-    productCategoryController.getCategoryById
+    permissionMiddleware({
+        all: ["category:read"],
+    }),
+    productCategoryController.getCategoryById,
 );
 
 // UPDATE - Cập nhật category
 router.put(
     "/api/product-categories/update",
     authMiddleware,
-    roleMiddleware(["admin", "staff"]),
-    productCategoryController.updateCategory
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["category:update"],
+    }),
+    productCategoryController.updateCategory,
 );
 
-// SOFT DELETE - xóa mềm
+// SOFT DELETE - xóa mềm (ADMIN)
 router.delete(
     "/api/product-categories/soft-delete",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    productCategoryController.softDeleteCategory
+    permissionMiddleware({
+        all: ["dashboard:admin", "category:delete"],
+    }),
+    productCategoryController.softDeleteCategory,
 );
 
-// HARD DELETE - xóa cứng
+// HARD DELETE - xóa cứng (ADMIN ONLY)
 router.delete(
     "/api/product-categories/hard-delete",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    productCategoryController.hardDeleteCategory
+    permissionMiddleware({
+        all: ["dashboard:admin", "category:delete"],
+    }),
+    productCategoryController.hardDeleteCategory,
 );
 
 export default router;

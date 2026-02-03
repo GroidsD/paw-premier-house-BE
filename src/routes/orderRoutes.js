@@ -1,65 +1,119 @@
 import express from "express";
 import orderController from "../controllers/orderController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
-// CREATE - Tạo đơn hàng mới
-router.post("/api/orders/create", authMiddleware, orderController.createOrder);
+// ============================
+// CREATE ORDER
+// ============================
+router.post(
+    "/api/orders/create",
+    authMiddleware,
+    permissionMiddleware({
+        all: ["order:create"],
+    }),
+    orderController.createOrder,
+);
 
-// READ ALL - Lấy tất cả đơn hàng
-router.get("/api/orders/get-all", authMiddleware, orderController.getAllOrders);
+// ============================
+// READ ALL ORDERS (ADMIN / MANAGER)
+// ============================
+router.get(
+    "/api/orders/get-all",
+    authMiddleware,
+    permissionMiddleware({
+        all: ["order:read"],
+        any: ["dashboard:admin", "dashboard:manager"],
+    }),
+    orderController.getAllOrders,
+);
 
-// READ ONE - Lấy đơn hàng theo ID
+// ============================
+// READ ORDER BY ID
+// ============================
 router.get(
     "/api/orders/get-by-id",
     authMiddleware,
-    orderController.getOrderById
+    permissionMiddleware({
+        all: ["order:read"],
+    }),
+    orderController.getOrderById,
 );
-// GET ALL ORDERS BY USER ID
+
+// ============================
+// GET ORDERS BY USER
+// ============================
 router.get(
     "/api/orders/get-by-user",
     authMiddleware,
-    orderController.getAllOrdersByUserId
+    permissionMiddleware({
+        all: ["order:read"],
+    }),
+    orderController.getAllOrdersByUserId,
 );
-// CONFIRM ORDER - Xác nhận đơn hàng
+
+// ============================
+// CONFIRM ORDER
+// ============================
 router.post(
     "/api/orders/confirm",
     authMiddleware,
-    roleMiddleware(["admin", "staff"]),
-    orderController.confirmOrder
+    permissionMiddleware({
+        all: ["order:update"],
+    }),
+    orderController.confirmOrder,
 );
 
-// CANCEL ORDER - Hủy đơn hàng
+// ============================
+// CANCEL ORDER
+// ============================
 router.post(
     "/api/orders/cancel",
     authMiddleware,
-    roleMiddleware(["admin", "staff"]),
-    orderController.cancelOrder
+    permissionMiddleware({
+        all: ["order:update"],
+    }),
+    orderController.cancelOrder,
 );
 
-// UPDATE STATUS - Cập nhật trạng thái khác nếu cần
+// ============================
+// UPDATE STATUS
+// ============================
 router.patch(
     "/api/orders/update-status",
     authMiddleware,
-    roleMiddleware(["admin", "staff"]),
-    orderController.updateStatus
+    permissionMiddleware({
+        all: ["order:update"],
+    }),
+    orderController.updateStatus,
 );
 
+// ============================
 // SOFT DELETE
+// ============================
 router.delete(
     "/api/orders/soft-delete",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    orderController.softDeleteOrder
+    permissionMiddleware({
+        all: ["order:delete"],
+        any: ["dashboard:admin", "dashboard:manager"],
+    }),
+    orderController.softDeleteOrder,
 );
 
+// ============================
 // HARD DELETE
+// ============================
 router.delete(
     "/api/orders/hard-delete",
     authMiddleware,
-    roleMiddleware(["admin"]),
-    orderController.hardDeleteOrder
+    permissionMiddleware({
+        all: ["order:delete"],
+        any: ["dashboard:admin"],
+    }),
+    orderController.hardDeleteOrder,
 );
+
 export default router;
