@@ -23,20 +23,6 @@ let hashPassword = (password) => {
     });
 };
 
-//  Lấy thông tin người dùng theo ID
-// let getUserById = (user_id) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             const user = await db.User.findByPk(user_id, {
-//                 attributes: { exclude: ["password"] },
-//             });
-//             if (!user) return reject("User not found");
-//             resolve(user);
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
 let getUserById = (user_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -110,20 +96,6 @@ let getUserById = (user_id) => {
     });
 };
 
-//  Lấy tất cả người dùng
-// let getAllUsers = () => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             const users = await db.User.findAll({
-//                 attributes: { exclude: ["password"] },
-//                 order: [["user_id", "ASC"]],
-//             });
-//             resolve(users);
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
 let getAllUsers = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -269,7 +241,6 @@ let registerUser = (data) => {
     });
 };
 
-//
 let updateUser = (user_id, data) => {
     return new Promise(async (resolve, reject) => {
         const transaction = await db.sequelize.transaction();
@@ -285,8 +256,8 @@ let updateUser = (user_id, data) => {
             }
 
             /* ================= IMAGE ================= */
-            if (data.img && user.img && user.img !== data.img) {
-                const oldFileName = path.basename(user.img);
+            if (data.avatar && user.avatar && user.avatar !== data.avatar) {
+                const oldFileName = path.basename(user.avatar);
                 const oldImagePath = path.join(
                     __dirname,
                     "../public/uploadImageUsers",
@@ -308,7 +279,7 @@ let updateUser = (user_id, data) => {
                     gender: data.gender ?? user.gender,
                     status: data.status ?? user.status,
                     isActive: data.isActive ?? user.isActive,
-                    img: data.img ?? user.img,
+                    avatar: data.avatar ?? user.avatar,
                 },
                 { transaction },
             );
@@ -351,6 +322,7 @@ let updateUser = (user_id, data) => {
             resolve({
                 errCode: 0,
                 errMessage: "User updated successfully",
+                avatar: user.avatar,
             });
         } catch (e) {
             await transaction.rollback();
@@ -425,50 +397,6 @@ let hardDeleteUserById = async (user_id) => {
     }
 };
 
-//  Đăng nhập
-// let login = (email, password) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             if (!email || !password)
-//                 return resolve({
-//                     errCode: 1,
-//                     errMessage: "Missing email or password",
-//                 });
-
-//             const user = await db.User.findOne({ where: { email } });
-//             if (!user)
-//                 return resolve({ errCode: 2, errMessage: "User not found" });
-
-//             const isMatch = await bcrypt.compare(password, user.password);
-//             if (!isMatch)
-//                 return resolve({
-//                     errCode: 3,
-//                     errMessage: "Incorrect password",
-//                 });
-
-//             const token = jwt.sign(
-//                 {
-//                     user_id: user.user_id,
-//                     email: user.email,
-//                     role: user.role,
-//                 },
-//                 process.env.JWT_SECRET,
-//                 { expiresIn: "1d" }
-//             );
-
-//             const { password: pw, ...userWithoutPassword } = user.dataValues;
-
-//             resolve({
-//                 errCode: 0,
-//                 errMessage: "Login successful",
-//                 user: userWithoutPassword,
-//                 token,
-//             });
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
 let login = (email, password) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -586,21 +514,6 @@ let login = (email, password) => {
     });
 };
 
-//  Lấy danh sách người dùng theo vai trò
-// let getUsersByRole = (role) => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             if (!role) return reject("Missing role parameter");
-//             const users = await db.User.findAll({
-//                 where: { role },
-//                 attributes: ["user_id", "fullname", "email"],
-//             });
-//             resolve(users);
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
 //  Lấy danh sách người dùng theo vai trò + permissions
 let getUsersByRole = async (roleName) => {
     try {
@@ -700,75 +613,7 @@ let changeMyPassword = (user_id, oldPassword, newPassword) => {
         }
     });
 };
-// let firebaseLogin = async (idToken) => {
-//     try {
-//         if (!idToken) {
-//             return { errCode: 1, errMessage: "Missing Firebase ID token" };
-//         }
 
-//         const decoded = await admin.auth().verifyIdToken(idToken);
-
-//         const firebaseUser = {
-//             uid: decoded.uid,
-//             email: decoded.email,
-//             fullname: decoded.name || "",
-//             avatar: decoded.avatar || "",
-//         };
-
-//         // ✅ Tìm user theo user_id = firebase uid
-//         let user = await db.User.findByPk(firebaseUser.uid);
-
-//         if (!user && firebaseUser.email) {
-//             user = await db.User.findOne({
-//                 where: { email: firebaseUser.email },
-//             });
-
-//             if (user) {
-//                 await user.update({
-//                     user_id: firebaseUser.uid,
-//                     auth_provider: "firebase",
-//                 });
-//             }
-//         }
-
-//         // ✅ Nếu chưa có → tạo mới
-//         if (!user) {
-//             user = await db.User.create({
-//                 user_id: firebaseUser.uid,
-//                 email: firebaseUser.email,
-//                 fullname: firebaseUser.fullname,
-//                 avatar: firebaseUser.avatar,
-//                 role: "customer",
-//                 status: "active",
-//                 isActive: true,
-//                 auth_provider: "firebase",
-//             });
-//         }
-
-//         // ✅ Tạo JWT
-//         const token = jwt.sign(
-//             {
-//                 user_id: user.user_id,
-//                 email: user.email,
-//                 role: user.role,
-//             },
-//             process.env.JWT_SECRET,
-//             { expiresIn: "7d" },
-//         );
-
-//         const { password, ...userData } = user.dataValues;
-
-//         return {
-//             errCode: 0,
-//             errMessage: "Firebase login successful",
-//             user: userData,
-//             token,
-//         };
-//     } catch (error) {
-//         console.error("Firebase login error:", error);
-//         return { errCode: -1, errMessage: "Firebase login failed" };
-//     }
-// };
 let firebaseLogin = async (idToken) => {
     try {
         if (!idToken) {
