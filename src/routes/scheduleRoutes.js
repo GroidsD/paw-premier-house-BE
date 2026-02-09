@@ -33,7 +33,15 @@ router.get(
     }),
     scheduleController.getMySchedule,
 );
-
+router.get(
+    "/api/schedules/by-week",
+    authMiddleware,
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:read"],
+    }),
+    scheduleController.getSchedulesByWeek,
+);
 // ============================
 // GET SCHEDULE BY ID
 // ============================

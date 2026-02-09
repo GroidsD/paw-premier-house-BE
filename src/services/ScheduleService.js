@@ -67,7 +67,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
 
     if (!schedule) {
         throw new Error(
-            `Schedule not found for shift_id=${shift_id}, work_date=${work_date}`
+            `Schedule not found for shift_id=${shift_id}, work_date=${work_date}`,
         );
     }
 
@@ -182,7 +182,7 @@ let createWeeklySchedule = async (
     startDate,
     shifts,
     maxPeople,
-    numDays = 7
+    numDays = 7,
 ) => {
     try {
         // ===== VALIDATE INPUT =====
@@ -200,7 +200,7 @@ let createWeeklySchedule = async (
         if (validShifts.length !== shifts.length) {
             const validIds = validShifts.map((s) => s.shift_id);
             throw new Error(
-                `❌ Some shift_id do not exist. Provided: [${shifts}], Valid: [${validIds}]`
+                `❌ Some shift_id do not exist. Provided: [${shifts}], Valid: [${validIds}]`,
             );
         }
 
@@ -220,7 +220,7 @@ let createWeeklySchedule = async (
         const formatLocal = (d) =>
             `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
                 2,
-                "0"
+                "0",
             )}-${String(d.getDate()).padStart(2, "0")}`;
 
         for (let i = 0; i < numDays; i++) {
@@ -243,7 +243,7 @@ let createWeeklySchedule = async (
 
                     if (exists) {
                         console.log(
-                            `⚠️ Schedule exists for date=${date}, shift=${shift_id}`
+                            `⚠️ Schedule exists for date=${date}, shift=${shift_id}`,
                         );
                         continue;
                     }
@@ -255,7 +255,7 @@ let createWeeklySchedule = async (
                             max_people: maxPeople,
                             status: "closed",
                         },
-                        { transaction: t }
+                        { transaction: t },
                     );
 
                     createdSchedules.push(schedule);
@@ -353,7 +353,7 @@ let openWeeklySchedule = async (weekDate) => {
     const format = (d) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
             2,
-            "0"
+            "0",
         )}-${String(d.getDate()).padStart(2, "0")}`;
 
     const start = format(monday);
@@ -370,7 +370,7 @@ let openWeeklySchedule = async (weekDate) => {
                 },
                 status: "closed",
             },
-        }
+        },
     );
 
     return {
@@ -378,6 +378,66 @@ let openWeeklySchedule = async (weekDate) => {
         week_start: start,
         week_end: end,
         updatedCount,
+    };
+};
+let getSchedulesByWeek = async (weekDate) => {
+    if (!weekDate) throw new Error("Missing weekDate");
+
+    const [y, m, d] = weekDate.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+
+    let dow = date.getDay();
+    if (dow === 0) dow = 7;
+
+    const monday = new Date(date);
+    monday.setDate(date.getDate() - (dow - 1));
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const format = (dt) =>
+        `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(
+            dt.getDate(),
+        ).padStart(2, "0")}`;
+
+    const start = format(monday);
+    const end = format(sunday);
+
+    const schedules = await db.Schedule.findAll({
+        where: {
+            work_date: { [Op.between]: [start, end] },
+        },
+        include: [
+            {
+                model: db.Shift,
+                as: "shift",
+                attributes: [
+                    "shift_id",
+                    "shift_name",
+                    "start_time",
+                    "end_time",
+                ],
+            },
+            // nếu muốn trả registrations luôn thì bật cái này
+            // {
+            //   model: db.ScheduleStaff,
+            //   as: "registrations",
+            //   include: [
+            //     { model: db.User, as: "scheduleStaffUser", attributes: ["user_id","fullname","email"] },
+            //     { model: db.User, as: "replacedBy", attributes: ["user_id","fullname","email"] },
+            //   ],
+            // },
+        ],
+        order: [
+            ["work_date", "ASC"],
+            ["shift_id", "ASC"],
+        ],
+    });
+
+    return {
+        week_start: start,
+        week_end: end,
+        schedules,
     };
 };
 
@@ -392,4 +452,5 @@ export default {
     createWeeklySchedule,
     getMySchedule,
     openWeeklySchedule,
+    getSchedulesByWeek,
 };

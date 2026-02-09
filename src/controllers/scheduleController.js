@@ -14,7 +14,7 @@ let getAll = async (req, res) => {
 let getById = async (req, res) => {
     try {
         const schedule = await ScheduleService.getScheduleById(
-            req.params.schedule_id
+            req.params.schedule_id,
         );
         if (!schedule)
             return res.status(404).json({ message: "Schedule not found" });
@@ -42,7 +42,7 @@ let register = async (req, res) => {
         const schedule = await ScheduleService.registerSchedule(
             req.user.user_id,
             shift_id,
-            work_date
+            work_date,
         );
 
         res.status(201).json({ message: "Registered successfully", schedule });
@@ -62,7 +62,7 @@ let approve = async (req, res) => {
 
         const result = await ScheduleService.approveSchedule(
             schedule_staff_id,
-            action
+            action,
         );
 
         res.json({
@@ -82,7 +82,7 @@ let replace = async (req, res) => {
 
         const schedule = await ScheduleService.replaceSchedule(
             req.params.schedule_staff_id,
-            req.body.replacement_staff_id
+            req.body.replacement_staff_id,
         );
         res.json(schedule);
     } catch (err) {
@@ -95,7 +95,7 @@ let update = async (req, res) => {
     try {
         const updated = await ScheduleService.updateSchedule(
             req.params.schedule_id,
-            req.body
+            req.body,
         );
         res.json(updated);
     } catch (err) {
@@ -106,7 +106,7 @@ let update = async (req, res) => {
 let remove = async (req, res) => {
     try {
         const result = await ScheduleService.deleteSchedule(
-            req.params.schedule_id
+            req.params.schedule_id,
         );
         res.json({ message: result });
     } catch (err) {
@@ -119,9 +119,6 @@ let createWeekly = async (req, res) => {
         // console.log("Body:", req.body);
         // console.log("start_date:", req.body.start_date);
 
-        if (!["admin", "manager"].includes(req.user.role))
-            return res.status(403).json({ message: "Permission denied" });
-
         const { start_date, shifts, max_people } = req.body;
         // shifts: [1,2,3] - các shift_id
         // max_people: số lượng tối đa cho mỗi shift mỗi ngày
@@ -129,7 +126,7 @@ let createWeekly = async (req, res) => {
         const schedules = await ScheduleService.createWeeklySchedule(
             start_date,
             shifts,
-            max_people
+            max_people,
         );
         res.status(201).json(schedules);
     } catch (err) {
@@ -161,7 +158,18 @@ let openWeekSchedules = async (req, res) => {
         });
     }
 };
-
+let getSchedulesByWeek = async (req, res) => {
+    try {
+        const { week } = req.query; // monday hoặc ngày bất kỳ
+        const data = await ScheduleService.getSchedulesByWeek(week);
+        return res.status(200).json({ errCode: 0, data });
+    } catch (e) {
+        return res.status(400).json({
+            errCode: 1,
+            message: e.message || "Get schedules by week failed",
+        });
+    }
+};
 export default {
     getAll,
     getById,
@@ -173,4 +181,5 @@ export default {
     createWeekly,
     getMySchedule,
     openWeekSchedules,
+    getSchedulesByWeek,
 };
