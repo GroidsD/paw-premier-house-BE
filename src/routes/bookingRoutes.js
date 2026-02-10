@@ -2,15 +2,18 @@ import express from "express";
 import bookingController from "../controllers/bookingController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
+router.post("/api/booking/verify", bookingController.verifyBooking);
 // ============================
 // CREATE BOOKING (CUSTOMER)
 // ============================
 router.post(
     "/api/booking/create",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["booking:create"],
     }),
@@ -23,6 +26,7 @@ router.post(
 router.get(
     "/api/booking/my-bookings",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["booking:read"],
     }),
@@ -35,6 +39,7 @@ router.get(
 router.get(
     "/api/booking/get-all",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["booking:read"],
         any: ["dashboard:admin", "dashboard:staff", "dashboard:manager"],
@@ -48,6 +53,7 @@ router.get(
 router.put(
     "/api/booking/update-status",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["booking:update"],
         any: ["dashboard:admin", "dashboard:staff", "dashboard:manager"],
@@ -61,6 +67,7 @@ router.put(
 router.post(
     "/api/booking/:bookingId/cancel",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["booking:update"],
     }),
@@ -73,6 +80,7 @@ router.post(
 router.post(
     "/booking/:bookingId/assign",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["booking:update"],
         any: ["dashboard:staff"],

@@ -2,6 +2,7 @@ import express from "express";
 import productCategoryController from "../controllers/productCategoryController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ const router = express.Router();
 router.post(
     "/api/product-categories/create",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["category:create"],
@@ -24,6 +26,7 @@ router.post(
 router.get(
     "/api/product-categories/get-all",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["category:read"],
     }),
@@ -33,6 +36,8 @@ router.get(
 // READ ONE - Lấy category theo ID
 router.get(
     "/api/product-categories/get-by-id",
+    authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["category:read"],
     }),
@@ -43,6 +48,7 @@ router.get(
 router.put(
     "/api/product-categories/update",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["category:update"],
@@ -54,6 +60,7 @@ router.put(
 router.delete(
     "/api/product-categories/soft-delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["dashboard:admin", "category:delete"],
     }),
@@ -64,6 +71,7 @@ router.delete(
 router.delete(
     "/api/product-categories/hard-delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["dashboard:admin", "category:delete"],
     }),

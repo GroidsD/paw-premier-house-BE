@@ -1,8 +1,112 @@
 import BookingService from "../services/BookingService.js";
+import { sendEmail } from "../services/EmailService.js";
+import buildUrlEmail from "../utils/buildUrlEmail.js";
+import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
+// const verifyBooking = async (req, res) => {
+//     try {
+//         const { token, bookingId } = req.body;
+//         const decoded = verifyToken(token);
+
+//         if (decoded.bookingId != bookingId)
+//             return res.status(400).json({ message: "Invalid token" });
+
+//         const booking = await db.Booking.findByPk(bookingId);
+//         if (!booking) {
+//             return res.status(404).json({ message: "Booking not found" });
+//         }
+//         // await db.Booking.update(
+//         //     { status: "confirmed" },
+//         //     { where: { booking_id: bookingId } },
+//         // );
+
+//         res.json({ message: "Booking confirmed" });
+//     } catch (err) {
+//         res.status(400).json({ message: "Token expired or invalid" });
+//     }
+// };
+
+const verifyBooking = async (req, res) => {
+    try {
+        const { token, bookingId } = req.body;
+
+        // 1. Verify JWT
+        const decoded = verifyToken(token);
+
+        if (Number(decoded.bookingId) !== Number(bookingId)) {
+            return res.status(400).json({
+                errCode: 1,
+                message: "Invalid token",
+            });
+        }
+
+        // 2. Get booking via service
+        const bookingResult = await BookingService.getBookingById(bookingId);
+
+        if (bookingResult.errCode !== 0) {
+            return res.status(404).json({
+                errCode: 1,
+                message: bookingResult.errMessage,
+            });
+        }
+
+        // 3. Update status nếu cần (optional)
+        // await bookingService.updateBookingStatus(bookingId, "confirmed", null);
+
+        return res.status(200).json({
+            errCode: 0,
+            message: "Booking confirmed",
+            data: bookingResult.data,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            errCode: -1,
+            message: "Token expired or invalid",
+        });
+    }
+};
 
 const createBooking = async (req, res) => {
     const userId = req.user.user_id;
     const result = await BookingService.createBooking(userId, req.body);
+
+    if (result.errCode !== 0) {
+        return res.status(400).json(result);
+    }
+    const { booking, user } = result;
+    const token = generateVerifyToken(booking.booking_id);
+    const url = buildUrlEmail(booking.booking_id, token);
+    try {
+        await sendEmail({
+            to: user.email,
+            subject: "Booking Confirmation",
+            html: `
+                <h2>Booking Successful 🎉</h2>
+                <p>Hello <b>${user.fullname}</b>,</p>
+                <p>Your booking has been created successfully.</p>
+
+                <ul>
+                    <li><b>Booking ID:</b> ${booking.booking_id}</li>
+                    <li><b>Date:</b> ${booking.date}</li>
+                    <li><b>Total:</b> ${booking.total_price} VND</li>
+                    <li><b>Status:</b> ${booking.status}</li>
+                    <a href="${url}" 
+                    style="
+                        display:inline-block;
+                        padding:12px 20px;
+                        background:#4CAF50;
+                        color:#fff;
+                        text-decoration:none;
+                        border-radius:6px;
+                    ">
+                        View Booking</a>
+                </ul>
+
+                <p>Thank you for using our service.</p>
+            `,
+        });
+    } catch (emailError) {
+        console.error("Email send failed:", emailError);
+    }
     return res.status(200).json(result);
 };
 
@@ -68,6 +172,7 @@ const assignBooking = async (req, res) => {
 };
 
 export default {
+    verifyBooking,
     createBooking,
     getMyBookings,
     getAllBookings,

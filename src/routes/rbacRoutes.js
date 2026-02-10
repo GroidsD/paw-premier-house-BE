@@ -2,6 +2,7 @@ import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
 import rbacController from "../controllers/rbacController.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ const router = express.Router();
 router.get(
     "/api/permission/get-all",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:permission:read"],
     }),
@@ -21,6 +23,7 @@ router.get(
 router.post(
     "/api/permission/create",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:permission:assign"],
         any: ["dashboard:admin"],
@@ -31,6 +34,7 @@ router.post(
 router.delete(
     "/api/permission/delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:permission:assign"],
         any: ["dashboard:admin"],
@@ -45,6 +49,7 @@ router.delete(
 router.get(
     "/api/role/get-all",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:role:read"],
     }),
@@ -54,6 +59,7 @@ router.get(
 router.post(
     "/api/role/create",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:role:create"],
         any: ["dashboard:admin"],
@@ -64,6 +70,7 @@ router.post(
 router.delete(
     "/api/role/delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:role:delete"],
         any: ["dashboard:admin"],
@@ -78,6 +85,7 @@ router.delete(
 router.post(
     "/api/role/set-permissions",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:permission:assign"],
         any: ["dashboard:admin"],
@@ -92,6 +100,7 @@ router.post(
 router.post(
     "/api/user/set-roles",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:user-role:assign"],
         any: ["dashboard:admin"],
@@ -106,6 +115,7 @@ router.post(
 router.post(
     "/api/user/set-permission",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["rbac:user-permission:assign"],
         any: ["dashboard:admin"],

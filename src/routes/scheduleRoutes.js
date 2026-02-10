@@ -2,6 +2,7 @@ import express from "express";
 import scheduleController from "../controllers/scheduleController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get(
     "/api/schedules/get-all",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:read"],
@@ -28,6 +30,7 @@ router.get(
 router.get(
     "/api/schedules/my-schedule",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["schedule:read"],
     }),
@@ -48,6 +51,7 @@ router.get(
 router.get(
     "/api/schedules/:schedule_id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["schedule:read"],
     }),
@@ -60,6 +64,7 @@ router.get(
 router.post(
     "/api/schedules/register",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["schedule:create"],
     }),
@@ -72,6 +77,7 @@ router.post(
 router.post(
     "/api/schedules/create-weekly",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:create"],
@@ -85,6 +91,7 @@ router.post(
 router.put(
     "/api/schedules/open-week",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:update"],
@@ -98,6 +105,7 @@ router.put(
 router.put(
     "/api/schedules/:schedule_id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:update"],
@@ -111,6 +119,7 @@ router.put(
 router.delete(
     "/api/schedules/:schedule_id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:delete"],
@@ -128,6 +137,7 @@ router.delete(
 router.patch(
     "/api/schedule-staff/:schedule_staff_id/approve",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:approve"],
@@ -141,6 +151,7 @@ router.patch(
 router.patch(
     "/api/schedule-staff/:schedule_staff_id/replace",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:replace"],
