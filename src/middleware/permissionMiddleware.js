@@ -13,7 +13,7 @@ const permissionMiddleware = ({ any = [], all = [] }) => {
         const hasAll =
             all.length === 0 || all.every((p) => userPermissions.includes(p));
 
-        // /* ================= DEBUG LOG ================= */
+        /* ================= DEBUG LOG ================= */
         // console.log("🛂 PERMISSION CHECK");
         // console.log("➡️ ANY required :", any);
         // console.log("➡️ ALL required :", all);
