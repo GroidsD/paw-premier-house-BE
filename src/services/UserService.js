@@ -483,23 +483,25 @@ let login = (email, password) => {
                 .filter(([_, allowed]) => allowed)
                 .map(([action]) => action);
 
+            // 👉 chỉ trả dashboard cho FE
+            const dashboardPermissions = finalPermissions.filter(
+                (p) => p.startsWith("dashboard.") || p.startsWith("dashboard:"),
+            );
+
             /* ================= JWT ================= */
             const token = jwt.sign(
                 {
                     user_id: user.user_id,
                     email: user.email,
-                    permissions: finalPermissions,
+                    // permissions: finalPermissions, // BE dùng
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: "1d" },
             );
 
             const plain = user.toJSON();
-
-            plain.permissions = finalPermissions;
+            plain.permissions = dashboardPermissions;
             plain.roles = plain.roles.map((r) => r.name);
-
-            // xoá internal RBAC
             delete plain.permissionOverrides;
 
             resolve({
@@ -717,16 +719,19 @@ let firebaseLogin = async (idToken) => {
             {
                 user_id: fullUser.user_id,
                 email: fullUser.email,
-                permissions: finalPermissions,
+                // permissions: finalPermissions,
             },
             process.env.JWT_SECRET,
             { expiresIn: "7d" },
         );
-
+        // 👉 chỉ trả dashboard cho FE
+        const dashboardPermissions = finalPermissions.filter((p) =>
+            p.startsWith("dashboard:"),
+        );
         /* ================= RESPONSE ================= */
         const plain = fullUser.toJSON();
 
-        plain.permissions = finalPermissions;
+        plain.permissions = dashboardPermissions;
         plain.roles = plain.roles.map((r) => r.name);
 
         // remove internal RBAC override object
