@@ -10,6 +10,12 @@ module.exports = (sequelize, DataTypes) => {
                 otherKey: "role_id",
                 as: "roles",
             });
+            Permission.belongsToMany(models.User, {
+                through: models.UserPermission,
+                foreignKey: "permission_id",
+                otherKey: "user_id",
+                as: "users",
+            });
         }
     }
 
@@ -28,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
             modelName: "Permission",
             tableName: "permissions",
             timestamps: false,
-        }
+        },
     );
 
     return Permission;
