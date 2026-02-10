@@ -11,7 +11,6 @@ router.get(
     authMiddleware,
     rbacMiddleware,
     permissionMiddleware({
-        any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:read"],
     }),
     scheduleController.getAll,
@@ -30,8 +29,8 @@ router.get(
 router.get(
     "/api/schedules/by-week",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
-        any: ["dashboard:admin", "dashboard:manager"],
         all: ["schedule:read"],
     }),
     scheduleController.getSchedulesByWeek,
