@@ -30,9 +30,6 @@ const getAllPets = async () => {
     }
 };
 
-/* ======================
-   CREATE PET
-====================== */
 const createPet = async (user, data) => {
     const t = await db.sequelize.transaction();
     try {
@@ -47,7 +44,7 @@ const createPet = async (user, data) => {
                 weight: data.weight,
                 description: data.description,
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         if (Array.isArray(data.media)) {
@@ -55,7 +52,7 @@ const createPet = async (user, data) => {
                 data.media,
                 pet.pet_id,
                 "pet",
-                t
+                t,
             );
         }
 
@@ -68,9 +65,6 @@ const createPet = async (user, data) => {
     }
 };
 
-/* ======================
-   GET MY PETS
-====================== */
 const getMyPets = async (user) => {
     const pets = await db.Pet.findAll({
         where: { owner_id: user.user_id },
@@ -81,9 +75,6 @@ const getMyPets = async (user) => {
     return { errCode: 0, pets };
 };
 
-/* ======================
-   GET PET BY ID
-====================== */
 const getPetById = async (user, pet_id) => {
     const pet = await db.Pet.findByPk(pet_id, {
         include: [{ model: db.Media, as: "media" }],
@@ -98,9 +89,6 @@ const getPetById = async (user, pet_id) => {
     return { errCode: 0, pet };
 };
 
-/* ======================
-   UPDATE PET
-====================== */
 const updatePet = async (user, pet_id, data) => {
     const t = await db.sequelize.transaction();
     try {
@@ -121,7 +109,7 @@ const updatePet = async (user, pet_id, data) => {
                 weight: data.weight ?? pet.weight,
                 description: data.description ?? pet.description,
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         if (Array.isArray(data.media)) {
@@ -129,7 +117,7 @@ const updatePet = async (user, pet_id, data) => {
                 data.media,
                 pet_id,
                 "pet",
-                t
+                t,
             );
         }
 
@@ -141,9 +129,6 @@ const updatePet = async (user, pet_id, data) => {
     }
 };
 
-/* ======================
-   DELETE PET
-====================== */
 const deletePet = async (user, pet_id) => {
     const pet = await db.Pet.findByPk(pet_id);
     if (!pet) return { errCode: 1, errMessage: "Pet not found" };
@@ -152,7 +137,7 @@ const deletePet = async (user, pet_id) => {
         return { errCode: 2, errMessage: "Permission denied" };
     }
 
-    await pet.destroy(); // afterDestroy auto xóa media
+    await pet.destroy();
     return { errCode: 0, errMessage: "Pet deleted successfully" };
 };
 

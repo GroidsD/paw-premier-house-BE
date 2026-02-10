@@ -1,7 +1,6 @@
 import { update } from "lodash";
 import db from "../models";
 
-// CREATE NEW ORDER WITH RESERVED STOCK
 let createOrder = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -14,7 +13,6 @@ let createOrder = (data) => {
                 });
             }
 
-            // Lấy thông tin sản phẩm từ DB
             const productIds = items.map((it) => it.product_id);
             const products = await db.Product.findAll({
                 where: { product_id: productIds },
@@ -32,11 +30,10 @@ let createOrder = (data) => {
 
             for (const item of items) {
                 const product = products.find(
-                    (p) => p.product_id === item.product_id
+                    (p) => p.product_id === item.product_id,
                 );
                 if (!product) continue;
 
-                // Kiểm tra stock khả dụng
                 const availableStock =
                     product.quantity - product.reserved_quantity;
                 if (item.quantity > availableStock) {
@@ -72,14 +69,12 @@ let createOrder = (data) => {
 
                 original_total += finalPrice * item.quantity;
 
-                // Lock stock: tăng reserved_quantity
                 await product.update({
                     reserved_quantity:
                         product.reserved_quantity + item.quantity,
                 });
             }
 
-            // Tạo Order
             const order = await db.Order.create({
                 customer_id,
                 original_price: original_total,
@@ -89,7 +84,6 @@ let createOrder = (data) => {
                 status: "pending",
             });
 
-            // Tạo OrderItems
             for (const item of orderItemsData) {
                 await db.OrderItem.create({
                     order_id: order.order_id,
@@ -97,7 +91,6 @@ let createOrder = (data) => {
                 });
             }
 
-            // Lấy lại dữ liệu order đầy đủ
             const newOrder = await db.Order.findByPk(order.order_id, {
                 include: [
                     {
@@ -120,7 +113,6 @@ let createOrder = (data) => {
     });
 };
 
-// GET ALL ORDERS
 let getAllOrders = async () => {
     const orders = await db.Order.findAll({
         include: [
@@ -149,7 +141,6 @@ let getAllOrders = async () => {
     };
 };
 
-// GET ORDER BY ID
 let getOrderById = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -205,7 +196,6 @@ let getOrderById = (order_id) => {
     });
 };
 
-// UPDATE ORDER STATUS
 let updateOrderStatus = (order_id, newStatus) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -233,7 +223,6 @@ let updateOrderStatus = (order_id, newStatus) => {
                 });
             }
 
-            // Chỉ cho phép cập nhật shipped nếu order đã confirmed
             if (newStatus === "shipped" && order.status !== "confirmed") {
                 return resolve({
                     errCode: 3,
@@ -241,7 +230,6 @@ let updateOrderStatus = (order_id, newStatus) => {
                 });
             }
 
-            // Chỉ cho phép completed nếu order đã shipped
             if (newStatus === "completed" && order.status !== "shipped") {
                 return resolve({
                     errCode: 4,
@@ -249,7 +237,6 @@ let updateOrderStatus = (order_id, newStatus) => {
                 });
             }
 
-            // Không cho update nếu đã cancelled hoặc deleted
             if (["cancelled", "deleted"].includes(order.status)) {
                 return resolve({
                     errCode: 5,
@@ -270,7 +257,6 @@ let updateOrderStatus = (order_id, newStatus) => {
     });
 };
 
-// CONFIRM ORDER → trừ stock thực + giảm reserved_quantity
 let confirmOrder = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -298,7 +284,6 @@ let confirmOrder = (order_id) => {
                     });
                 }
 
-                // Kiểm tra stock thật
                 if (product.quantity < item.quantity) {
                     return resolve({
                         errCode: 4,
@@ -322,7 +307,6 @@ let confirmOrder = (order_id) => {
     });
 };
 
-// CANCEL ORDER → giải phóng reserved_quantity nếu chưa confirm
 let cancelOrder = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -344,8 +328,6 @@ let cancelOrder = (order_id) => {
             for (const item of order.orderItems) {
                 const product = await db.Product.findByPk(item.product_id);
                 if (product) {
-                    // Nếu chưa confirm → chỉ giảm reserved_quantity
-                    // Nếu đã confirm → không cần giảm reserved_quantity, quantity đã trừ
                     const reservedReduction =
                         order.status === "pending" ? item.quantity : 0;
                     await product.update({
@@ -364,8 +346,6 @@ let cancelOrder = (order_id) => {
     });
 };
 
-// DELETE ORDER
-// SOFT DELETE bằng status
 let softDeleteOrder = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -394,7 +374,6 @@ let softDeleteOrder = (order_id) => {
     });
 };
 
-// HARD DELETE
 let hardDeleteOrder = (order_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -403,10 +382,7 @@ let hardDeleteOrder = (order_id) => {
                 return resolve({ errCode: 1, errMessage: "Order not found" });
             }
 
-            // Xóa các orderItems trước
             await db.OrderItem.destroy({ where: { order_id } });
-
-            // Xóa order
             await order.destroy();
 
             resolve({ errCode: 0, errMessage: "Order hard deleted" });
@@ -415,7 +391,7 @@ let hardDeleteOrder = (order_id) => {
         }
     });
 };
-// GET ALL ORDERS BY USER / CUSTOMER ID
+
 let getAllOrdersByUserId = (customer_id) => {
     return new Promise(async (resolve, reject) => {
         try {

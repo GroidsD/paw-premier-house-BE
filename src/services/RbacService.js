@@ -1,14 +1,6 @@
 import db from "../models/index.js";
 
-/*
-MODELS:
-User
-Role
-Permission
-UserRole
-RolePermission
-UserPermission
-*/
+
 const PERMISSION_ORDER = [
     "dashboard",
     "booking",
@@ -30,12 +22,12 @@ const sortPermissions = (permissions) => {
         const indexA = PERMISSION_ORDER.indexOf(resA);
         const indexB = PERMISSION_ORDER.indexOf(resB);
 
-        // resource không nằm trong list → đẩy xuống cuối
+        
         if (indexA === -1 && indexB === -1) return a.localeCompare(b);
         if (indexA === -1) return 1;
         if (indexB === -1) return -1;
 
-        // cùng resource → sort theo action
+        
         if (indexA === indexB) {
             return actA.localeCompare(actB);
         }
@@ -44,9 +36,7 @@ const sortPermissions = (permissions) => {
     });
 };
 
-/* ======================================================
-   PERMISSIONS
-====================================================== */
+
 const getAllPermissions = async () => {
     const permissions = await db.Permission.findAll();
     return { errCode: 0, permissions };
@@ -84,33 +74,31 @@ const deletePermission = async (id) => {
     }
 };
 
-/* ======================================================
-   ROLES
-====================================================== */
-// const getAllRoles = async () => {
-//     const roles = await db.Role.findAll({
-//         attributes: ["id", "name"],
-//         include: [
-//             {
-//                 model: db.Permission,
-//                 as: "permissions",
-//                 attributes: ["action"],
-//                 through: { attributes: [] },
-//             },
-//         ],
-//     });
 
-//     const mappedRoles = roles.map((role) => ({
-//         id: role.id,
-//         name: role.name,
-//         permissions: role.permissions.map((p) => p.action),
-//     }));
 
-//     return {
-//         errCode: 0,
-//         roles: mappedRoles,
-//     };
-// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const getAllRoles = async () => {
     const roles = await db.Role.findAll({
         attributes: ["id", "name"],
@@ -166,9 +154,7 @@ const deleteRole = async (id) => {
     }
 };
 
-/* ======================================================
-   ROLE PERMISSIONS
-====================================================== */
+
 const setPermissionsForRole = async (role_id, permission_ids) => {
     const t = await db.sequelize.transaction();
     try {
@@ -188,9 +174,7 @@ const setPermissionsForRole = async (role_id, permission_ids) => {
     }
 };
 
-/* ======================================================
-   USER ROLES
-====================================================== */
+
 const setRolesForUser = async (user_id, role_ids) => {
     const t = await db.sequelize.transaction();
     try {
@@ -210,9 +194,7 @@ const setRolesForUser = async (user_id, role_ids) => {
     }
 };
 
-/* ======================================================
-   USER PERMISSION OVERRIDES
-====================================================== */
+
 const setUserPermission = async (user_id, permission_id, allowed) => {
     const existing = await db.UserPermission.findOne({
         where: { user_id, permission_id },
@@ -230,17 +212,15 @@ const setUserPermission = async (user_id, permission_id, allowed) => {
 
     return { errCode: 0 };
 };
-/* ======================================================
-   USER PERMISSION DETAIL (FOR UI)
-====================================================== */
+
 const getUserPermissionDetail = async (user_id) => {
-    // 1) roles + role permissions
+    
     const user = await db.User.findByPk(user_id, {
         attributes: ["user_id", "fullname", "email"],
         include: [
             {
                 model: db.Role,
-                as: "roles", // phải đúng association của User model
+                as: "roles", 
                 attributes: ["id", "name"],
                 through: { attributes: [] },
                 include: [
@@ -265,7 +245,7 @@ const getUserPermissionDetail = async (user_id) => {
 
     const rolePermissions = sortPermissions(Array.from(rolePermissionsSet));
 
-    // 2) overrides (user_permissions join permission -> action)
+    
     const overridesRows = await db.UserPermission.findAll({
         where: { user_id },
         attributes: ["allowed"],
@@ -291,9 +271,7 @@ const getUserPermissionDetail = async (user_id) => {
     };
 };
 
-/* ======================================================
-   BULK SAVE OVERRIDES (action -> boolean)
-====================================================== */
+
 const setUserOverridesBulk = async (user_id, overrides = {}) => {
     const t = await db.sequelize.transaction();
     try {
@@ -305,7 +283,7 @@ const setUserOverridesBulk = async (user_id, overrides = {}) => {
 
         const actions = Object.keys(overrides);
 
-        // map action -> permission_id
+        
         const permissions = await db.Permission.findAll({
             where: { action: actions },
             attributes: ["id", "action"],
@@ -324,11 +302,11 @@ const setUserOverridesBulk = async (user_id, overrides = {}) => {
             };
         }
 
-        // Sync override table
+        
         await db.UserPermission.destroy({
             where: { user_id },
             transaction: t,
-            // nếu paranoid true: thêm force: true
+            
         });
 
         const rows = actions.map((action) => ({

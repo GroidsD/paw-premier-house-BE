@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class BookingItem extends Model {
         static associate(models) {
-            // BookingItem thuộc về 1 Booking
             BookingItem.belongsTo(models.Booking, {
                 foreignKey: "booking_id",
                 as: "booking",
@@ -12,7 +11,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "CASCADE",
             });
 
-            // BookingItem thuộc về 1 Service
             BookingItem.belongsTo(models.Service, {
                 foreignKey: "service_id",
                 as: "service",
@@ -34,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 references: {
-                    model: "bookings", // bảng cha
+                    model: "bookings",
                     key: "booking_id",
                 },
                 onUpdate: "CASCADE",
@@ -44,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: true,
                 references: {
-                    model: "services", // bảng dịch vụ
+                    model: "services",
                     key: "service_id",
                 },
                 onUpdate: "CASCADE",
@@ -72,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return BookingItem;

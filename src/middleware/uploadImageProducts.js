@@ -7,7 +7,6 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// === STORAGE CHO ẢNH SẢN PHẨM ===
 const productStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -26,7 +25,6 @@ const productStorage = multer.diskStorage({
     },
 });
 
-// === MULTER UPLOADERS ===
 const productUpload = multer({
     storage: productStorage,
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -36,7 +34,6 @@ const productUpload = multer({
     },
 });
 
-// === EXPORT ===
 module.exports = {
     multiUpload: productUpload.array("evidence", 10),
     singleUpload: productUpload.single("evidence"),

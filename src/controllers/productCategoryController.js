@@ -1,6 +1,5 @@
 import ProductCategoryService from "../services/ProductCategoryService.js";
 
-// CREATE
 let createCategory = async (req, res) => {
     try {
         const result = await ProductCategoryService.createCategory(req.body);
@@ -18,7 +17,6 @@ let createCategory = async (req, res) => {
     }
 };
 
-// READ ALL
 let getAllCategories = async (req, res) => {
     try {
         const categories = await ProductCategoryService.getAllCategories();
@@ -35,7 +33,6 @@ let getAllCategories = async (req, res) => {
     }
 };
 
-// READ ONE
 let getCategoryById = async (req, res) => {
     try {
         const { productCategories_id } = req.query;
@@ -62,7 +59,6 @@ let getCategoryById = async (req, res) => {
     }
 };
 
-// UPDATE
 let updateCategory = async (req, res) => {
     try {
         const { productCategories_id } = req.query;
@@ -81,7 +77,6 @@ let updateCategory = async (req, res) => {
     }
 };
 
-// SOFT DELETE
 let softDeleteCategory = async (req, res) => {
     try {
         const { category_id } = req.query;
@@ -98,7 +93,6 @@ let softDeleteCategory = async (req, res) => {
     }
 };
 
-// HARD DELETE
 let hardDeleteCategory = async (req, res) => {
     try {
         const { productCategories_id } = req.query;

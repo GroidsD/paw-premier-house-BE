@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("pets", {
@@ -22,7 +22,7 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
-            /* ===== Thông tin pet ===== */
+            
             name: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -48,7 +48,7 @@ module.exports = {
                 defaultValue: "active",
             },
 
-            /* ===== Thông tin vật lý ===== */
+            
             pet_image: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -79,7 +79,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });
@@ -88,12 +88,11 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("pets");
 
-        // ⚠️ Quan trọng: drop ENUM (MySQL / Postgres)
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_pets_gender";'
+            'DROP TYPE IF EXISTS "enum_pets_gender";',
         );
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_pets_status";'
+            'DROP TYPE IF EXISTS "enum_pets_status";',
         );
     },
 };

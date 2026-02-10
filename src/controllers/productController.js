@@ -1,11 +1,9 @@
 import ProductService from "../services/ProductService.js";
 
-// CREATE - Tạo sản phẩm mới
 const createProduct = async (req, res) => {
     try {
         const data = { ...req.body };
 
-        // FormData -> string, ép kiểu số
         data.productCategories_id = data.productCategories_id
             ? Number(data.productCategories_id)
             : null;
@@ -13,7 +11,6 @@ const createProduct = async (req, res) => {
         data.discount = Number(data.discount || 0);
         data.quantity = Number(data.quantity || 0);
 
-        // ✅ tags nếu gửi JSON string
         if (typeof data.tags === "string") {
             try {
                 data.tags = JSON.parse(data.tags);
@@ -22,19 +19,16 @@ const createProduct = async (req, res) => {
             }
         }
 
-        // ✅ mainIndex: FE gửi index ảnh chính (optional)
         const mainIndex = Number(data.mainIndex || 0);
 
-        // ✅ convert files -> media array
         const files = req.files || [];
         data.media = files.map((f, idx) => ({
             url: `/uploadImageProducts/${f.filename}`,
             type: "image",
-            is_main: idx === mainIndex, // ảnh chính
+            is_main: idx === mainIndex,
             alt_text: data.name || "product image",
         }));
 
-        // gọi service bạn đã có
         const result = await ProductService.createProduct(data);
         return res.status(200).json(result);
     } catch (e) {
@@ -45,7 +39,6 @@ const createProduct = async (req, res) => {
     }
 };
 
-// READ ALL - Lấy tất cả sản phẩm
 let getAllProducts = async (req, res) => {
     try {
         const products = await ProductService.getAllProducts();
@@ -62,7 +55,6 @@ let getAllProducts = async (req, res) => {
     }
 };
 
-// READ ONE - Lấy sản phẩm theo ID
 let getProductById = async (req, res) => {
     try {
         const product_id = req.query.product_id;
@@ -88,34 +80,6 @@ let getProductById = async (req, res) => {
     }
 };
 
-// UPDATE - Cập nhật sản phẩm
-// let updateProduct = async (req, res) => {
-//     try {
-//         const product_id = req.query.product_id;
-//         const updated = await ProductService.updateProduct(
-//             product_id,
-//             req.body,
-//         );
-//         if (!updated) {
-//             return res.status(404).json({
-//                 errCode: 1,
-//                 errMessage: "Product not found",
-//                 product: null,
-//             });
-//         }
-//         return res.status(200).json({
-//             errCode: updated.errCode,
-//             errMessage: updated.errMessage,
-//             product: updated.product,
-//         });
-//     } catch (e) {
-//         console.error(e);
-//         return res.status(400).json({
-//             errCode: 1,
-//             errMessage: e.toString(),
-//         });
-//     }
-// };
 const parseMaybeJson = (v, fallback) => {
     if (v === undefined || v === null) return fallback;
     if (typeof v !== "string") return v;
@@ -132,7 +96,6 @@ let updateProduct = async (req, res) => {
     try {
         const product_id = req.query.product_id;
 
-        // req.body của multipart toàn là string
         const body = { ...req.body };
 
         body.productCategories_id = body.productCategories_id
@@ -179,7 +142,6 @@ let updateProduct = async (req, res) => {
         });
     }
 };
-// SOFT DELETE - đổi status thành deleted
 let softDeleteProduct = async (req, res) => {
     try {
         const product_id = req.query.product_id;
@@ -199,7 +161,6 @@ let softDeleteProduct = async (req, res) => {
     }
 };
 
-// HARD DELETE - xóa hoàn toàn sản phẩm
 let hardDeleteProduct = async (req, res) => {
     try {
         const product_id = req.query.product_id;

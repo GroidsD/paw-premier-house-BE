@@ -1,13 +1,8 @@
 import openai from "../config/openAI.js";
 
-/**
- * Phân loại intent với context và examples
- * @param {string} text - Câu hỏi người dùng
- * @param {Array} conversationHistory - Lịch sử chat (optional)
- * @returns {Object} {intent, confidence, entities}
- */
+
 export async function classifyIntent(text, conversationHistory = []) {
-    // Tạo context từ lịch sử
+    
     const contextStr = conversationHistory.length > 0
         ? `\nLịch sử chat:\n${conversationHistory.map(h => `- ${h.role}: ${h.content}`).join('\n')}`
         : '';
@@ -66,7 +61,7 @@ ${contextStr}
                 { role: "user", content: prompt }
             ],
             max_tokens: 200,
-            temperature: 0.1, // Giảm temperature để ổn định hơn
+            temperature: 0.1, 
         });
 
         const content = res.choices?.[0]?.message?.content ?? "";
@@ -78,23 +73,21 @@ ${contextStr}
 
     } catch (error) {
         console.error("❌ Intent classification error:", error);
-        // Fallback với regex nâng cao
+        
         return fallbackClassifyIntent(text);
     }
 }
 
-/**
- * Fallback classification khi GPT fail
- */
+
 function fallbackClassifyIntent(text) {
     const t = text.toLowerCase();
     
-    // Greeting
+    
     if (/(^hi|^hello|^xin chào|^chào|^hey)/.test(t)) {
         return { intent: "greeting", confidence: 0.9, entities: {} };
     }
 
-    // Price range
+    
     const priceMatch = t.match(/(dưới|under|below)\s*(\d+)|(\d+)\s*(đến|to|-)\s*(\d+)/);
     if (priceMatch) {
         return { 
@@ -108,7 +101,7 @@ function fallbackClassifyIntent(text) {
         };
     }
 
-    // Price inquiry
+    
     if (/(giá|bao nhiêu|price|cost)/.test(t)) {
         if (/(mắc nhất|đắt nhất|cao nhất|highest|most expensive)/.test(t))
             return { intent: "highest_price", confidence: 0.9, entities: {} };
@@ -117,27 +110,27 @@ function fallbackClassifyIntent(text) {
         return { intent: "price_inquiry", confidence: 0.8, entities: {} };
     }
 
-    // Top selling
+    
     if (/(bán chạy|hot|best|popular|trending)/.test(t))
         return { intent: "top_selling", confidence: 0.85, entities: {} };
 
-    // Low stock
+    
     if (/(sắp hết|còn lại|ít hàng|low stock|limited)/.test(t))
         return { intent: "low_stock", confidence: 0.85, entities: {} };
 
-    // Discounted
+    
     if (/(giảm giá|sale|khuyến mãi|discount|promotion)/.test(t))
         return { intent: "discounted", confidence: 0.85, entities: {} };
 
-    // Recommend
+    
     if (/(gợi ý|recommend|suggest|nên mua|tư vấn)/.test(t))
         return { intent: "recommend", confidence: 0.8, entities: {} };
 
-    // Compare
+    
     if (/(so sánh|compare|khác gì|difference|vs)/.test(t))
         return { intent: "compare", confidence: 0.8, entities: {} };
 
-    // Extract entities
+    
     const entities = {};
     if (/(mèo|cat|kitten)/.test(t)) entities.pet_type = "cat";
     if (/(chó|dog|puppy)/.test(t)) entities.pet_type = "dog";
@@ -164,7 +157,7 @@ function fallbackClassifyIntent(text) {
         return { intent: "service_search", confidence: 0.75, entities };
     }
 
-    // Default to product_search
+    
     return { 
         intent: "product_search", 
         confidence: 0.6,

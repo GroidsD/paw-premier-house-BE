@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("orderItems", {
@@ -39,7 +39,6 @@ module.exports = {
                 defaultValue: 1,
             },
 
-            // Giá gốc
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
@@ -47,7 +46,6 @@ module.exports = {
                 comment: "Giá gốc của sản phẩm trong đơn (trước khi giảm giá)",
             },
 
-            // Chiết khấu
             discount: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: true,
@@ -63,7 +61,6 @@ module.exports = {
                 comment: "Loại chiết khấu: percent = %, fixed = số tiền",
             },
 
-            // Giá sau giảm
             price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
@@ -81,7 +78,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });
@@ -91,7 +88,7 @@ module.exports = {
         await queryInterface.dropTable("orderItems");
 
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_orderItems_discount_type";'
+            'DROP TYPE IF EXISTS "enum_orderItems_discount_type";',
         );
     },
 };

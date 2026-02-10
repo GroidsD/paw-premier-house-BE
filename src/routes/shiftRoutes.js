@@ -6,10 +6,7 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   CREATE SHIFT
-   Permission: shift:create
-====================================================== */
+
 router.post(
     "/api/create-shifts",
     authMiddleware,
@@ -20,10 +17,7 @@ router.post(
     shiftController.create,
 );
 
-/* ======================================================
-   GET ALL SHIFTS
-   Permission: shift:read
-====================================================== */
+
 router.get(
     "/api/get-all-shifts",
     authMiddleware,
@@ -34,10 +28,7 @@ router.get(
     shiftController.getAll,
 );
 
-/* ======================================================
-   GET SHIFT BY ID
-   Permission: shift:read
-====================================================== */
+
 router.get(
     "/api/get-shift/:shift_id",
     authMiddleware,
@@ -48,10 +39,7 @@ router.get(
     shiftController.getById,
 );
 
-/* ======================================================
-   UPDATE SHIFT
-   Permission: shift:update
-====================================================== */
+
 router.put(
     "/api/update-shift/:shift_id",
     authMiddleware,
@@ -62,10 +50,7 @@ router.put(
     shiftController.update,
 );
 
-/* ======================================================
-   DELETE SHIFT
-   Permission: shift:delete
-====================================================== */
+
 router.delete(
     "/api/delete-shift/:shift_id",
     authMiddleware,

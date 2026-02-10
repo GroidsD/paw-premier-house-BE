@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Booking extends Model {
         static associate(models) {
-            // Booking thuộc về khách hàng
             Booking.belongsTo(models.User, {
                 foreignKey: "customer_id",
                 targetKey: "user_id",
@@ -13,7 +12,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             });
 
-            // Booking thuộc về nhân viên
             Booking.belongsTo(models.User, {
                 foreignKey: "staff_id",
                 targetKey: "user_id",
@@ -22,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             });
 
-            // Booking thuộc về 1 pet
             Booking.belongsTo(models.Pet, {
                 foreignKey: "pet_id",
                 as: "pet",
@@ -112,7 +109,7 @@ module.exports = (sequelize, DataTypes) => {
                     "pending",
                     "assigned",
                     "cancelled",
-                    "completed"
+                    "completed",
                 ),
                 defaultValue: "pending",
             },
@@ -147,7 +144,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return Booking;

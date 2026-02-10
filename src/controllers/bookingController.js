@@ -2,34 +2,11 @@ import BookingService from "../services/BookingService.js";
 import { sendEmail } from "../services/EmailService.js";
 import buildUrlEmail from "../utils/buildUrlEmail.js";
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
-// const verifyBooking = async (req, res) => {
-//     try {
-//         const { token, bookingId } = req.body;
-//         const decoded = verifyToken(token);
-
-//         if (decoded.bookingId != bookingId)
-//             return res.status(400).json({ message: "Invalid token" });
-
-//         const booking = await db.Booking.findByPk(bookingId);
-//         if (!booking) {
-//             return res.status(404).json({ message: "Booking not found" });
-//         }
-//         // await db.Booking.update(
-//         //     { status: "confirmed" },
-//         //     { where: { booking_id: bookingId } },
-//         // );
-
-//         res.json({ message: "Booking confirmed" });
-//     } catch (err) {
-//         res.status(400).json({ message: "Token expired or invalid" });
-//     }
-// };
 
 const verifyBooking = async (req, res) => {
     try {
         const { token, bookingId } = req.body;
 
-        // 1. Verify JWT
         const decoded = verifyToken(token);
 
         if (Number(decoded.bookingId) !== Number(bookingId)) {
@@ -39,7 +16,6 @@ const verifyBooking = async (req, res) => {
             });
         }
 
-        // 2. Get booking via service
         const bookingResult = await BookingService.getBookingById(bookingId);
 
         if (bookingResult.errCode !== 0) {
@@ -48,9 +24,6 @@ const verifyBooking = async (req, res) => {
                 message: bookingResult.errMessage,
             });
         }
-
-        // 3. Update status nếu cần (optional)
-        // await bookingService.updateBookingStatus(bookingId, "confirmed", null);
 
         return res.status(200).json({
             errCode: 0,

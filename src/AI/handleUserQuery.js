@@ -12,20 +12,20 @@ import { recommendServices } from "./services/recommendServices.js";
 import { classifyIntent } from "./classifyIntent.js";
 import conversationMemory from "./conversationMemory.js";
 
-// ------------------------- Main Handler -------------------------
+
 export async function handleUserQuery({ userId = null, text }) {
     const userLang = detectLanguage(text);
     const sessionId = userId || "anonymous";
 
     try {
-        // 1️⃣ Lưu user message vào memory
+        
         conversationMemory.addMessage(sessionId, "user", text);
 
-        // 2️⃣ Lấy context từ lịch sử
+        
         const history = conversationMemory.getHistory(sessionId, 3);
         const userProfile = conversationMemory.analyzeUserIntent(sessionId);
 
-        // 3️⃣ Phân loại intent với context
+        
         const intentRes = await classifyIntent(text, history);
         const intent = intentRes.intent?.toLowerCase() ?? "other";
         const entities = intentRes.entities || {};
@@ -77,8 +77,8 @@ export async function handleUserQuery({ userId = null, text }) {
                     await recommendForUser({
                         userId,
                         userText: text,
-                        userProfile, // Truyền user profile
-                        language: userLang, // Truyền language
+                        userProfile, 
+                        language: userLang, 
                         limit: 5,
                     }),
                     userLang === "en"
@@ -148,7 +148,7 @@ export async function handleUserQuery({ userId = null, text }) {
                 break;
         }
 
-        // 4️⃣ Lưu assistant response vào memory
+        
         conversationMemory.addMessage(sessionId, "assistant", response);
 
         return response;
@@ -161,7 +161,7 @@ export async function handleUserQuery({ userId = null, text }) {
     }
 }
 
-// ------------------------- Detect language -------------------------
+
 function detectLanguage(text) {
     const vietnameseChars =
         /[àáạảãâầấậẩẫăằắặẳẵđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i;
@@ -169,9 +169,9 @@ function detectLanguage(text) {
     return "en";
 }
 
-// ------------------------- Handle price queries -------------------------
+
 async function handlePriceQuery(text, lang, entities = {}) {
-    // Sử dụng filters từ entities
+    
     const filters = buildFilters(entities);
 
     const results = await semanticSearchProducts(text, lang, 1, filters);
@@ -187,7 +187,7 @@ async function handlePriceQuery(text, lang, entities = {}) {
         }: **${formatPrice(p.price, lang)}**`;
 }
 
-// ------------------------- Handle price range queries -------------------------
+
 async function handlePriceRangeQuery(priceRange, lang, entities = {}) {
     if (!priceRange) {
         return lang === "en"
@@ -211,20 +211,20 @@ async function handlePriceRangeQuery(priceRange, lang, entities = {}) {
     return formatProducts(results, title, lang);
 }
 
-// ------------------------- Handle generic product info -------------------------
+
 async function handleProductInfoQuery(text, lang, entities = {}) {
     let query = text.toLowerCase();
 
-    // Build filters từ entities
+    
     const filters = buildFilters(entities);
 
-    // Boost embedding nếu có từ "cat/meo" hoặc "dog/cho"
+    
     if (/(mèo|cat)/.test(query)) query += " cat";
     else if (/(chó|dog)/.test(query)) query += " dog";
 
     let results = await semanticSearchProducts(query, lang, 10, filters);
 
-    // Fallback nếu không có kết quả
+    
     if (results.length === 0 && lang === "vi") {
         results = await semanticSearchProducts(query, "en", 5, filters);
     }
@@ -241,7 +241,7 @@ async function handleProductInfoQuery(text, lang, entities = {}) {
     );
 }
 
-// ------------------------- Handle service search -------------------------
+
 async function handleServiceSearchQuery(text, lang, entities = {}, userProfile = {}) {
     const filters = buildServiceFilters(entities, userProfile);
     const results = await semanticSearchServices(text, lang, 5, filters);
@@ -259,7 +259,7 @@ async function handleServiceSearchQuery(text, lang, entities = {}, userProfile =
     );
 }
 
-// ------------------------- Handle service price -------------------------
+
 async function handleServicePriceQuery(text, lang, entities = {}, userProfile = {}) {
     const filters = buildServiceFilters(entities, userProfile);
     const results = await semanticSearchServices(text, lang, 1, filters);
@@ -280,7 +280,7 @@ async function handleServicePriceQuery(text, lang, entities = {}, userProfile = 
         : `Giá của **${nameObj.name}** là **${formatPrice(service.price, lang)}**.`;
 }
 
-// ------------------------- Handle service booking -------------------------
+
 async function handleServiceBookingQuery(text, lang, entities = {}, userProfile = {}) {
     const filters = buildServiceFilters(entities, userProfile);
     const results = await semanticSearchServices(text, lang, 3, filters);
@@ -301,7 +301,7 @@ async function handleServiceBookingQuery(text, lang, entities = {}, userProfile 
         : `Để đặt dịch vụ **${nameObj.name}**, bạn cho mình biết khung giờ mong muốn và thông tin thú cưng. Mình sẽ hỗ trợ tạo lịch hoặc bạn có thể đặt trực tiếp trong ứng dụng tại mục lịch hẹn.`;
 }
 
-// ------------------------- Build filters from entities -------------------------
+
 function buildFilters(entities) {
     const filters = {};
 
@@ -338,7 +338,7 @@ function buildServiceFilters(entities = {}, userProfile = {}) {
     return filters;
 }
 
-// ------------------------- Format products -------------------------
+
 function formatProducts(products, title, lang = "vi") {
     if (!products || products.length === 0) {
         return lang === "en"
@@ -346,16 +346,16 @@ function formatProducts(products, title, lang = "vi") {
             : "Không tìm thấy sản phẩm phù hợp.";
     }
 
-    // Lọc products có translation cho ngôn ngữ yêu cầu
+    
     let filtered = products.filter((p) =>
         p.translates?.some((t) => t.language === lang)
     );
 
-    // Nếu không có, fallback sang ngôn ngữ có sẵn
+    
     if (!filtered.length) {
         console.log(`⚠️ No products with ${lang} translation, using available language`);
         filtered = products;
-        // Detect ngôn ngữ có sẵn
+        
         const availableLang = products[0]?.translates?.[0]?.language || lang;
         console.log(`📝 Using language: ${availableLang}`);
         lang = availableLang;
@@ -372,7 +372,7 @@ function formatProducts(products, title, lang = "vi") {
     return msg;
 }
 
-// ------------------------- Format services -------------------------
+
 function formatServices(services, title, lang = "vi") {
     if (!services || services.length === 0) {
         return lang === "en"
@@ -391,7 +391,7 @@ function formatServices(services, title, lang = "vi") {
     return msg;
 }
 
-// ------------------------- Format products with highlight -------------------------
+
 function formatProductsWithHighlight(
     products,
     lang = "vi",
@@ -415,7 +415,7 @@ function formatProductsWithHighlight(
             lang
         );
 
-    // Sort theo giá
+    
     filtered.sort((a, b) =>
         mostExpensive ? b.price - a.price : a.price - b.price
     );
@@ -435,7 +435,7 @@ function formatProductsWithHighlight(
         msg += `• ${nameObj.name} – **${formatPrice(p.price, lang)}**\n`;
     }
 
-    // Highlight first product
+    
     const first = filtered[0];
     const firstName = first.translates.find((t) => t.language === lang).name;
     const firstPrice = formatPrice(first.price, lang);
@@ -451,7 +451,7 @@ function formatProductsWithHighlight(
     return msg;
 }
 
-// ------------------------- Format price -------------------------
+
 function formatPrice(price, lang = "vi") {
     const numericPrice = Number(price);
     if (Number.isNaN(numericPrice) || numericPrice < 0)

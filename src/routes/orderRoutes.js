@@ -6,9 +6,6 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-// ============================
-// CREATE ORDER
-// ============================
 router.post(
     "/api/orders/create",
     authMiddleware,
@@ -19,9 +16,6 @@ router.post(
     orderController.createOrder,
 );
 
-// ============================
-// READ ALL ORDERS (ADMIN / MANAGER)
-// ============================
 router.get(
     "/api/orders/get-all",
     authMiddleware,
@@ -33,9 +27,6 @@ router.get(
     orderController.getAllOrders,
 );
 
-// ============================
-// READ ORDER BY ID
-// ============================
 router.get(
     "/api/orders/get-by-id",
     authMiddleware,
@@ -46,9 +37,6 @@ router.get(
     orderController.getOrderById,
 );
 
-// ============================
-// GET ORDERS BY USER
-// ============================
 router.get(
     "/api/orders/get-by-user",
     authMiddleware,
@@ -59,9 +47,6 @@ router.get(
     orderController.getAllOrdersByUserId,
 );
 
-// ============================
-// CONFIRM ORDER
-// ============================
 router.post(
     "/api/orders/confirm",
     authMiddleware,
@@ -72,9 +57,6 @@ router.post(
     orderController.confirmOrder,
 );
 
-// ============================
-// CANCEL ORDER
-// ============================
 router.post(
     "/api/orders/cancel",
     authMiddleware,
@@ -85,9 +67,6 @@ router.post(
     orderController.cancelOrder,
 );
 
-// ============================
-// UPDATE STATUS
-// ============================
 router.patch(
     "/api/orders/update-status",
     authMiddleware,
@@ -98,9 +77,6 @@ router.patch(
     orderController.updateStatus,
 );
 
-// ============================
-// SOFT DELETE
-// ============================
 router.delete(
     "/api/orders/soft-delete",
     authMiddleware,
@@ -112,9 +88,6 @@ router.delete(
     orderController.softDeleteOrder,
 );
 
-// ============================
-// HARD DELETE
-// ============================
 router.delete(
     "/api/orders/hard-delete",
     authMiddleware,

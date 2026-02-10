@@ -7,9 +7,7 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 const router = express.Router();
 
 router.post("/api/booking/verify", bookingController.verifyBooking);
-// ============================
-// CREATE BOOKING (CUSTOMER)
-// ============================
+
 router.post(
     "/api/booking/create",
     authMiddleware,
@@ -20,9 +18,6 @@ router.post(
     bookingController.createBooking,
 );
 
-// ============================
-// GET MY BOOKINGS (CUSTOMER)
-// ============================
 router.get(
     "/api/booking/my-bookings",
     authMiddleware,
@@ -33,9 +28,6 @@ router.get(
     bookingController.getMyBookings,
 );
 
-// ============================
-// GET ALL BOOKINGS (ADMIN / STAFF)
-// ============================
 router.get(
     "/api/booking/get-all",
     authMiddleware,
@@ -47,9 +39,6 @@ router.get(
     bookingController.getAllBookings,
 );
 
-// ============================
-// UPDATE BOOKING STATUS (ADMIN / STAFF)
-// ============================
 router.put(
     "/api/booking/update-status",
     authMiddleware,
@@ -61,9 +50,6 @@ router.put(
     bookingController.updateBookingStatus,
 );
 
-// ============================
-// CUSTOMER CANCEL BOOKING
-// ============================
 router.post(
     "/api/booking/:bookingId/cancel",
     authMiddleware,
@@ -74,9 +60,6 @@ router.post(
     bookingController.customerCancelBooking,
 );
 
-// ============================
-// STAFF ASSIGN BOOKING
-// ============================
 router.post(
     "/booking/:bookingId/assign",
     authMiddleware,

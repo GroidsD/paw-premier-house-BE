@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Service extends Model {
         static associate(models) {
-            // Mỗi Service thuộc về 1 ServiceCategory
             Service.belongsTo(models.ServiceCategory, {
                 foreignKey: "serviceCategories_id",
                 as: "category",
@@ -12,13 +11,11 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             });
 
-            // Mỗi Service có thể nằm trong nhiều BookingItem
             Service.hasMany(models.BookingItem, {
                 foreignKey: "service_id",
                 as: "bookingItems",
             });
 
-            // Media đa hình
             Service.hasMany(models.Media, {
                 foreignKey: "entity_id",
                 constraints: false,
@@ -47,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
-            /* ===== Thông tin dịch vụ ===== */
+            
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -64,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
             duration: {
-                type: DataTypes.INTEGER, // phút
+                type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 60,
                 comment: "Duration in minutes",
@@ -98,7 +95,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return Service;

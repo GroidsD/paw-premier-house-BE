@@ -1,9 +1,9 @@
 import db from "../models/index.js";
 import MediaService from "./MediaService.js";
 
-// ============================
-// CREATE SERVICE
-// ============================
+
+
+
 const createService = async (data) => {
   const t = await db.sequelize.transaction();
   try {
@@ -13,7 +13,7 @@ const createService = async (data) => {
         name: data.name,
         description: data.description,
         price: data.price,
-        duration: data.duration, // ✅ đã có trong model
+        duration: data.duration, 
       },
       { transaction: t },
     );
@@ -45,9 +45,9 @@ const createService = async (data) => {
   }
 };
 
-// ============================
-// GET ALL SERVICES
-// ============================
+
+
+
 const getAllServices = async () => {
   try {
     const services = await db.Service.findAll({
@@ -81,9 +81,9 @@ const getAllServices = async () => {
   }
 };
 
-// ============================
-// GET SERVICE BY ID
-// ============================
+
+
+
 const getServiceById = async (id) => {
   try {
     const service = await db.Service.findOne({
@@ -124,16 +124,16 @@ const getServiceById = async (id) => {
   }
 };
 
-// ============================
-// GET SERVICES BY CATEGORY
-// ============================
+
+
+
 const getServicesByCategory = async (category_id) => {
   try {
     const services = await db.Service.findAll({
       where: {
         serviceCategories_id: category_id,
         isDeleted: false,
-        // isActive: true,
+        
       },
       include: [
         {
@@ -161,9 +161,9 @@ const getServicesByCategory = async (category_id) => {
   }
 };
 
-// ============================
-// UPDATE SERVICE
-// ============================
+
+
+
 const updateService = async (id, data) => {
   const t = await db.sequelize.transaction();
   try {
@@ -211,9 +211,9 @@ const updateService = async (id, data) => {
   }
 };
 
-// ============================
-// 🟢 SOFT DELETE SERVICE
-// ============================
+
+
+
 const softDeleteService = async (id) => {
   try {
     const service = await db.Service.findByPk(id);
@@ -239,9 +239,9 @@ const softDeleteService = async (id) => {
   }
 };
 
-// ============================
-// 🔴 HARD DELETE SERVICE
-// ============================
+
+
+
 const hardDeleteService = async (id) => {
   const t = await db.sequelize.transaction();
   try {
@@ -250,10 +250,10 @@ const hardDeleteService = async (id) => {
       throw new Error("Service not found");
     }
 
-    // Xóa media liên quan
+    
     await MediaService.deleteMediaByEntity("service", id, t);
 
-    // Xóa service
+    
     await service.destroy({ transaction: t });
 
     await t.commit();

@@ -1,4 +1,3 @@
-// models/shift.js
 "use strict";
 const { Model } = require("sequelize");
 
@@ -7,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Shift.hasMany(models.Schedule, {
                 foreignKey: "shift_id",
-                as: "schedules", // THÊM ALIAS
+                as: "schedules",
             });
         }
     }
@@ -22,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
             shift_name: DataTypes.STRING,
             start_time: DataTypes.TIME,
             end_time: DataTypes.TIME,
-            duration_hours: DataTypes.FLOAT, // VD: 8.0h
+            duration_hours: DataTypes.FLOAT,
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
@@ -40,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return Shift;

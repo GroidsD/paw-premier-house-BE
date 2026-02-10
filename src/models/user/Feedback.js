@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Feedback extends Model {
         static associate(models) {
-            // Feedback thuộc về 1 user (khách hàng)
             Feedback.belongsTo(models.User, {
                 foreignKey: "customer_id",
                 targetKey: "user_id",
@@ -74,7 +73,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return Feedback;

@@ -8,7 +8,6 @@ const createBooking = async (user_id, data) => {
     const t = await db.sequelize.transaction();
 
     try {
-        // 1️⃣ Create booking
         const booking = await db.Booking.create(
             {
                 customer_id: user_id,
@@ -19,7 +18,6 @@ const createBooking = async (user_id, data) => {
             { transaction: t },
         );
 
-        // 2️⃣ Booking items + total price
         let totalPrice = 0;
 
         for (const item of data.services) {
@@ -45,7 +43,6 @@ const createBooking = async (user_id, data) => {
             );
         }
 
-        // 3️⃣ Voucher
         const { voucher, discount } = await applyVoucherForBooking({
             voucherCode: data.voucher_code,
             userId: user_id,
@@ -55,7 +52,6 @@ const createBooking = async (user_id, data) => {
 
         const finalTotal = totalPrice - discount;
 
-        // 4️⃣ Update booking
         await booking.update(
             {
                 original_price: totalPrice,
@@ -66,7 +62,6 @@ const createBooking = async (user_id, data) => {
             { transaction: t },
         );
 
-        // 5️⃣ Voucher usage
         if (voucher) {
             await db.VoucherUsage.create(
                 {
@@ -84,7 +79,6 @@ const createBooking = async (user_id, data) => {
         await booking.reload({ transaction: t });
         await t.commit();
 
-        // 🔽 🔽 🔽 THÊM PHẦN NÀY 🔽 🔽 🔽
         const user = await db.User.findByPk(user_id, {
             attributes: ["fullname", "email"],
         });
@@ -134,6 +128,7 @@ const getMyBookings = async (user_id) => {
 
     return { errCode: 0, bookings };
 };
+
 const getAllBookings = async () => {
     const bookings = await db.Booking.findAll({
         include: [
@@ -162,6 +157,7 @@ const getAllBookings = async () => {
 
     return { errCode: 0, bookings };
 };
+
 const updateBookingStatus = async (id, status, staffId) => {
     const booking = await db.Booking.findByPk(id);
     if (!booking) {
@@ -178,6 +174,7 @@ const updateBookingStatus = async (id, status, staffId) => {
         errMessage: "Booking updated successfully",
     };
 };
+
 const cancelBooking = async ({
     bookingId,
     cancelledBy,
@@ -196,21 +193,19 @@ const cancelBooking = async ({
         if (booking.status !== "pending")
             throw new Error("Booking không thể huỷ");
 
-        // quyền huỷ
         if (cancelledBy === "customer" && booking.customer_id !== userId) {
             throw new Error("Không có quyền huỷ booking này");
         }
+
         if (cancelledBy === "staff") {
             const isStaffOfBooking = booking.staff_id === userId;
-
-            const isAdmin = req.user?.role === "admin"; // nếu bạn có role
+            const isAdmin = req.user?.role === "admin";
 
             if (!isStaffOfBooking && !isAdmin) {
                 throw new Error("Bạn không có quyền huỷ booking này");
             }
         }
 
-        // update booking
         await booking.update(
             {
                 status: "rejected",
@@ -220,7 +215,6 @@ const cancelBooking = async ({
             { transaction: t },
         );
 
-        // refund voucher nếu có
         await refundVoucherForBooking({
             booking,
             cancelledBy,
@@ -241,11 +235,11 @@ const cancelBooking = async ({
         };
     }
 };
+
 const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
     const t = await db.sequelize.transaction();
 
     try {
-        // 1️⃣ Booking
         const booking = await db.Booking.findByPk(bookingId, {
             transaction: t,
         });
@@ -255,7 +249,6 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
         if (booking.status !== "pending")
             throw new Error("Booking không thể nhận");
 
-        // 2️⃣ Check staff trong ca
         const scheduleStaff = await db.ScheduleStaff.findOne({
             where: {
                 schedule_id: scheduleId,
@@ -268,7 +261,6 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
         if (!scheduleStaff)
             throw new Error("Staff không thuộc ca hoặc đang bận");
 
-        // 3️⃣ Assign booking
         await booking.update(
             {
                 staff_id: staffId,
@@ -277,7 +269,6 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
             { transaction: t },
         );
 
-        // 4️⃣ Update schedule_staff
         await scheduleStaff.update(
             {
                 status: "busy",
@@ -300,6 +291,7 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
         };
     }
 };
+
 const getBookingById = async (id) => {
     const booking = await db.Booking.findByPk(id);
 

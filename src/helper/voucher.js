@@ -21,7 +21,7 @@ export const applyVoucherForBooking = async ({
             apply_for: { [Op.in]: ["booking", "all"] },
         },
         transaction,
-        lock: transaction.LOCK.UPDATE, // 🔒 chống race condition
+        lock: transaction.LOCK.UPDATE,
     });
 
     if (!voucher) throw new Error("Voucher không tồn tại");
@@ -55,7 +55,6 @@ export const applyVoucherForBooking = async ({
 
     if (used) throw new Error("Bạn đã sử dụng voucher này rồi");
 
-    // 💰 TÍNH GIẢM GIÁ
     let discount = 0;
 
     if (voucher.discount_type === "percent") {
@@ -95,13 +94,12 @@ export const refundVoucherForBooking = async ({
 
     if (!usage) return;
 
-    // refund
     await usage.update(
         {
             status: "refunded",
             refunded_at: new Date(),
         },
-        { transaction }
+        { transaction },
     );
 
     await db.Voucher.decrement("used_count", {

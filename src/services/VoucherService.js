@@ -74,7 +74,7 @@ const applyVoucher = async ({
         throw error;
     }
 };
-// services/VoucherService.js
+
 const createVoucher = async (data) => {
     const existed = await db.Voucher.findOne({
         where: { code: data.code },
@@ -84,14 +84,14 @@ const createVoucher = async (data) => {
 
     const voucher = await db.Voucher.create({
         code: data.code,
-        discount_type: data.discount_type, // percent | fixed
+        discount_type: data.discount_type, 
         discount: data.discount,
         description: data.description || null,
         max_discount: data.max_discount || null,
         min_order_value: data.min_order_value || 0,
         usage_limit: data.usage_limit || null,
         used_count: 0,
-        apply_for: data.apply_for, // booking | order
+        apply_for: data.apply_for, 
         start_date: data.start_date,
         end_date: data.end_date,
         is_active: true,

@@ -6,13 +6,6 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   SCHEDULE ROUTES (RBAC - permission based)
-====================================================== */
-
-// ============================
-// GET ALL SCHEDULES
-// ============================
 router.get(
     "/api/schedules/get-all",
     authMiddleware,
@@ -24,9 +17,6 @@ router.get(
     scheduleController.getAll,
 );
 
-// ============================
-// GET MY SCHEDULE (STAFF)
-// ============================
 router.get(
     "/api/schedules/my-schedule",
     authMiddleware,
@@ -36,6 +26,7 @@ router.get(
     }),
     scheduleController.getMySchedule,
 );
+
 router.get(
     "/api/schedules/by-week",
     authMiddleware,
@@ -45,9 +36,7 @@ router.get(
     }),
     scheduleController.getSchedulesByWeek,
 );
-// ============================
-// GET SCHEDULE BY ID
-// ============================
+
 router.get(
     "/api/schedules/:schedule_id",
     authMiddleware,
@@ -58,9 +47,6 @@ router.get(
     scheduleController.getById,
 );
 
-// ============================
-// STAFF REGISTER SHIFT
-// ============================
 router.post(
     "/api/schedules/register",
     authMiddleware,
@@ -71,9 +57,6 @@ router.post(
     scheduleController.register,
 );
 
-// ============================
-// CREATE WEEKLY SCHEDULE
-// ============================
 router.post(
     "/api/schedules/create-weekly",
     authMiddleware,
@@ -85,9 +68,6 @@ router.post(
     scheduleController.createWeekly,
 );
 
-// ============================
-// OPEN WEEK SCHEDULE
-// ============================
 router.put(
     "/api/schedules/open-week",
     authMiddleware,
@@ -99,9 +79,6 @@ router.put(
     scheduleController.openWeekSchedules,
 );
 
-// ============================
-// UPDATE SCHEDULE
-// ============================
 router.put(
     "/api/schedules/:schedule_id",
     authMiddleware,
@@ -113,9 +90,6 @@ router.put(
     scheduleController.update,
 );
 
-// ============================
-// DELETE SCHEDULE
-// ============================
 router.delete(
     "/api/schedules/:schedule_id",
     authMiddleware,
@@ -127,13 +101,6 @@ router.delete(
     scheduleController.delete,
 );
 
-// ======================================================
-// SCHEDULE STAFF (schedule_staff table)
-// ======================================================
-
-// ============================
-// APPROVE / REJECT STAFF
-// ============================
 router.patch(
     "/api/schedule-staff/:schedule_staff_id/approve",
     authMiddleware,
@@ -145,9 +112,6 @@ router.patch(
     scheduleController.approve,
 );
 
-// ============================
-// REPLACE STAFF
-// ============================
 router.patch(
     "/api/schedule-staff/:schedule_staff_id/replace",
     authMiddleware,

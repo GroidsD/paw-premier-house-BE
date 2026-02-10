@@ -2,6 +2,7 @@ import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
+
 let createProduct = async (data) => {
     try {
         let {
@@ -45,7 +46,6 @@ let createProduct = async (data) => {
         for (const tagName of tags) {
             let tagSlug = generateSlug(tagName);
 
-            // tìm hoặc tạo tag
             const [tag] = await db.Tag.findOrCreate({
                 where: { slug: tagSlug },
                 defaults: {
@@ -54,7 +54,6 @@ let createProduct = async (data) => {
                 },
             });
 
-            // gắn tag cho product (DB sẽ chặn nếu trùng)
             await db.ProductTag.findOrCreate({
                 where: {
                     product_id: product.product_id,
@@ -62,6 +61,7 @@ let createProduct = async (data) => {
                 },
             });
         }
+
         let productWithRelations = await db.Product.findByPk(
             product.product_id,
             {
@@ -110,9 +110,9 @@ let getAllProducts = () => {
                     },
                     {
                         model: db.Tag,
-                        as: "tags", // 👈 thêm tag
+                        as: "tags",
                         attributes: ["tag_id", "name", "slug"],
-                        through: { attributes: [] }, // 👈 ẩn bảng trung gian
+                        through: { attributes: [] },
                     },
                     {
                         model: db.Media,
@@ -154,7 +154,7 @@ let getProductById = (product_id) => {
                         model: db.Tag,
                         as: "tags",
                         attributes: ["tag_id", "name", "slug"],
-                        through: { attributes: [] }, // ẩn bảng product_tags
+                        through: { attributes: [] },
                     },
                     {
                         model: db.Media,
@@ -198,19 +198,18 @@ let updateProduct = async (product_id, data, files) => {
             quantity,
             isActive,
             isDelete,
-
             removedMediaIds = [],
             replaceAllImages = false,
-            mainIndex = 0, // main index trong files mới
-            mainOldId = null, // nếu chọn main là ảnh cũ (media_id)
+            mainIndex = 0,
+            mainOldId = null,
         } = data;
 
-        // ✅ normalize removedMediaIds -> number[]
         if (typeof removedMediaIds === "string") {
             try {
                 removedMediaIds = JSON.parse(removedMediaIds);
             } catch {}
         }
+
         if (Array.isArray(removedMediaIds)) {
             removedMediaIds = removedMediaIds
                 .map((x) => Number(x))
@@ -228,7 +227,6 @@ let updateProduct = async (product_id, data, files) => {
             };
         }
 
-        // ===== PRICE CALC =====
         const basePrice =
             original_price !== undefined
                 ? Number(original_price)
@@ -243,15 +241,16 @@ let updateProduct = async (product_id, data, files) => {
             discount_type !== undefined ? discount_type : product.discount_type;
 
         let finalPrice = basePrice;
+
         if (Number(newDiscount) > 0) {
             finalPrice =
                 newDiscountType === "percent"
                     ? basePrice - (basePrice * newDiscount) / 100
                     : basePrice - newDiscount;
         }
+
         finalPrice = finalPrice < 0 ? 0 : finalPrice;
 
-        // ===== UPDATE PRODUCT INFO =====
         await product.update({
             productCategories_id:
                 productCategories_id ?? product.productCategories_id,
@@ -266,8 +265,6 @@ let updateProduct = async (product_id, data, files) => {
             isDelete: isDelete ?? product.isDelete,
         });
 
-        // ===== MEDIA UPDATE =====
-        // helper: set main cho 1 media_id cụ thể
         const setMainById = async (media_id) => {
             await db.Media.update(
                 { is_main: false },
@@ -278,6 +275,7 @@ let updateProduct = async (product_id, data, files) => {
                     },
                 },
             );
+
             await db.Media.update(
                 { is_main: true },
                 {
@@ -290,7 +288,6 @@ let updateProduct = async (product_id, data, files) => {
             );
         };
 
-        // 1) replaceAllImages => xóa hết media cũ (DB + file)
         if (replaceAllImages) {
             const oldMedia = await db.Media.findAll({
                 where: {
@@ -308,11 +305,10 @@ let updateProduct = async (product_id, data, files) => {
                     entity_type: "product",
                     entity_id: String(product_id),
                 },
-                force: true, // ✅ đúng chỗ
+                force: true,
             });
         }
 
-        // 2) xóa 1 phần theo removedMediaIds (DB + file)
         if (!replaceAllImages && removedMediaIds.length > 0) {
             const removeList = await db.Media.findAll({
                 where: {
@@ -332,18 +328,15 @@ let updateProduct = async (product_id, data, files) => {
                     entity_type: "product",
                     entity_id: String(product_id),
                 },
-                force: true, // ✅ đúng chỗ
+                force: true,
             });
 
-            // nếu mainOldId nằm trong removedMediaIds thì bỏ mainOldId
             if (mainOldId && removedMediaIds.includes(Number(mainOldId))) {
                 mainOldId = null;
             }
         }
 
-        // 3) nếu có files mới => thêm media mới + set main theo mainIndex
         if (Array.isArray(files) && files.length > 0) {
-            // set hết is_main = false trước
             await db.Media.update(
                 { is_main: false },
                 {
@@ -357,6 +350,7 @@ let updateProduct = async (product_id, data, files) => {
             for (let i = 0; i < files.length; i++) {
                 const f = files[i];
                 const url = `/uploadImageProducts/${f.filename}`;
+
                 await db.Media.create({
                     entity_type: "product",
                     entity_id: String(product_id),
@@ -366,11 +360,8 @@ let updateProduct = async (product_id, data, files) => {
                 });
             }
         } else if (mainOldId) {
-            // 4) không upload file mới nhưng set main là ảnh cũ
             await setMainById(mainOldId);
         } else {
-            // 5) không upload + không set mainOldId
-            // nếu sau khi xóa mà không còn main => auto set main = ảnh đầu tiên còn lại
             const remaining = await db.Media.findAll({
                 where: {
                     entity_type: "product",
@@ -387,7 +378,6 @@ let updateProduct = async (product_id, data, files) => {
             }
         }
 
-        // ===== RETURN =====
         const updatedProduct = await db.Product.findByPk(product_id, {
             include: [
                 { model: db.Media, as: "media" },
@@ -409,7 +399,6 @@ let updateProduct = async (product_id, data, files) => {
     }
 };
 
-// 🟢 Xóa product
 let deleteProduct = async (id) => {
     let product = await db.Product.findByPk(id);
     if (!product) throw "Product not found";
@@ -421,7 +410,6 @@ let deleteProduct = async (id) => {
     return "Product deleted successfully";
 };
 
-// 🟢 Xóa mềm
 let softDeleteProduct = async (product_id) => {
     let product = await db.Product.findByPk(product_id);
     if (!product) throw "Product not found";
@@ -430,8 +418,6 @@ let softDeleteProduct = async (product_id) => {
     return "Product soft deleted successfully";
 };
 
-// 🟢 Xóa cứng
-// 🟢 Xóa cứng (xóa file + media DB + product)
 let hardDeleteProduct = async (id) => {
     const product = await db.Product.findByPk(id);
     if (!product) throw "Product not found";

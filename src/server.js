@@ -28,15 +28,15 @@ const path = require("path");
 
 let app = express();
 
-//  Create HTTP Server from Express
+
 const server = http.createServer(app);
 
-// Cấu hình CORS
+
 const corsOptions = {
     origin: [
         process.env.URL_REACT,
         "http://localhost:5173",
-        // "https://pet-sanctuary-7f78f.web.app",,
+        
     ],
     methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -50,7 +50,7 @@ app.use((req, res, next) => {
 });
 app.use(cors(corsOptions));
 
-// Sau app.use(cors(corsOptions));
+
 app.use((req, res, next) => {
     const allowedOrigins = [
         process.env.URL_REACT,
@@ -64,11 +64,11 @@ app.use((req, res, next) => {
         res.setHeader("Access-Control-Allow-Credentials", "true");
         res.setHeader(
             "Access-Control-Allow-Headers",
-            "Content-Type, Authorization, X-Requested-With"
+            "Content-Type, Authorization, X-Requested-With",
         );
         res.setHeader(
             "Access-Control-Allow-Methods",
-            "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+            "GET, POST, OPTIONS, PUT, PATCH, DELETE",
         );
     }
 
@@ -78,29 +78,29 @@ app.options("*", cors(corsOptions));
 
 console.log("CORS allowed origins:", corsOptions.origin);
 
-// Multer static route
-// app.use(
-//   "/uploadsPDF",
-//   express.static(path.join(__dirname, "public/uploadsPDF"))
-// );
-// app.use(
-//   "/uploadsExcel",
-//   express.static(path.join(__dirname, "public/uploadsExcel"))
-// );
+
+
+
+
+
+
+
+
+
 
 app.use(
     "/uploadImageUsers",
-    express.static(path.join(__dirname, "public/uploadImageUsers"))
+    express.static(path.join(__dirname, "public/uploadImageUsers")),
 );
 app.use(
     "/uploadImageProducts",
-    express.static(path.join(__dirname, "public/uploadImageProducts"))
+    express.static(path.join(__dirname, "public/uploadImageProducts")),
 );
 app.use(
     "/uploadMedia",
-    express.static(path.join(__dirname, "public/uploadMedia"))
+    express.static(path.join(__dirname, "public/uploadMedia")),
 );
-// Token Cookie
+
 app.use(cookieParser());
 app.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
@@ -111,11 +111,11 @@ app.use((err, req, res, next) => {
     next();
 });
 
-// Parse request
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-//Test route
+
 app.use("/", chatRoutes);
 
 app.use(
@@ -126,15 +126,15 @@ app.use(
                 res.status(403).end();
             }
         },
-    })
+    }),
 );
 
-// Connect Redis khi Node.js start
-// initRedis()
-//     .then(() => console.log("Redis connected successfully"))
-//     .catch((err) => console.error("Redis connect failed:", err));
 
-// View engine & routes
+
+
+
+
+
 viewEngine(app);
 initWebRoutes(app);
 app.use("/", productRoutes);
@@ -146,13 +146,13 @@ app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
 app.use("/", bookingRoutes);
 app.use("/", petRoutes);
-// app.use("/", chatRoutes);
+
 app.use("/", voucherRoutes);
 app.use("/", rbacRoutes);
-// Connect DB
+
 connectDB();
 
-// Start server
+
 let port = process.env.PORT || 5059;
 server.listen(port, () => {
     console.log("Backend Nodejs is running on port: " + port);

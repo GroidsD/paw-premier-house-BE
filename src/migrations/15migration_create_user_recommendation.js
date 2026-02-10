@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("UserRecommendations", {
@@ -37,7 +37,6 @@ module.exports = {
                 allowNull: true,
             },
 
-            // ✅ Thêm 2 cột nâng cao
             algorithm_type: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -59,7 +58,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });

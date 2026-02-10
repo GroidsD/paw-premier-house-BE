@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class ProductCategory extends Model {
         static associate(models) {
-            // Một Category có nhiều Product
             ProductCategory.hasMany(models.Product, {
                 foreignKey: "productCategories_id",
                 as: "products",
@@ -22,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
             },
 
-            // ===== Tên loại sản phẩm =====
             type: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -57,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return ProductCategory;

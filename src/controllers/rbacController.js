@@ -1,8 +1,6 @@
 import RbacService from "../services/RbacService";
 
-/* ======================================================
-   PERMISSIONS
-====================================================== */
+
 
 const getAllPermissions = async (req, res) => {
     try {
@@ -44,9 +42,7 @@ const deletePermission = async (req, res) => {
     }
 };
 
-/* ======================================================
-   ROLES
-====================================================== */
+
 
 const getAllRoles = async (req, res) => {
     try {
@@ -88,9 +84,7 @@ const deleteRole = async (req, res) => {
     }
 };
 
-/* ======================================================
-   ROLE → PERMISSIONS
-====================================================== */
+
 
 const setPermissionsForRole = async (req, res) => {
     try {
@@ -118,9 +112,7 @@ const setPermissionsForRole = async (req, res) => {
     }
 };
 
-/* ======================================================
-   USER → ROLES
-====================================================== */
+
 
 const setRolesForUser = async (req, res) => {
     try {
@@ -144,9 +136,7 @@ const setRolesForUser = async (req, res) => {
     }
 };
 
-/* ======================================================
-   USER → PERMISSION OVERRIDE
-====================================================== */
+
 
 const setUserPermission = async (req, res) => {
     try {
@@ -174,9 +164,7 @@ const setUserPermission = async (req, res) => {
         });
     }
 };
-/* ======================================================
-   USER PERMISSION DETAIL
-====================================================== */
+
 const getUserPermissionDetail = async (req, res) => {
     try {
         const { user_id } = req.params;
@@ -190,9 +178,7 @@ const getUserPermissionDetail = async (req, res) => {
     }
 };
 
-/* ======================================================
-   BULK OVERRIDES
-====================================================== */
+
 const setUserOverridesBulk = async (req, res) => {
     try {
         const { user_id } = req.params;

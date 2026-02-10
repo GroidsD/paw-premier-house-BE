@@ -1,6 +1,5 @@
 import db from "../models/index.js";
 
-// CREATE
 let createCategory = async (data) => {
     const { type, isActive = true } = data;
 
@@ -12,7 +11,6 @@ let createCategory = async (data) => {
     return category;
 };
 
-// READ ALL
 let getAllCategories = async () => {
     return await db.ProductCategory.findAll({
         where: { isDelete: false },
@@ -20,12 +18,10 @@ let getAllCategories = async () => {
     });
 };
 
-// READ ONE
 let getCategoryById = async (productCategories_id) => {
     return await db.ProductCategory.findByPk(productCategories_id);
 };
 
-// UPDATE
 let updateCategory = async (productCategories_id, data) => {
     const category = await db.ProductCategory.findByPk(productCategories_id);
     if (!category) {
@@ -47,7 +43,6 @@ let updateCategory = async (productCategories_id, data) => {
     };
 };
 
-// SOFT DELETE
 let softDeleteCategory = async (productCategories_id) => {
     const category = await db.ProductCategory.findByPk(productCategories_id);
     if (!category) throw "Category not found";
@@ -63,7 +58,6 @@ let softDeleteCategory = async (productCategories_id) => {
     };
 };
 
-// HARD DELETE
 let hardDeleteCategory = async (productCategories_id) => {
     const category = await db.ProductCategory.findByPk(productCategories_id);
     if (!category) throw "Category not found";

@@ -6,7 +6,7 @@ import { Op } from "sequelize";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
 async function embedServices() {
@@ -35,17 +35,19 @@ async function embedServices() {
         for (const translate of service.translates) {
             if (!translate.name) continue;
 
-            const categoryName = (service.category?.type || "general").toLowerCase();
+            const categoryName = (
+                service.category?.type || "general"
+            ).toLowerCase();
             const metadata = buildServiceMetadata(service, categoryName);
             const content = generateServiceContent(
                 service,
                 translate,
                 categoryName,
-                metadata
+                metadata,
             );
 
             console.log(
-                `🟦 Embedding service ${service.service_id} [${translate.language}] ${translate.name}`
+                `🟦 Embedding service ${service.service_id} [${translate.language}] ${translate.name}`,
             );
 
             try {
@@ -59,8 +61,10 @@ async function embedServices() {
                 const row = {
                     service_id: service.service_id,
                     name: translate.name,
-                    name_vi: translate.language === "vi" ? translate.name : null,
-                    name_en: translate.language === "en" ? translate.name : null,
+                    name_vi:
+                        translate.language === "vi" ? translate.name : null,
+                    name_en:
+                        translate.language === "en" ? translate.name : null,
                     price: parseInt(service.price) || 0,
                     content,
                     embedding,
@@ -69,9 +73,11 @@ async function embedServices() {
                     rating: metadata.rating,
                 };
 
-                const { error } = await supabase.from("service_vectors").upsert(row, {
-                    onConflict: "service_id,language",
-                });
+                const { error } = await supabase
+                    .from("service_vectors")
+                    .upsert(row, {
+                        onConflict: "service_id,language",
+                    });
 
                 if (error) {
                     console.error("❌ Supabase upsert error:", error);
@@ -91,7 +97,9 @@ async function embedServices() {
     console.log("✅ Service embeddings completed!");
     console.log(`   Success: ${successCount}`);
     console.log(`   Errors: ${errorCount}`);
-    console.log(`   Total processed translations: ${successCount + errorCount}`);
+    console.log(
+        `   Total processed translations: ${successCount + errorCount}`,
+    );
     console.log("=".repeat(50));
 
     await db.sequelize.close();
@@ -121,7 +129,6 @@ function buildServiceMetadata(service, categoryName) {
             break;
     }
 
-    // Simple heuristic: cheaper services tagged as affordable
     const numericPrice = parseInt(service.price) || 0;
     if (numericPrice < 100000) metadata.tags.push("affordable");
     if (numericPrice > 500000) metadata.tags.push("premium");
@@ -157,4 +164,3 @@ embedServices()
         console.error("❌ Service embedding script failed:", error);
         process.exit(1);
     });
-

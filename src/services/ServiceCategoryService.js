@@ -1,8 +1,8 @@
 import db from "../models/index.js";
 
-// ============================
-// CREATE CATEGORY
-// ============================
+
+
+
 const createServiceCategory = async (data) => {
   try {
     const category = await db.ServiceCategory.create({
@@ -17,9 +17,9 @@ const createServiceCategory = async (data) => {
   }
 };
 
-// ============================
-// GET ALL CATEGORIES
-// ============================
+
+
+
 const getAllServiceCategories = async () => {
   try {
     const categories = await db.ServiceCategory.findAll({
@@ -41,9 +41,9 @@ const getAllServiceCategories = async () => {
   }
 };
 
-// ============================
-// GET CATEGORY BY ID
-// ============================
+
+
+
 const getServiceCategoryById = async (id) => {
   try {
     const category = await db.ServiceCategory.findByPk(id, {
@@ -62,9 +62,9 @@ const getServiceCategoryById = async (id) => {
   }
 };
 
-// ============================
-// UPDATE CATEGORY
-// ============================
+
+
+
 
 const updateServiceCategory = async (id, data) => {
   try {
@@ -92,9 +92,9 @@ const updateServiceCategory = async (id, data) => {
   }
 };
 
-// ============================
-// SOFT DELETE CATEGORY
-// ============================
+
+
+
 const softDeleteServiceCategory = async (id) => {
   const category = await db.ServiceCategory.findByPk(id);
   if (!category) throw new Error("Service category not found");
@@ -107,9 +107,9 @@ const softDeleteServiceCategory = async (id) => {
   return true;
 };
 
-// ============================
-// HARD DELETE CATEGORY
-// ============================
+
+
+
 const hardDeleteServiceCategory = async (id) => {
   const t = await db.sequelize.transaction();
   try {
@@ -119,7 +119,7 @@ const hardDeleteServiceCategory = async (id) => {
 
     if (!category) throw new Error("Service category not found");
 
-    // Set serviceCategories_id = null cho service liên quan
+    
     await db.Service.update(
       { serviceCategories_id: null },
       {

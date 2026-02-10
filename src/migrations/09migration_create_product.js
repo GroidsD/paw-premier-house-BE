@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("products", {
@@ -22,7 +22,7 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
-            /* ===== Thông tin sản phẩm ===== */
+            
             name: {
                 type: Sequelize.STRING,
                 allowNull: false,
@@ -38,7 +38,7 @@ module.exports = {
                 unique: true,
             },
 
-            /* ===== Giá ===== */
+            
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
@@ -63,7 +63,7 @@ module.exports = {
                 defaultValue: 0,
             },
 
-            /* ===== Kho ===== */
+            
             quantity: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
@@ -105,7 +105,6 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("products");
 
-        // Dọn ENUM (Postgres/MySQL safe)
         await queryInterface.sequelize.query(
             'DROP TYPE IF EXISTS "enum_products_discount_type";',
         );

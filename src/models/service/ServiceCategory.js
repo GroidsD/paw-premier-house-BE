@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class ServiceCategory extends Model {
         static associate(models) {
-            // Một Category có nhiều Services
             ServiceCategory.hasMany(models.Service, {
                 foreignKey: "serviceCategories_id",
                 as: "services",

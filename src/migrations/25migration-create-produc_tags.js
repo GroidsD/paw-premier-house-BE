@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("product_tags", {
@@ -40,7 +40,6 @@ module.exports = {
             },
         });
 
-        // Ngăn product gắn trùng cùng 1 tag
         await queryInterface.addConstraint("product_tags", {
             fields: ["product_id", "tag_id"],
             type: "unique",

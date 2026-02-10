@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class OrderItem extends Model {
         static associate(models) {
-            // Mỗi OrderItem thuộc về một Order
             OrderItem.belongsTo(models.Order, {
                 foreignKey: "order_id",
                 as: "order",
@@ -12,7 +11,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "CASCADE",
             });
 
-            // Mỗi OrderItem thuộc về một Product
             OrderItem.belongsTo(models.Product, {
                 foreignKey: "product_id",
                 as: "product",
@@ -88,13 +86,6 @@ module.exports = (sequelize, DataTypes) => {
                 comment: "Giá sau khi áp dụng chiết khấu",
             },
 
-            // total_price: {
-            //     type: DataTypes.DECIMAL(10, 2),
-            //     allowNull: false,
-            //     defaultValue: 0,
-            //     comment: "Tổng tiền của item (quantity * price)",
-            // },
-
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
@@ -115,7 +106,6 @@ module.exports = (sequelize, DataTypes) => {
 
             hooks: {
                 beforeSave: (item) => {
-                    // Tính giá sau chiết khấu
                     let finalPrice = item.original_price;
 
                     if (item.discount && item.discount > 0) {
@@ -128,14 +118,12 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // Không để giá âm
                     item.price = finalPrice < 0 ? 0 : finalPrice;
 
-                    // Tính tổng tiền = quantity * price
                     item.total_price = (item.price * item.quantity).toFixed(2);
                 },
             },
-        }
+        },
     );
 
     return OrderItem;

@@ -1,12 +1,9 @@
 import serviceCategoryService from "../services/serviceCategoryService.js";
 
-// ============================
-// CREATE CATEGORY
-// ============================
 let createServiceCategory = async (req, res) => {
     try {
         const result = await serviceCategoryService.createServiceCategory(
-            req.body
+            req.body,
         );
 
         return res.status(201).json({
@@ -23,9 +20,6 @@ let createServiceCategory = async (req, res) => {
     }
 };
 
-// ============================
-// GET ALL CATEGORIES
-// ============================
 let getAllServiceCategories = async (req, res) => {
     try {
         const categories =
@@ -44,15 +38,13 @@ let getAllServiceCategories = async (req, res) => {
     }
 };
 
-// ============================
-// GET CATEGORY BY ID
-// ============================
 let getServiceCategoryById = async (req, res) => {
     try {
         const serviceCategories_id = req.query.serviceCategories_id;
-        const category = await serviceCategoryService.getServiceCategoryById(
-            serviceCategories_id
-        );
+        const category =
+            await serviceCategoryService.getServiceCategoryById(
+                serviceCategories_id,
+            );
 
         if (!category) {
             return res.status(404).json({
@@ -74,15 +66,12 @@ let getServiceCategoryById = async (req, res) => {
     }
 };
 
-// ============================
-// UPDATE CATEGORY
-// ============================
 let updateServiceCategory = async (req, res) => {
     try {
         const serviceCategories_id = req.query.serviceCategories_id;
         const result = await serviceCategoryService.updateServiceCategory(
             serviceCategories_id,
-            req.body
+            req.body,
         );
 
         if (result.errCode !== 0) {
@@ -99,9 +88,6 @@ let updateServiceCategory = async (req, res) => {
     }
 };
 
-// ============================
-// SOFT DELETE CATEGORY
-// ============================
 let softDeleteServiceCategory = async (req, res) => {
     try {
         const id = req.query.serviceCategories_id;
@@ -120,9 +106,6 @@ let softDeleteServiceCategory = async (req, res) => {
     }
 };
 
-// ============================
-// HARD DELETE CATEGORY
-// ============================
 let hardDeleteServiceCategory = async (req, res) => {
     try {
         const id = req.query.serviceCategories_id;

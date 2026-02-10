@@ -6,9 +6,7 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   APPLY VOUCHER (CUSTOMER / ADMIN)
-====================================================== */
+
 router.post(
     "/api/voucher/apply",
     authMiddleware,
@@ -19,9 +17,7 @@ router.post(
     voucherController.applyVoucher,
 );
 
-/* ======================================================
-   CREATE VOUCHER (ADMIN)
-====================================================== */
+
 router.post(
     "/api/voucher/create",
     authMiddleware,

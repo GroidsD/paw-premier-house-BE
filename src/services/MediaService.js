@@ -1,9 +1,5 @@
-// src/services/MediaService.js
 import db from "../models/index.js";
 
-/**
- * 🟢 Tạo 1 media riêng lẻ
- */
 let createMedia = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -15,9 +11,6 @@ let createMedia = (data) => {
     });
 };
 
-/**
- * 🟢 Lấy tất cả media (có thể lọc theo entity_type hoặc entity_id)
- */
 let getAllMedia = (filters = {}) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -36,9 +29,6 @@ let getAllMedia = (filters = {}) => {
     });
 };
 
-/**
- * 🟡 Lấy media theo ID
- */
 let getMediaById = (id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -51,9 +41,6 @@ let getMediaById = (id) => {
     });
 };
 
-/**
- * 🟠 Cập nhật media theo ID
- */
 let updateMedia = (id, data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -67,9 +54,6 @@ let updateMedia = (id, data) => {
     });
 };
 
-/**
- * 🔴 Xóa media theo ID
- */
 let deleteMedia = (id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -83,14 +67,11 @@ let deleteMedia = (id) => {
     });
 };
 
-/**
- * 🧩 Tạo media hàng loạt cho 1 entity (Product, Service, ...)
- */
 let createMediaForEntity = (
     mediaList,
     entityId,
     entityType,
-    transaction = null
+    transaction = null,
 ) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -113,20 +94,16 @@ let createMediaForEntity = (
     });
 };
 
-/**
- * 🧩 Cập nhật media cho 1 entity (tự động thêm/sửa/xóa)
- */
 let updateMediaForEntity = (
     mediaList,
     entityId,
     entityType,
-    transaction = null
+    transaction = null,
 ) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!Array.isArray(mediaList)) return resolve();
 
-            // Lấy media hiện tại
             const existing = await db.Media.findAll({
                 where: { entity_id: entityId, entity_type: entityType },
                 transaction,
@@ -137,7 +114,6 @@ let updateMediaForEntity = (
 
             for (const m of mediaList) {
                 if (existingMap.has(m.url)) {
-                    // Update media có sẵn
                     await db.Media.update(
                         {
                             is_main: m.is_main ?? false,
@@ -150,11 +126,10 @@ let updateMediaForEntity = (
                                 url: m.url,
                             },
                             transaction,
-                        }
+                        },
                     );
                     existingMap.delete(m.url);
                 } else {
-                    // Tạo media mới
                     await db.Media.create(
                         {
                             entity_id: entityId,
@@ -163,12 +138,11 @@ let updateMediaForEntity = (
                             is_main: m.is_main ?? false,
                             alt_text: m.alt_text ?? null,
                         },
-                        { transaction }
+                        { transaction },
                     );
                 }
             }
 
-            // Xóa media không còn trong danh sách mới
             for (const [url] of existingMap.entries()) {
                 await db.Media.destroy({
                     where: {
@@ -186,6 +160,7 @@ let updateMediaForEntity = (
         }
     });
 };
+
 let deleteMediaByEntity = async (entityType, entityId) => {
     try {
         await db.Media.destroy({
@@ -196,9 +171,7 @@ let deleteMediaByEntity = async (entityType, entityId) => {
         throw e;
     }
 };
-// ============================
-// GET SERVICES BY CATEGORY
-// ============================
+
 let getServicesByCategory = async (categoryId) => {
     try {
         let services = await db.Service.findAll({
@@ -223,7 +196,6 @@ let getServicesByCategory = async (categoryId) => {
             services,
         };
     } catch (error) {
-        console.error("❌ Error in getServicesByCategory:", error);
         return {
             errCode: 1,
             errMessage: "Failed to fetch services by category",

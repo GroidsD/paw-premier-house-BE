@@ -6,11 +6,6 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   PRODUCT CATEGORY ROUTES (RBAC - permission based)
-====================================================== */
-
-// CREATE - Tạo category mới
 router.post(
     "/api/product-categories/create",
     authMiddleware,
@@ -22,7 +17,6 @@ router.post(
     productCategoryController.createCategory,
 );
 
-// READ ALL - Lấy tất cả category
 router.get(
     "/api/product-categories/get-all",
     authMiddleware,
@@ -33,7 +27,6 @@ router.get(
     productCategoryController.getAllCategories,
 );
 
-// READ ONE - Lấy category theo ID
 router.get(
     "/api/product-categories/get-by-id",
     authMiddleware,
@@ -44,7 +37,6 @@ router.get(
     productCategoryController.getCategoryById,
 );
 
-// UPDATE - Cập nhật category
 router.put(
     "/api/product-categories/update",
     authMiddleware,
@@ -56,7 +48,6 @@ router.put(
     productCategoryController.updateCategory,
 );
 
-// SOFT DELETE - xóa mềm (ADMIN)
 router.delete(
     "/api/product-categories/soft-delete",
     authMiddleware,
@@ -67,7 +58,6 @@ router.delete(
     productCategoryController.softDeleteCategory,
 );
 
-// HARD DELETE - xóa cứng (ADMIN ONLY)
 router.delete(
     "/api/product-categories/hard-delete",
     authMiddleware,

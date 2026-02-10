@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Tag extends Model {
         static associate(models) {
-            // Many-to-Many với Product
             Tag.belongsToMany(models.Product, {
                 through: models.ProductTag,
                 foreignKey: "tag_id",
@@ -56,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return Tag;

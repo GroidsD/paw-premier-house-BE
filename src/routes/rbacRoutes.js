@@ -6,9 +6,7 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   PERMISSIONS
-====================================================== */
+
 
 router.get(
     "/api/permission/get-all",
@@ -42,9 +40,7 @@ router.delete(
     rbacController.deletePermission,
 );
 
-/* ======================================================
-   ROLES
-====================================================== */
+
 
 router.get(
     "/api/role/get-all",
@@ -78,9 +74,7 @@ router.delete(
     rbacController.deleteRole,
 );
 
-/* ======================================================
-   ROLE → PERMISSIONS
-====================================================== */
+
 
 router.post(
     "/api/role/set-permissions",
@@ -93,9 +87,7 @@ router.post(
     rbacController.setPermissionsForRole,
 );
 
-/* ======================================================
-   USER → ROLES
-====================================================== */
+
 
 router.post(
     "/api/user/set-roles",
@@ -108,9 +100,7 @@ router.post(
     rbacController.setRolesForUser,
 );
 
-/* ======================================================
-   USER → PERMISSION OVERRIDE
-====================================================== */
+
 
 router.post(
     "/api/user/set-permission",
@@ -122,9 +112,7 @@ router.post(
     }),
     rbacController.setUserPermission,
 );
-/* ======================================================
-   USER → PERMISSION DETAIL (FOR UI)
-====================================================== */
+
 
 router.get(
     "/api/user/:user_id/permission-detail",
@@ -137,9 +125,7 @@ router.get(
     rbacController.getUserPermissionDetail,
 );
 
-/* ======================================================
-   USER → OVERRIDES BULK SAVE (action -> boolean)
-====================================================== */
+
 
 router.put(
     "/api/user/:user_id/overrides",

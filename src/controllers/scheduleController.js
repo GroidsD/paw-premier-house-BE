@@ -1,6 +1,5 @@
 import ScheduleService from "../services/ScheduleService.js";
 
-// Lấy tất cả
 let getAll = async (req, res) => {
     try {
         const schedules = await ScheduleService.getAllSchedules();
@@ -10,7 +9,6 @@ let getAll = async (req, res) => {
     }
 };
 
-// Lấy theo ID
 let getById = async (req, res) => {
     try {
         const schedule = await ScheduleService.getScheduleById(
@@ -24,7 +22,6 @@ let getById = async (req, res) => {
     }
 };
 
-// Staff đăng ký
 let register = async (req, res) => {
     try {
         if (req.user.role !== "staff")
@@ -51,14 +48,13 @@ let register = async (req, res) => {
     }
 };
 
-// Manager duyệt/reject
 let approve = async (req, res) => {
     try {
         if (!["admin", "manager"].includes(req.user.role))
             return res.status(403).json({ message: "Permission denied" });
 
         const { schedule_staff_id } = req.params;
-        const { action } = req.body; // approve | reject
+        const { action } = req.body;
 
         const result = await ScheduleService.approveSchedule(
             schedule_staff_id,
@@ -74,7 +70,6 @@ let approve = async (req, res) => {
     }
 };
 
-// Manager chuyển ca
 let replace = async (req, res) => {
     try {
         if (!["admin", "manager"].includes(req.user.role))
@@ -90,7 +85,6 @@ let replace = async (req, res) => {
     }
 };
 
-// Update & Delete
 let update = async (req, res) => {
     try {
         const updated = await ScheduleService.updateSchedule(
@@ -113,15 +107,9 @@ let remove = async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 };
-// POST /api/schedules/create-weekly
 let createWeekly = async (req, res) => {
     try {
-        // console.log("Body:", req.body);
-        // console.log("start_date:", req.body.start_date);
-
         const { start_date, shifts, max_people } = req.body;
-        // shifts: [1,2,3] - các shift_id
-        // max_people: số lượng tối đa cho mỗi shift mỗi ngày
 
         const schedules = await ScheduleService.createWeeklySchedule(
             start_date,
@@ -136,7 +124,7 @@ let createWeekly = async (req, res) => {
 
 let getMySchedule = async (req, res) => {
     try {
-        const staff_id = req.user.user_id; // Lấy từ token
+        const staff_id = req.user.user_id;
 
         const result = await ScheduleService.getMySchedule(staff_id);
 
@@ -160,7 +148,7 @@ let openWeekSchedules = async (req, res) => {
 };
 let getSchedulesByWeek = async (req, res) => {
     try {
-        const { week } = req.query; // monday hoặc ngày bất kỳ
+        const { week } = req.query;
         const data = await ScheduleService.getSchedulesByWeek(week);
         return res.status(200).json({ errCode: 0, data });
     } catch (e) {

@@ -18,19 +18,16 @@ if (config.use_env_variable) {
         config.database,
         config.username,
         config.password,
-        config
+        config,
     );
 }
 
-/**
- * Hàm đệ quy để load tất cả model trong thư mục models và các subfolder
- */
+
 function loadModelsRecursively(directory) {
     fs.readdirSync(directory).forEach((file) => {
         const fullPath = path.join(directory, file);
 
         if (fs.lstatSync(fullPath).isDirectory()) {
-            // Nếu là thư mục -> đệ quy tiếp
             loadModelsRecursively(fullPath);
         } else if (
             file.indexOf(".") !== 0 &&
@@ -44,10 +41,8 @@ function loadModelsRecursively(directory) {
     });
 }
 
-// Gọi hàm để load tất cả model
 loadModelsRecursively(__dirname);
 
-// Thiết lập quan hệ giữa các model
 Object.keys(db).forEach((modelName) => {
     if (db[modelName].associate) {
         db[modelName].associate(db);

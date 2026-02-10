@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
-const JWT_EXPIRES = "7d"; // thời gian hiệu lực token
+const JWT_EXPIRES = "7d"; 
 
 exports.generateToken = (user) => {
     return jwt.sign(

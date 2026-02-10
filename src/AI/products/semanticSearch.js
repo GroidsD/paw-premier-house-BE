@@ -1,9 +1,7 @@
 import openai from "../../config/openAI.js";
 import supabase from "../../config/supabase.js";
 
-/**
- * Semantic search với query expansion và filtering cho products
- */
+
 export async function semanticSearchProducts(
     query,
     language = "vi",

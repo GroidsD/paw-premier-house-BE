@@ -1,6 +1,5 @@
 import ServiceService from "../services/ServiceService.js";
 
-// CREATE - Tạo service mới
 let createService = async (req, res) => {
     try {
         const result = await ServiceService.createService(req.body);
@@ -18,7 +17,6 @@ let createService = async (req, res) => {
     }
 };
 
-// READ ALL - Lấy tất cả service
 let getAllServices = async (req, res) => {
     try {
         const services = await ServiceService.getAllServices();
@@ -35,7 +33,6 @@ let getAllServices = async (req, res) => {
     }
 };
 
-// READ ONE - Lấy service theo ID
 let getServiceById = async (req, res) => {
     try {
         const service_id = req.query.service_id;
@@ -61,13 +58,12 @@ let getServiceById = async (req, res) => {
     }
 };
 
-// UPDATE - Cập nhật service
 let updateService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
         const updated = await ServiceService.updateService(
             service_id,
-            req.body
+            req.body,
         );
 
         if (!updated) {
@@ -92,7 +88,6 @@ let updateService = async (req, res) => {
     }
 };
 
-// SOFT DELETE - Đánh dấu là đã xóa (isDeleted = true)
 let softDeleteService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
@@ -112,7 +107,6 @@ let softDeleteService = async (req, res) => {
     }
 };
 
-// HARD DELETE - Xóa hoàn toàn
 let hardDeleteService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
@@ -131,7 +125,6 @@ let hardDeleteService = async (req, res) => {
     }
 };
 
-// GET SERVICES BY CATEGORY
 let getServicesByCategory = async (req, res) => {
     try {
         const category_id = req.query.category_id;

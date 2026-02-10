@@ -1,7 +1,7 @@
 import db from "../models/index.js";
 import { Op } from "sequelize";
-// Lấy tất cả schedule kèm shift + staff
-// services/ScheduleService.js
+
+
 
 let getAllSchedules = async () => {
     return await db.Schedule.findAll({
@@ -17,7 +17,7 @@ let getAllSchedules = async () => {
                 include: [
                     {
                         model: db.User,
-                        as: "scheduleStaffUser", // phải khớp alias trong model
+                        as: "scheduleStaffUser", 
                         attributes: ["user_id", "fullname", "email"],
                     },
                     {
@@ -35,7 +35,7 @@ let getAllSchedules = async () => {
     });
 };
 
-// Lấy schedule theo ID
+
 let getScheduleById = async (schedule_id) => {
     return await db.Schedule.findByPk(schedule_id, {
         include: [
@@ -51,9 +51,9 @@ let getScheduleById = async (schedule_id) => {
     });
 };
 
-// Staff đăng ký ca
+
 let registerSchedule = async (staff_id, shift_id, work_date) => {
-    // 🔥 VALIDATE INPUT
+    
     if (!staff_id) throw new Error("Missing staff_id");
     if (!shift_id) throw new Error("Missing shift_id");
     if (!work_date) throw new Error("Missing work_date");
@@ -71,12 +71,12 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
         );
     }
 
-    // 2. Không cho đăng ký nếu closed
+    
     if (schedule.status !== "open") {
         throw new Error("Shift is not open");
     }
 
-    // 3. Không cho đăng ký ca quá khứ
+    
     const today = new Date().setHours(0, 0, 0, 0);
     const workDate = new Date(work_date).setHours(0, 0, 0, 0);
 
@@ -84,7 +84,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
         throw new Error("Cannot register past shift");
     }
 
-    // 4. Không cho đăng ký trùng user
+    
     const existingRegistration = await db.ScheduleStaff.findOne({
         where: { staff_id, schedule_id: schedule.schedule_id },
     });
@@ -98,7 +98,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
             throw new Error("Your previous registration was rejected");
         }
     }
-    // 5. Check số lượng người
+    
     const count = await db.ScheduleStaff.count({
         where: {
             schedule_id: schedule.schedule_id,
@@ -108,7 +108,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
 
     if (count >= schedule.max_people) throw new Error("This shift is full");
 
-    // 6. Tạo đăng ký
+    
     return await db.ScheduleStaff.create({
         schedule_id: schedule.schedule_id,
         staff_id,
@@ -116,7 +116,7 @@ let registerSchedule = async (staff_id, shift_id, work_date) => {
     });
 };
 
-// Manager duyệt/reject
+
 let approveSchedule = async (schedule_staff_id, action) => {
     const reg = await db.ScheduleStaff.findByPk(schedule_staff_id);
     if (!reg) throw new Error("Registration not found");
@@ -129,12 +129,12 @@ let approveSchedule = async (schedule_staff_id, action) => {
     return reg;
 };
 
-// Manager chuyển ca
+
 let replaceSchedule = async (schedule_staff_id, replacement_staff_id) => {
     const reg = await db.ScheduleStaff.findByPk(schedule_staff_id);
     if (!reg) throw new Error("Registration not found");
 
-    // Người B đã đăng ký ca này?
+    
     const exists = await db.ScheduleStaff.findOne({
         where: {
             schedule_id: reg.schedule_id,
@@ -150,7 +150,7 @@ let replaceSchedule = async (schedule_staff_id, replacement_staff_id) => {
 
     await reg.save();
 
-    // Tạo dòng đăng ký mới cho người thay thế
+    
     await db.ScheduleStaff.create({
         schedule_id: reg.schedule_id,
         staff_id: replacement_staff_id,
@@ -160,24 +160,24 @@ let replaceSchedule = async (schedule_staff_id, replacement_staff_id) => {
     return reg;
 };
 
-// Update schedule
+
 let updateSchedule = async (schedule_id, data) => {
     const schedule = await db.Schedule.findByPk(schedule_id);
     if (!schedule) throw new Error("Schedule not found");
     return await schedule.update(data);
 };
 
-// Delete schedule
+
 let deleteSchedule = async (schedule_id) => {
     const schedule = await db.Schedule.findByPk(schedule_id);
     if (!schedule) throw new Error("Schedule not found");
     await schedule.destroy();
     return "Schedule deleted successfully";
 };
-// Manager tạo lịch cho một tuần
-// shifts: mảng shift_id, max_people: số lượng tối đa cho từng shift
-// startDate: ngày đầu tuần (thứ 2)
-// numDays: số ngày muốn tạo (mặc định 7)
+
+
+
+
 let createWeeklySchedule = async (
     startDate,
     shifts,
@@ -185,14 +185,14 @@ let createWeeklySchedule = async (
     numDays = 7,
 ) => {
     try {
-        // ===== VALIDATE INPUT =====
+        
         if (!startDate) throw new Error("❌ Missing startDate");
         if (!Array.isArray(shifts) || shifts.length === 0)
             throw new Error("❌ shifts must be a non-empty array");
         if (!maxPeople || maxPeople <= 0)
             throw new Error("❌ maxPeople must be a positive number");
 
-        // ===== CHECK SHIFT EXISTS =====
+        
         const validShifts = await db.Shift.findAll({
             where: { shift_id: shifts },
         });
@@ -204,18 +204,18 @@ let createWeeklySchedule = async (
             );
         }
 
-        // ===== PARSE INPUT DATE =====
+        
         const [year, month, day] = startDate.split("-").map(Number);
         let input = new Date(year, month - 1, day);
 
-        // ===== FIND MONDAY OF THAT WEEK =====
-        let dow = input.getDay(); // 1=Mon ... 0=Sun
+        
+        let dow = input.getDay(); 
         if (dow === 0) dow = 7;
 
         const monday = new Date(input);
         monday.setDate(input.getDate() - (dow - 1));
 
-        // ===== BUILD 7 DAYS OF THE WEEK =====
+        
         const dates = [];
         const formatLocal = (d) =>
             `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
@@ -229,7 +229,7 @@ let createWeeklySchedule = async (
             dates.push(formatLocal(d));
         }
 
-        // ===== SAVE TO DB (TRANSACTION) =====
+        
         return await db.sequelize.transaction(async (t) => {
             const createdSchedules = [];
 
@@ -337,19 +337,19 @@ let openWeeklySchedule = async (weekDate) => {
     const [y, m, d] = weekDate.split("-").map(Number);
     const date = new Date(y, m - 1, d);
 
-    // Lấy thứ (0 = Sunday)
+    
     let dow = date.getDay();
-    if (dow === 0) dow = 7; // Sunday → 7
+    if (dow === 0) dow = 7; 
 
-    // ==== TÍNH MONDAY ====
+    
     const monday = new Date(date);
     monday.setDate(date.getDate() - (dow - 1));
 
-    // ==== TÍNH SUNDAY ====
+    
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
 
-    // Format YYYY-MM-DD (không dùng toISOString để tránh lệch ngày)
+    
     const format = (d) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
             2,
@@ -418,15 +418,15 @@ let getSchedulesByWeek = async (weekDate) => {
                     "end_time",
                 ],
             },
-            // nếu muốn trả registrations luôn thì bật cái này
-            // {
-            //   model: db.ScheduleStaff,
-            //   as: "registrations",
-            //   include: [
-            //     { model: db.User, as: "scheduleStaffUser", attributes: ["user_id","fullname","email"] },
-            //     { model: db.User, as: "replacedBy", attributes: ["user_id","fullname","email"] },
-            //   ],
-            // },
+            
+            
+            
+            
+            
+            
+            
+            
+            
         ],
         order: [
             ["work_date", "ASC"],

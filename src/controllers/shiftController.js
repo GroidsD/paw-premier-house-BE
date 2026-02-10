@@ -1,6 +1,5 @@
 import ShiftService from "../services/ShiftService.js";
 
-// Lấy tất cả ca làm việc
 let getAll = async (req, res) => {
     try {
         const shifts = await ShiftService.getAllShifts();
@@ -10,7 +9,6 @@ let getAll = async (req, res) => {
     }
 };
 
-// Lấy ca theo ID
 let getById = async (req, res) => {
     try {
         const shift = await ShiftService.getShiftById(req.params.shift_id);
@@ -21,7 +19,6 @@ let getById = async (req, res) => {
     }
 };
 
-// Tạo ca mới
 let create = async (req, res) => {
     try {
         const newShift = await ShiftService.createShift(req.body);
@@ -31,12 +28,11 @@ let create = async (req, res) => {
     }
 };
 
-// Cập nhật ca
 let update = async (req, res) => {
     try {
         const updatedShift = await ShiftService.updateShift(
             req.params.shift_id,
-            req.body
+            req.body,
         );
         res.json(updatedShift);
     } catch (err) {
@@ -44,7 +40,6 @@ let update = async (req, res) => {
     }
 };
 
-// Xóa ca
 let remove = async (req, res) => {
     try {
         const result = await ShiftService.deleteShift(req.params.shift_id);
@@ -54,7 +49,6 @@ let remove = async (req, res) => {
     }
 };
 
-// Export tất cả functions
 export default {
     getAll,
     getById,

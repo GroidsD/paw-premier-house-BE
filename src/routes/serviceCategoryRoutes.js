@@ -6,13 +6,6 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   SERVICE CATEGORY ROUTES (RBAC - permission based)
-====================================================== */
-
-// ============================
-// CREATE
-// ============================
 router.post(
     "/api/service-category/create",
     authMiddleware,
@@ -24,25 +17,16 @@ router.post(
     serviceCategoryController.createServiceCategory,
 );
 
-// ============================
-// GET ALL
-// ============================
 router.get(
     "/api/service-category/get-all",
     serviceCategoryController.getAllServiceCategories,
 );
 
-// ============================
-// GET BY ID
-// ============================
 router.get(
     "/api/service-category/get-by-id",
     serviceCategoryController.getServiceCategoryById,
 );
 
-// ============================
-// UPDATE
-// ============================
 router.put(
     "/api/service-category/update",
     authMiddleware,
@@ -54,9 +38,6 @@ router.put(
     serviceCategoryController.updateServiceCategory,
 );
 
-// ============================
-// SOFT DELETE
-// ============================
 router.delete(
     "/api/service-category/soft-delete",
     authMiddleware,
@@ -68,9 +49,6 @@ router.delete(
     serviceCategoryController.softDeleteServiceCategory,
 );
 
-// ============================
-// HARD DELETE
-// ============================
 router.delete(
     "/api/service-category/hard-delete",
     authMiddleware,

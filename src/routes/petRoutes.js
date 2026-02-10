@@ -6,9 +6,6 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-// ============================
-// GET ALL PETS (ADMIN)
-// ============================
 router.get(
     "/api/pet/get-all",
     authMiddleware,
@@ -20,9 +17,6 @@ router.get(
     petController.getAllPets,
 );
 
-// ============================
-// CREATE PET (CUSTOMER / ADMIN)
-// ============================
 router.post(
     "/api/pet/create",
     authMiddleware,
@@ -33,9 +27,6 @@ router.post(
     petController.createPet,
 );
 
-// ============================
-// GET MY PETS (CUSTOMER / ADMIN)
-// ============================
 router.get(
     "/api/pet/my-pets",
     authMiddleware,
@@ -46,9 +37,6 @@ router.get(
     petController.getMyPets,
 );
 
-// ============================
-// GET PET BY ID
-// ============================
 router.get(
     "/api/pet/get-by-id",
     authMiddleware,
@@ -59,9 +47,6 @@ router.get(
     petController.getPetById,
 );
 
-// ============================
-// UPDATE PET
-// ============================
 router.put(
     "/api/pet/update",
     authMiddleware,
@@ -72,9 +57,6 @@ router.put(
     petController.updatePet,
 );
 
-// ============================
-// DELETE PET (SOFT)
-// ============================
 router.delete(
     "/api/pet/delete",
     authMiddleware,

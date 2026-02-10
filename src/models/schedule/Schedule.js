@@ -4,22 +4,20 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Schedule extends Model {
         static associate(models) {
-            // Một schedule có N nhân viên đăng ký
             Schedule.hasMany(models.ScheduleStaff, {
                 foreignKey: "schedule_id",
                 as: "registrations",
             });
 
-            // Ca làm thuộc 1 shift
             Schedule.belongsTo(models.Shift, {
                 foreignKey: "shift_id",
                 as: "shift",
             });
             Schedule.belongsToMany(models.User, {
-                through: models.ScheduleStaff, // Bảng trung gian
+                through: models.ScheduleStaff,
                 foreignKey: "schedule_id",
                 otherKey: "staff_id",
-                as: "workingStaff", // Alias này khớp với getAllSchedules
+                as: "workingStaff",
             });
         }
     }
@@ -50,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
                     "not_started",
                     "in_progress",
                     "completed",
-                    "absent"
+                    "absent",
                 ),
                 defaultValue: "not_started",
             },
@@ -78,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
-        }
+        },
     );
 
     return Schedule;

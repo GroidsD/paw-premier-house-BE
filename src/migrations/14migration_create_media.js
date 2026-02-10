@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("media", {
@@ -45,17 +45,16 @@ module.exports = {
                 type: Sequelize.DATE,
                 allowNull: false,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });
     },
 
     async down(queryInterface) {
-        // Xóa ENUM trước khi drop table (tránh lỗi PostgreSQL / MySQL)
         await queryInterface.dropTable("media");
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_media_entity_type";'
+            'DROP TYPE IF EXISTS "enum_media_entity_type";',
         );
     },
 };

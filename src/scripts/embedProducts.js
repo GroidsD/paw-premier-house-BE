@@ -6,7 +6,7 @@ import { Op } from "sequelize";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
 async function embedProducts() {
@@ -45,23 +45,21 @@ async function embedProducts() {
         for (const t of p.translates) {
             if (!t.name) continue;
 
-            // Lấy category theo ngôn ngữ
             const catTranslate = p.category?.translates?.find(
-                (ct) => ct.language === t.language
+                (ct) => ct.language === t.language,
             );
             const categoryName = catTranslate?.type || "general";
 
-            // 🔥 Tạo nội dung embedding phong phú hơn
             const metadata = buildProductMetadata(p, t, categoryName);
             const content = generateEmbeddingContent(
                 p,
                 t,
                 categoryName,
-                metadata
+                metadata,
             );
 
             console.log(
-                `🟢 Embedding: ${productId} [${t.language}] ${t.name} (${categoryName})`
+                `🟢 Embedding: ${productId} [${t.language}] ${t.name} (${categoryName})`,
             );
 
             const embeddingRes = await openai.embeddings.create({
@@ -71,7 +69,6 @@ async function embedProducts() {
 
             const embedding = embeddingRes.data[0].embedding;
 
-            // Lưu với metadata đầy đủ (convert to integers)
             const row = {
                 product_id: productId,
                 name: t.name,
@@ -86,13 +83,12 @@ async function embedProducts() {
                 embedding,
                 category: categoryName.toLowerCase(),
                 language: t.language,
-                // Thêm metadata
                 sold: parseInt(p.sold) || 0,
                 stock: parseInt(p.stock) || 0,
                 rating: parseFloat(p.rating) || 0,
             };
 
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from("product_vectors")
                 .upsert(row, {
                     onConflict: "product_id,language",
@@ -116,9 +112,6 @@ async function embedProducts() {
     console.log("=".repeat(50));
 }
 
-/**
- * Build metadata từ product
- */
 function buildProductMetadata(product, translate, categoryName) {
     const metadata = {
         tags: [],
@@ -126,7 +119,6 @@ function buildProductMetadata(product, translate, categoryName) {
         popularity: "normal",
     };
 
-    // Tags từ category
     if (categoryName.toLowerCase().includes("food")) {
         metadata.tags.push("nutrition", "meal", "eating");
     } else if (categoryName.toLowerCase().includes("toy")) {
@@ -135,7 +127,6 @@ function buildProductMetadata(product, translate, categoryName) {
         metadata.tags.push("gear", "equipment", "utility");
     }
 
-    // Popularity
     if (product.sold > 100) {
         metadata.popularity = "bestseller";
         metadata.tags.push("popular", "trending", "hot");
@@ -143,17 +134,14 @@ function buildProductMetadata(product, translate, categoryName) {
         metadata.popularity = "popular";
     }
 
-    // Stock status
     if (product.stock < 10) {
         metadata.tags.push("limited", "low stock", "hurry");
     }
 
-    // Discount
     if (product.discount > 0) {
         metadata.tags.push("sale", "discount", "promotion", "deal");
     }
 
-    // Price range
     if (product.price < 50000) {
         metadata.tags.push("affordable", "budget-friendly", "cheap");
     } else if (product.price > 500000) {
@@ -163,40 +151,30 @@ function buildProductMetadata(product, translate, categoryName) {
     return metadata;
 }
 
-/**
- * Generate rich embedding content
- */
 function generateEmbeddingContent(product, translate, categoryName, metadata) {
     const parts = [];
 
-    // Tên sản phẩm
     parts.push(`Tên: ${translate.name}`);
 
-    // Mô tả
     if (translate.description) {
         parts.push(`Mô tả: ${translate.description}`);
     }
 
-    // Category
     parts.push(`Danh mục: ${categoryName}`);
-
-    // Giá
     parts.push(`Giá: ${product.price} VNĐ`);
+
     if (product.discount > 0) {
         parts.push(`Giảm giá: ${product.discount}%`);
     }
 
-    // Popularity
     if (product.sold > 0) {
         parts.push(`Đã bán: ${product.sold} sản phẩm`);
     }
 
-    // Tags
     if (metadata.tags.length > 0) {
         parts.push(`Tags: ${metadata.tags.join(", ")}`);
     }
 
-    // Ngôn ngữ
     parts.push(`Ngôn ngữ: ${translate.language}`);
 
     return parts.join(". ");

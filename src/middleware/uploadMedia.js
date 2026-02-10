@@ -7,7 +7,6 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Storage for media files (images, pdfs, docs)
 const mediaStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -29,13 +28,12 @@ const allowed = (mimetype) => {
     if (mimetype === "application/msword") return true;
     if (mimetype.startsWith("application/vnd.openxmlformats-officedocument"))
         return true;
-    // add more allowed types if needed
     return false;
 };
 
 const mediaUpload = multer({
     storage: mediaStorage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (allowed(file.mimetype)) cb(null, true);
         else cb(new Error("File type not allowed"), false);
@@ -44,6 +42,5 @@ const mediaUpload = multer({
 
 module.exports = {
     mediaSingleUpload: mediaUpload.single("media"),
-    // support multiple file upload (field name `media`, max 10 files)
     mediaMultipleUpload: mediaUpload.array("media", 10),
 };

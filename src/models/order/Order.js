@@ -4,7 +4,6 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Order extends Model {
         static associate(models) {
-            // Mỗi Order thuộc về 1 khách hàng (User)
             Order.belongsTo(models.User, {
                 foreignKey: "customer_id",
                 targetKey: "user_id",
@@ -13,7 +12,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             });
 
-            // Một Order có thể có nhiều OrderItem
             Order.hasMany(models.OrderItem, {
                 foreignKey: "order_id",
                 as: "orderItems",
@@ -42,7 +40,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
-            // Giá gốc (chưa giảm)
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
@@ -50,7 +47,6 @@ module.exports = (sequelize, DataTypes) => {
                 comment: "Tổng giá trị gốc của đơn hàng (trước khi giảm giá)",
             },
 
-            // Chiết khấu
             discount: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
@@ -59,7 +55,6 @@ module.exports = (sequelize, DataTypes) => {
                     "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
             },
 
-            // Loại chiết khấu
             discount_type: {
                 type: DataTypes.ENUM("percent", "fixed"),
                 allowNull: false,
@@ -67,7 +62,6 @@ module.exports = (sequelize, DataTypes) => {
                 comment: "Loại chiết khấu: percent = %, fixed = số tiền",
             },
 
-            // Tổng giá sau khi giảm
             total_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
@@ -82,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
                     "shipped",
                     "completed",
                     "cancelled",
-                    "deleted"
+                    "deleted",
                 ),
                 defaultValue: "pending",
                 comment:
@@ -108,7 +102,6 @@ module.exports = (sequelize, DataTypes) => {
             updatedAt: "updated_at",
             hooks: {
                 beforeSave: (order) => {
-                    // Tính lại tổng giá sau chiết khấu
                     let finalTotal = order.original_price;
 
                     if (order.discount && order.discount > 0) {
@@ -124,7 +117,7 @@ module.exports = (sequelize, DataTypes) => {
                     order.total_price = finalTotal < 0 ? 0 : finalTotal;
                 },
             },
-        }
+        },
     );
 
     return Order;

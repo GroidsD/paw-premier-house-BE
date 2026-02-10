@@ -5,19 +5,16 @@ const { v4: uuidv4 } = require("uuid");
 module.exports = (sequelize, DataTypes) => {
     class User extends Model {
         static associate(models) {
-            // Quan hệ với Order
             User.hasMany(models.Order, {
                 foreignKey: "customer_id",
                 as: "orders",
             });
 
-            // Quan hệ với Feedback
             User.hasMany(models.Feedback, {
                 foreignKey: "customer_id",
                 as: "feedbacks",
             });
 
-            // Quan hệ với Booking
             User.hasMany(models.Booking, {
                 foreignKey: "customer_id",
                 as: "bookingsAsCustomer",
@@ -28,7 +25,6 @@ module.exports = (sequelize, DataTypes) => {
                 as: "bookingsAsStaff",
             });
 
-            // Quan hệ với Media (ảnh, video)
             User.hasMany(models.Media, {
                 foreignKey: "entity_id",
                 constraints: false,
@@ -80,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             password: {
                 type: DataTypes.STRING,
-                allowNull: true, // có thể null nếu dùng Firebase
+                allowNull: true,
             },
             fullname: DataTypes.STRING,
             gender: {
@@ -138,7 +134,6 @@ module.exports = (sequelize, DataTypes) => {
         },
     );
 
-    // Xóa media khi xóa user
     User.afterDestroy(async (user, options) => {
         await sequelize.models.Media.destroy({
             where: {

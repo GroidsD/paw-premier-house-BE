@@ -11,7 +11,7 @@ dotenv.config();
 const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 
-// Mã hóa mật khẩu
+
 let hashPassword = (password) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -59,17 +59,17 @@ let getUserById = (user_id) => {
 
             if (!u) return reject("User not found");
 
-            // ===== Build permission map =====
+            
             const permissionMap = new Map();
 
-            // từ role
+            
             u.roles.forEach((role) => {
                 role.permissions.forEach((p) => {
                     permissionMap.set(p.action, true);
                 });
             });
 
-            // override
+            
             u.permissionOverrides.forEach((o) => {
                 permissionMap.set(o.Permission.action, o.allowed);
             });
@@ -80,13 +80,13 @@ let getUserById = (user_id) => {
 
             const plain = u.toJSON();
 
-            // expose roles dạng ["admin","staff"]
+            
             plain.roles = plain.roles.map((r) => r.name);
 
-            // expose permission final
+            
             plain.permissions = finalPermissions;
 
-            // xoá RBAC nội bộ
+            
             delete plain.permissionOverrides;
 
             resolve(plain);
@@ -134,14 +134,14 @@ let getAllUsers = () => {
             const result = users.map((u) => {
                 const permissionMap = new Map();
 
-                // permissions từ role
+                
                 u.roles.forEach((role) => {
                     role.permissions.forEach((p) => {
                         permissionMap.set(p.action, true);
                     });
                 });
 
-                // override
+                
                 u.permissionOverrides.forEach((o) => {
                     permissionMap.set(o.Permission.action, o.allowed);
                 });
@@ -152,14 +152,14 @@ let getAllUsers = () => {
 
                 const plain = u.toJSON();
 
-                // chỉ expose final permissions
+                
                 plain.permissions = finalPermissions;
-                // Chỉ giữ tên role
+                
                 if (plain.roles) {
                     plain.roles = plain.roles.map((r) => r.name);
                 }
-                // 🔥 xoá toàn bộ RBAC internal
-                // delete plain.roles;
+                
+                
                 delete plain.permissionOverrides;
 
                 return plain;
@@ -172,7 +172,7 @@ let getAllUsers = () => {
     });
 };
 
-//  Tạo người dùng mới
+
 let registerUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -183,7 +183,7 @@ let registerUser = (data) => {
                 });
             }
 
-            // 1. Check email tồn tại
+            
             const existing = await db.User.findOne({
                 where: { email: data.email },
             });
@@ -194,10 +194,10 @@ let registerUser = (data) => {
                 });
             }
 
-            // 2. Hash password
+            
             const hashed = await hashPassword(data.password);
 
-            // 3. Tạo user
+            
             console.log(data);
 
             const newUser = await db.User.create({
@@ -210,7 +210,7 @@ let registerUser = (data) => {
                 status: data.status || "active",
             });
 
-            // 4. Lấy role mặc định (customer)
+            
             const defaultRole = await db.Role.findOne({
                 where: { name: "customer" },
             });
@@ -224,7 +224,7 @@ let registerUser = (data) => {
             console.log(newUser.user_id);
             console.log(defaultRole);
 
-            // 5. Gán role cho user
+            
             await db.UserRole.create({
                 user_id: newUser.user_id,
                 role_id: defaultRole.id,
@@ -255,7 +255,7 @@ let updateUser = (user_id, data) => {
                 });
             }
 
-            /* ================= IMAGE ================= */
+            
             if (data.avatar && user.avatar && user.avatar !== data.avatar) {
                 const oldFileName = path.basename(user.avatar);
                 const oldImagePath = path.join(
@@ -269,7 +269,7 @@ let updateUser = (user_id, data) => {
                 }
             }
 
-            /* ================= UPDATE USER INFO ================= */
+            
             await user.update(
                 {
                     fullname: data.fullname ?? user.fullname,
@@ -284,9 +284,9 @@ let updateUser = (user_id, data) => {
                 { transaction },
             );
 
-            /* ================= UPDATE ROLE (RBAC) ================= */
+            
             if (data.role) {
-                // 1. check role tồn tại
+                
                 const role = await db.Role.findOne({
                     where: { name: data.role },
                     transaction,
@@ -300,13 +300,13 @@ let updateUser = (user_id, data) => {
                     });
                 }
 
-                // 2. xóa role cũ
+                
                 await db.UserRole.destroy({
                     where: { user_id },
                     transaction,
                 });
 
-                // 3. gán role mới
+                
                 await db.UserRole.create(
                     {
                         user_id,
@@ -315,7 +315,7 @@ let updateUser = (user_id, data) => {
                     { transaction },
                 );
             }
-            // console.log(roleName, "ssss");
+            
 
             await transaction.commit();
 
@@ -330,7 +330,7 @@ let updateUser = (user_id, data) => {
         }
     });
 };
-//  Xóa (ẩn) người dùng
+
 let deleteUserById = async (user_id) => {
     try {
         console.log("SERVICE DELETE → id:", user_id);
@@ -376,7 +376,7 @@ let hardDeleteUserById = async (user_id) => {
                         "Error deleting Firebase user:",
                         firebaseError,
                     );
-                    throw firebaseError; // hoặc return lỗi nếu muốn fail toàn bộ
+                    throw firebaseError; 
                 }
             }
         }
@@ -446,7 +446,7 @@ let login = (email, password) => {
                 });
             }
 
-            // cần query password riêng vì exclude ở trên
+            
             const userWithPassword = await db.User.findOne({
                 where: { email },
                 attributes: ["password"],
@@ -464,17 +464,17 @@ let login = (email, password) => {
                 });
             }
 
-            /* ================= MERGE PERMISSIONS ================= */
+            
             const permissionMap = new Map();
 
-            // từ role
+            
             user.roles.forEach((role) => {
                 role.permissions.forEach((p) => {
                     permissionMap.set(p.action, true);
                 });
             });
 
-            // override từ user
+            
             user.permissionOverrides.forEach((o) => {
                 permissionMap.set(o.Permission.action, o.allowed);
             });
@@ -483,17 +483,17 @@ let login = (email, password) => {
                 .filter(([_, allowed]) => allowed)
                 .map(([action]) => action);
 
-            // 👉 chỉ trả dashboard cho FE
+            
             const dashboardPermissions = finalPermissions.filter(
                 (p) => p.startsWith("dashboard.") || p.startsWith("dashboard:"),
             );
 
-            /* ================= JWT ================= */
+            
             const token = jwt.sign(
                 {
                     user_id: user.user_id,
                     email: user.email,
-                    // permissions: finalPermissions, // BE dùng
+                    
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: "1d" },
@@ -520,7 +520,7 @@ let login = (email, password) => {
     });
 };
 
-//  Lấy danh sách người dùng theo vai trò + permissions
+
 let getUsersByRole = async (roleName) => {
     try {
         if (!roleName) throw "Missing role parameter";
@@ -530,15 +530,15 @@ let getUsersByRole = async (roleName) => {
                 {
                     model: db.Role,
                     as: "roles",
-                    where: { name: roleName }, // lọc theo role
+                    where: { name: roleName }, 
                     attributes: ["id", "name"],
-                    through: { attributes: [] }, // bỏ bảng trung gian UserRole
+                    through: { attributes: [] }, 
                     include: [
                         {
                             model: db.Permission,
                             as: "permissions",
                             attributes: ["id", "action"],
-                            through: { attributes: [] }, // bỏ RolePermission
+                            through: { attributes: [] }, 
                         },
                     ],
                 },
@@ -546,7 +546,7 @@ let getUsersByRole = async (roleName) => {
             attributes: ["user_id", "fullname", "email", "isActive"],
         });
 
-        // Chuẩn hoá output
+        
         const result = users.map((u) => {
             const user = u.toJSON();
 
@@ -574,7 +574,7 @@ let getUsersByRole = async (roleName) => {
     }
 };
 
-//  Reset mật khẩu (Admin)
+
 let resetPassword = (user_id, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -592,7 +592,7 @@ let resetPassword = (user_id, newPassword) => {
     });
 };
 
-//  Đổi mật khẩu cá nhân
+
 let changeMyPassword = (user_id, oldPassword, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -626,7 +626,7 @@ let firebaseLogin = async (idToken) => {
             return { errCode: 1, errMessage: "Missing Firebase ID token" };
         }
 
-        /* ================= VERIFY FIREBASE TOKEN ================= */
+        
         const decoded = await admin.auth().verifyIdToken(idToken);
 
         const firebaseUser = {
@@ -636,7 +636,7 @@ let firebaseLogin = async (idToken) => {
             avatar: decoded.picture || "",
         };
 
-        /* ================= FIND USER ================= */
+        
         let user = await db.User.findByPk(firebaseUser.uid);
 
         if (!user && firebaseUser.email) {
@@ -652,7 +652,7 @@ let firebaseLogin = async (idToken) => {
             }
         }
 
-        /* ================= CREATE NEW USER ================= */
+        
         if (!user) {
             user = await db.User.create({
                 user_id: firebaseUser.uid,
@@ -666,7 +666,7 @@ let firebaseLogin = async (idToken) => {
             });
         }
 
-        /* ================= LOAD RBAC PERMISSIONS ================= */
+        
         const fullUser = await db.User.findOne({
             where: { user_id: user.user_id },
             attributes: { exclude: ["password"] },
@@ -699,17 +699,17 @@ let firebaseLogin = async (idToken) => {
             ],
         });
 
-        /* ================= MERGE PERMISSIONS ================= */
+        
         const permissionMap = new Map();
 
-        // permissions từ role
+        
         fullUser.roles.forEach((role) => {
             role.permissions.forEach((p) => {
                 permissionMap.set(p.action, true);
             });
         });
 
-        // override permissions từ userPermission
+        
         fullUser.permissionOverrides.forEach((o) => {
             permissionMap.set(o.Permission.action, o.allowed);
         });
@@ -718,27 +718,27 @@ let firebaseLogin = async (idToken) => {
             .filter(([_, allowed]) => allowed)
             .map(([action]) => action);
 
-        /* ================= CREATE JWT ================= */
+        
         const token = jwt.sign(
             {
                 user_id: fullUser.user_id,
                 email: fullUser.email,
-                // permissions: finalPermissions,
+                
             },
             process.env.JWT_SECRET,
             { expiresIn: "7d" },
         );
-        // 👉 chỉ trả dashboard cho FE
+        
         const dashboardPermissions = finalPermissions.filter((p) =>
             p.startsWith("dashboard:"),
         );
-        /* ================= RESPONSE ================= */
+        
         const plain = fullUser.toJSON();
 
         plain.permissions = dashboardPermissions;
         plain.roles = plain.roles.map((r) => r.name);
 
-        // remove internal RBAC override object
+        
         delete plain.permissionOverrides;
         await db.User.update(
             { last_login_at: new Date(), last_seen_at: new Date() },
@@ -770,14 +770,14 @@ let createUserByAdminOrManager = (permission, data) => {
                 });
             }
 
-            // -------------------------------------
-            //  Auto-assign role theo quyền creator
-            // -------------------------------------
+            
+            
+            
             let assignedRole = data.role;
 
-            // ---------------------------------
-            // Kiểm tra email tồn tại
-            // ---------------------------------
+            
+            
+            
             const existing = await db.User.findOne({
                 where: { email: data.email },
             });
@@ -801,9 +801,9 @@ let createUserByAdminOrManager = (permission, data) => {
                 status: "active",
             });
 
-            // -----------------------------
-            // Gán RBAC role
-            // -----------------------------
+            
+            
+            
             const role = await db.Role.findOne({
                 where: { name: assignedRole },
             });

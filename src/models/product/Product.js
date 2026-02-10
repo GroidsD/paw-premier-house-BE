@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
-            /* ===== Thông tin sản phẩm ===== */
+            
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -68,7 +68,7 @@ module.exports = (sequelize, DataTypes) => {
                 unique: true,
             },
 
-            /* ===== Giá ===== */
+            
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
@@ -90,7 +90,7 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
 
-            /* ===== Kho ===== */
+            
             quantity: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,

@@ -1,6 +1,5 @@
 import OrderService from "../services/OrderService.js";
 
-// CREATE
 let createOrder = async (req, res) => {
     try {
         const result = await OrderService.createOrder(req.body);
@@ -14,7 +13,6 @@ let createOrder = async (req, res) => {
     }
 };
 
-// READ ALL
 let getAllOrders = async (req, res) => {
     try {
         const orders = await OrderService.getAllOrders();
@@ -28,7 +26,6 @@ let getAllOrders = async (req, res) => {
     }
 };
 
-// READ ONE
 let getOrderById = async (req, res) => {
     try {
         const order_id = req.query.order_id;
@@ -43,7 +40,6 @@ let getOrderById = async (req, res) => {
     }
 };
 
-// CONFIRM ORDER
 let confirmOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
@@ -60,7 +56,6 @@ let confirmOrder = async (req, res) => {
     }
 };
 
-// CANCEL ORDER
 let cancelOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
@@ -75,7 +70,6 @@ let cancelOrder = async (req, res) => {
     }
 };
 
-// UPDATE STATUS (nếu cần cho các trạng thái đặc biệt)
 let updateStatus = async (req, res) => {
     try {
         const order_id = req.query.order_id;
@@ -91,7 +85,6 @@ let updateStatus = async (req, res) => {
     }
 };
 
-// SOFT DELETE bằng status
 let softDeleteOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
@@ -105,7 +98,6 @@ let softDeleteOrder = async (req, res) => {
     }
 };
 
-// HARD DELETE
 let hardDeleteOrder = async (req, res) => {
     try {
         const order_id = req.query.order_id;
@@ -118,7 +110,6 @@ let hardDeleteOrder = async (req, res) => {
             .json({ errCode: -1, errMessage: "Server error" });
     }
 };
-// GET ALL ORDERS BY USER ID
 let getAllOrdersByUserId = async (req, res) => {
     try {
         const customer_id = req.query.customer_id;
