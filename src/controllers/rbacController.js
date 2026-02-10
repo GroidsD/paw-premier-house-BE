@@ -105,7 +105,7 @@ const setPermissionsForRole = async (req, res) => {
 
         const data = await RbacService.setPermissionsForRole(
             role_id,
-            permission_ids
+            permission_ids,
         );
 
         return res.status(200).json(data);
@@ -162,7 +162,7 @@ const setUserPermission = async (req, res) => {
         const data = await RbacService.setUserPermission(
             user_id,
             permission_id,
-            allowed
+            allowed,
         );
 
         return res.status(200).json(data);
@@ -174,17 +174,56 @@ const setUserPermission = async (req, res) => {
         });
     }
 };
+/* ======================================================
+   USER PERMISSION DETAIL
+====================================================== */
+const getUserPermissionDetail = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const data = await RbacService.getUserPermissionDetail(user_id);
+        return res.status(200).json(data);
+    } catch (e) {
+        console.error("❌ getUserPermissionDetail:", e);
+        return res
+            .status(500)
+            .json({ errCode: 500, errMessage: "Server error" });
+    }
+};
+
+/* ======================================================
+   BULK OVERRIDES
+====================================================== */
+const setUserOverridesBulk = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const { overrides } = req.body;
+
+        if (!user_id || typeof overrides !== "object" || overrides === null) {
+            return res
+                .status(400)
+                .json({ errCode: 1, errMessage: "Invalid input" });
+        }
+
+        const data = await RbacService.setUserOverridesBulk(user_id, overrides);
+        return res.status(200).json(data);
+    } catch (e) {
+        console.error("❌ setUserOverridesBulk:", e);
+        return res
+            .status(500)
+            .json({ errCode: 500, errMessage: "Server error" });
+    }
+};
 
 export default {
     getAllPermissions,
     createPermission,
     deletePermission,
-
     getAllRoles,
     createRole,
     deleteRole,
     setPermissionsForRole,
-
     setRolesForUser,
     setUserPermission,
+    setUserOverridesBulk,
+    getUserPermissionDetail,
 };

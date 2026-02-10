@@ -122,5 +122,34 @@ router.post(
     }),
     rbacController.setUserPermission,
 );
+/* ======================================================
+   USER → PERMISSION DETAIL (FOR UI)
+====================================================== */
+
+router.get(
+    "/api/user/:user_id/permission-detail",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["rbac:user-permission:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.getUserPermissionDetail,
+);
+
+/* ======================================================
+   USER → OVERRIDES BULK SAVE (action -> boolean)
+====================================================== */
+
+router.put(
+    "/api/user/:user_id/overrides",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["rbac:user-permission:assign"],
+        any: ["dashboard:admin"],
+    }),
+    rbacController.setUserOverridesBulk,
+);
 
 export default router;

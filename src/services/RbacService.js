@@ -230,6 +230,124 @@ const setUserPermission = async (user_id, permission_id, allowed) => {
 
     return { errCode: 0 };
 };
+/* ======================================================
+   USER PERMISSION DETAIL (FOR UI)
+====================================================== */
+const getUserPermissionDetail = async (user_id) => {
+    // 1) roles + role permissions
+    const user = await db.User.findByPk(user_id, {
+        attributes: ["user_id", "fullname", "email"],
+        include: [
+            {
+                model: db.Role,
+                as: "roles", // phải đúng association của User model
+                attributes: ["id", "name"],
+                through: { attributes: [] },
+                include: [
+                    {
+                        model: db.Permission,
+                        as: "permissions",
+                        attributes: ["action"],
+                        through: { attributes: [] },
+                    },
+                ],
+            },
+        ],
+    });
+
+    if (!user) return { errCode: 1, errMessage: "User not found" };
+
+    const roles = user.roles || [];
+    const rolePermissionsSet = new Set();
+    roles.forEach((r) =>
+        (r.permissions || []).forEach((p) => rolePermissionsSet.add(p.action)),
+    );
+
+    const rolePermissions = sortPermissions(Array.from(rolePermissionsSet));
+
+    // 2) overrides (user_permissions join permission -> action)
+    const overridesRows = await db.UserPermission.findAll({
+        where: { user_id },
+        attributes: ["allowed"],
+        include: [{ model: db.Permission, attributes: ["action"] }],
+    });
+
+    const userOverrides = {};
+    overridesRows.forEach((row) => {
+        const action = row.Permission?.action;
+        if (action) userOverrides[action] = !!row.allowed;
+    });
+
+    return {
+        errCode: 0,
+        data: {
+            user_id: user.user_id,
+            fullname: user.fullname,
+            email: user.email,
+            roles: roles.map((r) => r.name),
+            rolePermissions,
+            userOverrides,
+        },
+    };
+};
+
+/* ======================================================
+   BULK SAVE OVERRIDES (action -> boolean)
+====================================================== */
+const setUserOverridesBulk = async (user_id, overrides = {}) => {
+    const t = await db.sequelize.transaction();
+    try {
+        const user = await db.User.findByPk(user_id, { transaction: t });
+        if (!user) {
+            await t.rollback();
+            return { errCode: 1, errMessage: "User not found" };
+        }
+
+        const actions = Object.keys(overrides);
+
+        // map action -> permission_id
+        const permissions = await db.Permission.findAll({
+            where: { action: actions },
+            attributes: ["id", "action"],
+            transaction: t,
+        });
+
+        const map = {};
+        permissions.forEach((p) => (map[p.action] = p.id));
+
+        const missing = actions.filter((a) => !map[a]);
+        if (missing.length) {
+            await t.rollback();
+            return {
+                errCode: 2,
+                errMessage: `Unknown permission actions: ${missing.join(", ")}`,
+            };
+        }
+
+        // Sync override table
+        await db.UserPermission.destroy({
+            where: { user_id },
+            transaction: t,
+            // nếu paranoid true: thêm force: true
+        });
+
+        const rows = actions.map((action) => ({
+            user_id,
+            permission_id: map[action],
+            allowed: !!overrides[action],
+        }));
+
+        if (rows.length) {
+            await db.UserPermission.bulkCreate(rows, { transaction: t });
+        }
+
+        await t.commit();
+        return { errCode: 0, errMessage: "Overrides saved" };
+    } catch (e) {
+        await t.rollback();
+        return { errCode: 500, errMessage: e.message };
+    }
+};
 
 export default {
     getAllPermissions,
@@ -243,4 +361,6 @@ export default {
 
     setRolesForUser,
     setUserPermission,
+    setUserOverridesBulk,
+    getUserPermissionDetail,
 };
