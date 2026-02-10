@@ -78,6 +78,8 @@ module.exports = {
                 type: Sequelize.FLOAT,
                 defaultValue: 0,
             },
+            last_login_at: { type: Sequelize.DATE },
+            last_seen_at: { type: Sequelize.DATE },
 
             created_at: {
                 allowNull: false,

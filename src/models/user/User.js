@@ -121,6 +121,8 @@ module.exports = (sequelize, DataTypes) => {
                 comment:
                     "Tổng số sao trung bình hoặc tổng số sao nhận được (chỉ áp dụng cho staff trở lên)",
             },
+            last_login_at: { type: DataTypes.DATE },
+            last_seen_at: { type: DataTypes.DATE },
 
             created_at: DataTypes.DATE,
             updated_at: DataTypes.DATE,

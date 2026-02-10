@@ -101,11 +101,17 @@ let login = async (req, res) => {
 
 let logout = async (req, res) => {
     try {
+        // đánh dấu offline ngay (optional)
+        if (req.user?.user_id) {
+            await userService.setOffline(req.user.user_id);
+        }
+
         res.clearCookie("access_token", {
             httpOnly: true,
             secure: true,
             sameSite: "none",
         });
+
         return res.status(200).json({ message: "Logged out successfully" });
     } catch (e) {
         return res.status(500).json({ error: e.message || "Server error" });
@@ -191,6 +197,19 @@ let createUserByAdminOrManager = async (req, res) => {
         return res.status(500).json({ error: e.message });
     }
 };
+let pingPresence = async (req, res) => {
+    try {
+        if (!req.user || !req.user.user_id) {
+            return res.status(403).json({ message: "Authentication required" });
+        }
+
+        await userService.pingPresence(req.user.user_id);
+        return res.status(200).json({ ok: true });
+    } catch (e) {
+        console.error("Error in pingPresence:", e);
+        return res.status(500).json({ error: e.message || "Server error" });
+    }
+};
 
 export default {
     getCurrentUser,
@@ -206,4 +225,5 @@ export default {
     changeMyPassword,
     firebaseLogin,
     createUserByAdminOrManager,
+    pingPresence,
 };

@@ -47,22 +47,11 @@ let initWebRoutes = (app) => {
         }),
         userController.getAllUsers,
     );
-    // const trace = (label) => (req, res, next) => {
-    //     console.log(`➡️ ${label}`);
-    //     next();
-    // };
-
-    // router.get(
-    //     "/api/get-all-users",
-    //     trace("ROUTE ENTER"),
-    //     authMiddleware,
-    //     trace("AFTER AUTH"),
-    //     rbacMiddleware,
-    //     trace("AFTER RBAC"),
-    //     permissionMiddleware(["dashboard.view"]),
-    //     trace("AFTER PERMISSION"),
-    //     userController.getAllUsers,
-    // );
+    router.post(
+        "/api/presence/ping",
+        authMiddleware,
+        userController.pingPresence,
+    );
 
     router.post(
         "/api/update-user",

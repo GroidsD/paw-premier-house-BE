@@ -501,6 +501,10 @@ let login = (email, password) => {
 
             // xoá internal RBAC
             delete plain.permissionOverrides;
+            await db.User.update(
+                { last_login_at: new Date(), last_seen_at: new Date() },
+                { where: { user_id: user.user_id } },
+            );
 
             resolve({
                 errCode: 0,
@@ -731,6 +735,10 @@ let firebaseLogin = async (idToken) => {
 
         // remove internal RBAC override object
         delete plain.permissionOverrides;
+        await db.User.update(
+            { last_login_at: new Date(), last_seen_at: new Date() },
+            { where: { user_id: fullUser.user_id } },
+        );
 
         return {
             errCode: 0,
@@ -817,6 +825,13 @@ let createUserByAdminOrManager = (permission, data) => {
         }
     });
 };
+let pingPresence = async (user_id) => {
+    await db.User.update({ last_seen_at: new Date() }, { where: { user_id } });
+    return true;
+};
+let setOffline = async (user_id) => {
+    await db.User.update({ last_seen_at: null }, { where: { user_id } });
+};
 
 export default {
     getUserById,
@@ -831,4 +846,6 @@ export default {
     changeMyPassword,
     firebaseLogin,
     createUserByAdminOrManager,
+    pingPresence,
+    setOffline,
 };
