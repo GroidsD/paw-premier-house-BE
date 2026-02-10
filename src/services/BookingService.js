@@ -3,11 +3,12 @@ import {
     applyVoucherForBooking,
     refundVoucherForBooking,
 } from "../helper/voucher.js";
+
 const createBooking = async (user_id, data) => {
     const t = await db.sequelize.transaction();
 
     try {
-        // 1️⃣ Create booking (chưa tiền)
+        // 1️⃣ Create booking
         const booking = await db.Booking.create(
             {
                 customer_id: user_id,
@@ -15,7 +16,7 @@ const createBooking = async (user_id, data) => {
                 date: data.date,
                 status: "pending",
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         // 2️⃣ Booking items + total price
@@ -40,7 +41,7 @@ const createBooking = async (user_id, data) => {
                     service_id: service.service_id,
                     price: service.price,
                 },
-                { transaction: t }
+                { transaction: t },
             );
         }
 
@@ -62,32 +63,41 @@ const createBooking = async (user_id, data) => {
                 total_price: finalTotal,
                 voucher_id: voucher ? voucher.voucher_id : null,
             },
-            { transaction: t }
+            { transaction: t },
         );
 
-        // 5️⃣ Save voucher usage
+        // 5️⃣ Voucher usage
         if (voucher) {
             await db.VoucherUsage.create(
                 {
                     voucher_id: voucher.voucher_id,
-                    user_id: user_id, // 👈 FIX
+                    user_id: user_id,
                     booking_id: booking.booking_id,
-                    status: "used", // 👈 nên thêm
+                    status: "used",
                 },
-                { transaction: t }
+                { transaction: t },
             );
 
-            await voucher.increment("used_count", {
-                transaction: t,
-            });
+            await voucher.increment("used_count", { transaction: t });
         }
 
         await booking.reload({ transaction: t });
         await t.commit();
 
+        // 🔽 🔽 🔽 THÊM PHẦN NÀY 🔽 🔽 🔽
+        const user = await db.User.findByPk(user_id, {
+            attributes: ["fullname", "email"],
+        });
+
         return {
             errCode: 0,
             booking,
+            user: user
+                ? {
+                      fullname: user.fullname,
+                      email: user.email,
+                  }
+                : null,
         };
     } catch (error) {
         await t.rollback();
@@ -207,7 +217,7 @@ const cancelBooking = async ({
                 cancelled_by: cancelledBy,
                 cancel_reason: cancelReason,
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         // refund voucher nếu có
@@ -264,7 +274,7 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
                 staff_id: staffId,
                 status: "assigned",
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         // 4️⃣ Update schedule_staff
@@ -273,7 +283,7 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
                 status: "busy",
                 booking_id: booking.booking_id,
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         await t.commit();
@@ -290,6 +300,22 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
         };
     }
 };
+const getBookingById = async (id) => {
+    const booking = await db.Booking.findByPk(id);
+
+    if (!booking) {
+        return {
+            errCode: 1,
+            errMessage: "Booking not found",
+        };
+    }
+
+    return {
+        errCode: 0,
+        errMessage: "Get booking successfully",
+        data: booking,
+    };
+};
 
 export default {
     createBooking,
@@ -298,4 +324,5 @@ export default {
     updateBookingStatus,
     cancelBooking,
     assignBookingToStaff,
+    getBookingById,
 };

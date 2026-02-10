@@ -31,6 +31,7 @@ let initWebRoutes = (app) => {
     router.get(
         "/api/get-users-role",
         authMiddleware,
+        rbacMiddleware,
         permissionMiddleware({
             all: ["rbac:role:read"],
         }),
@@ -39,6 +40,7 @@ let initWebRoutes = (app) => {
     router.get(
         "/api/get-all-users",
         authMiddleware,
+        rbacMiddleware,
         permissionMiddleware({
             any: ["dashboard:admin", "dashboard:manager"],
             all: ["user:read"],
@@ -66,6 +68,7 @@ let initWebRoutes = (app) => {
         "/api/update-user",
         authMiddleware,
         userSingleUpload,
+        rbacMiddleware,
         permissionMiddleware({
             all: ["user:update"],
         }),
@@ -75,12 +78,16 @@ let initWebRoutes = (app) => {
     router.delete(
         "/api/delete-user/:id",
         authMiddleware,
-        permissionMiddleware(["user:delete"]),
+        rbacMiddleware,
+        permissionMiddleware({
+            all: ["user:delete"],
+        }),
         userController.deleteUserById,
     );
     router.delete(
         "/api/delete-user/hard/:id",
         authMiddleware,
+        rbacMiddleware,
         permissionMiddleware({
             all: ["user:delete", "dashboard:admin"],
         }),
@@ -89,6 +96,7 @@ let initWebRoutes = (app) => {
     router.post(
         "/api/create-user",
         authMiddleware,
+        rbacMiddleware,
         permissionMiddleware({
             any: ["dashboard:admin", "dashboard:manager"],
             all: ["user:create"],

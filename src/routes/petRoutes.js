@@ -2,6 +2,7 @@ import express from "express";
 import petController from "../controllers/petController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ const router = express.Router();
 router.get(
     "/api/pet/get-all",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["pet:read"],
         any: ["dashboard:admin"],
@@ -24,6 +26,7 @@ router.get(
 router.post(
     "/api/pet/create",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["pet:create"],
     }),
@@ -36,6 +39,7 @@ router.post(
 router.get(
     "/api/pet/my-pets",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["pet:read"],
     }),
@@ -48,6 +52,7 @@ router.get(
 router.get(
     "/api/pet/get-by-id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["pet:read"],
     }),
@@ -60,6 +65,7 @@ router.get(
 router.put(
     "/api/pet/update",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["pet:update"],
     }),
@@ -72,6 +78,7 @@ router.put(
 router.delete(
     "/api/pet/delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["pet:delete"],
     }),

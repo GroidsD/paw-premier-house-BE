@@ -11,6 +11,16 @@ exports.generateToken = (user) => {
             role: user.role,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRES }
+        { expiresIn: JWT_EXPIRES },
     );
+};
+
+exports.generateVerifyToken = (bookingId) => {
+    return jwt.sign({ bookingId }, process.env.JWT_SECRET, {
+        expiresIn: "24h",
+    });
+};
+
+exports.verifyToken = (token) => {
+    return jwt.verify(token, process.env.JWT_SECRET);
 };

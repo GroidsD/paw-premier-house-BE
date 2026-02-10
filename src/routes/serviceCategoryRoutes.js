@@ -2,6 +2,7 @@ import express from "express";
 import serviceCategoryController from "../controllers/serviceCategoryController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post(
     "/api/service-category/create",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["category:create"],
@@ -44,6 +46,7 @@ router.get(
 router.put(
     "/api/service-category/update",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["category:update"],
@@ -57,6 +60,7 @@ router.put(
 router.delete(
     "/api/service-category/soft-delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         any: ["dashboard:admin", "dashboard:manager"],
         all: ["category:delete"],
@@ -70,6 +74,7 @@ router.delete(
 router.delete(
     "/api/service-category/hard-delete",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["dashboard:admin", "category:delete"],
     }),

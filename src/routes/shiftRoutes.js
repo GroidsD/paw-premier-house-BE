@@ -2,6 +2,7 @@ import express from "express";
 import shiftController from "../controllers/shiftController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ const router = express.Router();
 router.post(
     "/api/create-shifts",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["shift:create"],
     }),
@@ -25,6 +27,7 @@ router.post(
 router.get(
     "/api/get-all-shifts",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["shift:read"],
     }),
@@ -38,6 +41,7 @@ router.get(
 router.get(
     "/api/get-shift/:shift_id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["shift:read"],
     }),
@@ -51,6 +55,7 @@ router.get(
 router.put(
     "/api/update-shift/:shift_id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["shift:update"],
     }),
@@ -64,6 +69,7 @@ router.put(
 router.delete(
     "/api/delete-shift/:shift_id",
     authMiddleware,
+    rbacMiddleware,
     permissionMiddleware({
         all: ["shift:delete"],
     }),

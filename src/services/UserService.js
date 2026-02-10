@@ -896,15 +896,6 @@ let createUserByAdminOrManager = (permission, data) => {
                 });
             }
 
-            // check permission
-            //  Không phải admin hoặc manager
-            if (!permission.includes("user:create")) {
-                return resolve({
-                    errCode: 2,
-                    errMessage: "Permission denied",
-                });
-            }
-
             // -------------------------------------
             //  Auto-assign role theo quyền creator
             // -------------------------------------
