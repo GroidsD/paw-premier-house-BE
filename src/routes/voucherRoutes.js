@@ -48,5 +48,11 @@ router.get(
     permissionMiddleware({ all: ["voucher:read"] }),
     voucherController.getVoucherStats,
 );
-
+router.put(
+    "/api/voucher/:id",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({ any: ["dashboard:admin"], all: ["voucher:update"] }),
+    voucherController.updateVoucher,
+);
 export default router;

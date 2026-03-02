@@ -68,9 +68,27 @@ const getVoucherStats = async (req, res) => {
         return res.status(500).json({ errCode: 1, errMessage: e.message });
     }
 };
+const updateVoucher = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const voucher = await VoucherService.updateVoucher(id, req.body);
+
+        return res.json({
+            errCode: 0,
+            message: "Cập nhật voucher thành công",
+            voucher,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            errCode: 1,
+            errMessage: error.message,
+        });
+    }
+};
 export default {
     applyVoucher,
     createVoucher,
     listVouchers,
     getVoucherStats,
+    updateVoucher,
 };
