@@ -42,7 +42,35 @@ const createVoucher = async (req, res) => {
     }
 };
 
+const listVouchers = async (req, res) => {
+    try {
+        const { page, pageSize, search, type, status } = req.query;
+
+        const data = await VoucherService.listVouchers({
+            page,
+            pageSize,
+            search,
+            type,
+            status,
+        });
+
+        return res.status(200).json({ errCode: 0, data });
+    } catch (e) {
+        return res.status(500).json({ errCode: 1, errMessage: e.message });
+    }
+};
+
+const getVoucherStats = async (req, res) => {
+    try {
+        const stats = await VoucherService.getVoucherStats();
+        return res.status(200).json({ errCode: 0, data: stats });
+    } catch (e) {
+        return res.status(500).json({ errCode: 1, errMessage: e.message });
+    }
+};
 export default {
     applyVoucher,
     createVoucher,
+    listVouchers,
+    getVoucherStats,
 };

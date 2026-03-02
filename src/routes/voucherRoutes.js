@@ -26,10 +26,27 @@ router.post(
     "/api/voucher/create",
     authMiddleware,
     rbacMiddleware,
-    permissionMiddleware({
-        all: ["voucher:create"],
-    }),
+    permissionMiddleware({ any: ["dashboard:admin"], all: ["voucher:create"] }),
     voucherController.createVoucher,
+);
+// LIST VOUCHERS (ADMIN)
+router.get(
+    "/api/voucher/list",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["voucher:read"],
+    }),
+    voucherController.listVouchers,
+);
+
+// STATS (ADMIN)
+router.get(
+    "/api/voucher/stats",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({ all: ["voucher:read"] }),
+    voucherController.getVoucherStats,
 );
 
 export default router;

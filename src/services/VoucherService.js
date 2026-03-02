@@ -60,7 +60,7 @@ const applyVoucher = async ({
                 order_id: orderId,
                 booking_id: bookingId,
             },
-            { transaction: t }
+            { transaction: t },
         );
 
         await t.commit();
@@ -99,8 +99,87 @@ const createVoucher = async (data) => {
 
     return voucher;
 };
+const listVouchers = async ({
+    page = 1,
+    pageSize = 10,
+    search = "",
+    type = "", // percent | fixed
+    status = "", // active | inactive | expired
+}) => {
+    const now = new Date();
+    const limit = Math.max(1, Number(pageSize) || 10);
+    const offset = (Math.max(1, Number(page) || 1) - 1) * limit;
 
+    const where = {};
+
+    if (search) {
+        where.code = { [Op.like]: `%${search}%` };
+    }
+
+    if (type) {
+        where.discount_type = type; // percent | fixed
+    }
+
+    if (status) {
+        if (status === "active") {
+            where.is_active = true;
+            where.start_date = { [Op.lte]: now };
+            where.end_date = { [Op.gte]: now };
+        } else if (status === "inactive") {
+            // inactive = is_active false (admin tắt)
+            where.is_active = false;
+        } else if (status === "expired") {
+            where.end_date = { [Op.lt]: now };
+        }
+    }
+
+    const { rows, count } = await db.Voucher.findAndCountAll({
+        where,
+        order: [["created_at", "DESC"]],
+        limit,
+        offset,
+    });
+
+    return {
+        items: rows,
+        total: count,
+        page: Number(page),
+        pageSize: limit,
+    };
+};
+
+const getVoucherStats = async () => {
+    const now = new Date();
+
+    const totalVouchers = await db.Voucher.count();
+
+    const activeVouchers = await db.Voucher.count({
+        where: {
+            is_active: true,
+            start_date: { [Op.lte]: now },
+            end_date: { [Op.gte]: now },
+        },
+    });
+
+    // expiringSoon: 7 ngày tới (bạn muốn mấy ngày thì đổi)
+    const in7Days = new Date(now);
+    in7Days.setDate(in7Days.getDate() + 7);
+
+    const expiringSoon = await db.Voucher.count({
+        where: {
+            is_active: true,
+            end_date: { [Op.between]: [now, in7Days] },
+        },
+    });
+
+    // usedVouchers: tổng lượt dùng (sum used_count)
+    const usedVouchers = (await db.Voucher.sum("used_count")) || 0;
+
+    return { totalVouchers, activeVouchers, expiringSoon, usedVouchers };
+};
 export default {
     applyVoucher,
     createVoucher,
+    listVouchers,
+    getVoucherStats,
 };
