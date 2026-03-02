@@ -6,6 +6,8 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
+router.post("/api/orders/verify", orderController.verifyOrder);
+
 router.post(
     "/api/orders/create",
     authMiddleware,

@@ -47,7 +47,7 @@ const createBooking = async (req, res) => {
     }
     const { booking, user } = result;
     const token = generateVerifyToken(booking.booking_id);
-    const url = buildUrlEmail(booking.booking_id, token);
+    const url = buildUrlEmail("booking", booking.booking_id, token);
     try {
         await sendEmail({
             to: user.email,

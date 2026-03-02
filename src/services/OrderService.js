@@ -100,12 +100,20 @@ let createOrder = (data) => {
                     },
                 ],
             });
-
+            const user = await db.User.findByPk(customer_id, {
+                attributes: ["fullname", "email"],
+            });
             resolve({
                 errCode: 0,
                 errMessage:
                     "Order created successfully (pending, stock reserved)",
                 order: newOrder,
+                user: user
+                    ? {
+                          fullname: user.fullname,
+                          email: user.email,
+                      }
+                    : null,
             });
         } catch (e) {
             reject(e);
