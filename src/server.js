@@ -28,16 +28,10 @@ const path = require("path");
 
 let app = express();
 
-
 const server = http.createServer(app);
 
-
 const corsOptions = {
-    origin: [
-        process.env.URL_REACT,
-        "http://localhost:5173",
-        
-    ],
+    origin: [process.env.URL_REACT, "http://localhost:5173"],
     methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     credentials: true,
@@ -49,7 +43,6 @@ app.use((req, res, next) => {
     next();
 });
 app.use(cors(corsOptions));
-
 
 app.use((req, res, next) => {
     const allowedOrigins = [
@@ -78,16 +71,6 @@ app.options("*", cors(corsOptions));
 
 console.log("CORS allowed origins:", corsOptions.origin);
 
-
-
-
-
-
-
-
-
-
-
 app.use(
     "/uploadImageUsers",
     express.static(path.join(__dirname, "public/uploadImageUsers")),
@@ -100,6 +83,10 @@ app.use(
     "/uploadMedia",
     express.static(path.join(__dirname, "public/uploadMedia")),
 );
+app.use(
+    "/uploadImageServices",
+    express.static(path.join(__dirname, "public/uploadImageServices")),
+);
 
 app.use(cookieParser());
 app.use((err, req, res, next) => {
@@ -111,10 +98,8 @@ app.use((err, req, res, next) => {
     next();
 });
 
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
 
 app.use("/", chatRoutes);
 
@@ -128,12 +113,6 @@ app.use(
         },
     }),
 );
-
-
-
-
-
-
 
 viewEngine(app);
 initWebRoutes(app);
@@ -151,7 +130,6 @@ app.use("/", voucherRoutes);
 app.use("/", rbacRoutes);
 
 connectDB();
-
 
 let port = process.env.PORT || 5059;
 server.listen(port, () => {

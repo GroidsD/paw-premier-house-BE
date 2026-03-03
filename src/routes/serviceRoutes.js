@@ -4,6 +4,10 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
 import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
+import {
+    serviceSingleUpload,
+    handleServiceUploadError,
+} from "../middleware/uploadImageServices.js";
 const router = express.Router();
 
 router.post(
@@ -13,6 +17,8 @@ router.post(
     permissionMiddleware({
         all: ["dashboard:admin", "service:create"],
     }),
+    serviceSingleUpload,
+    handleServiceUploadError,
     serviceController.createService,
 );
 
@@ -38,6 +44,9 @@ router.put(
         any: ["dashboard:admin", "dashboard:staff"],
         all: ["service:update"],
     }),
+    serviceSingleUpload,
+    handleServiceUploadError,
+
     serviceController.updateService,
 );
 

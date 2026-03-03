@@ -1,21 +1,48 @@
 import ServiceService from "../services/ServiceService.js";
+const fileToMedia = (file) => {
+    if (!file) return null;
 
+    const url = `/uploadImageServices/${file.filename}`;
+    return {
+        url,
+        type: "image",
+        filename: file.filename,
+    };
+};
 let createService = async (req, res) => {
     try {
+        // ✅ gắn ảnh vào body.media
+        const m = fileToMedia(req.file);
+        if (m) req.body.media = [m];
+
         const result = await ServiceService.createService(req.body);
+
         return res.status(201).json({
-            errCode: 0,
-            errMessage: "Service created successfully",
-            service: result,
+            errCode: result.errCode,
+            errMessage: result.errMessage,
+            service: result.service,
         });
     } catch (e) {
         console.error(e);
-        return res.status(400).json({
-            errCode: 1,
-            errMessage: e.toString(),
-        });
+        return res.status(400).json({ errCode: 1, errMessage: e.toString() });
     }
 };
+// let createService = async (req, res) => {
+//     try {
+//         const result = await ServiceService.createService(req.body);
+//         return res.status(201).json({
+//             errCode: 0,
+//             errMessage: "Service created successfully",
+//             service: result,
+//         });
+//     } catch (e) {
+//         console.error(e);
+//         return res.status(400).json({
+//             errCode: 1,
+//             errMessage: e.toString(),
+//         });
+//     }
+// };
 
 let getAllServices = async (req, res) => {
     try {
@@ -58,33 +85,57 @@ let getServiceById = async (req, res) => {
     }
 };
 
+// let updateService = async (req, res) => {
+//     try {
+//         const service_id = req.query.service_id;
+//         const updated = await ServiceService.updateService(
+//             service_id,
+//             req.body,
+//         );
+
+//         if (!updated) {
+//             return res.status(404).json({
+//                 errCode: 1,
+//                 errMessage: "Service not found",
+//                 service: null,
+//             });
+//         }
+
+//         return res.status(200).json({
+//             errCode: updated.errCode,
+//             errMessage: updated.errMessage,
+//             service: updated.service,
+//         });
+//     } catch (e) {
+//         console.error(e);
+//         return res.status(400).json({
+//             errCode: 1,
+//             errMessage: e.toString(),
+//         });
+//     }
+// };
+
 let updateService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
+
+        // ✅ nếu có upload ảnh mới thì set media mới
+        const m = fileToMedia(req.file);
+        if (m) req.body.media = [m];
+
         const updated = await ServiceService.updateService(
             service_id,
             req.body,
         );
 
-        if (!updated) {
-            return res.status(404).json({
-                errCode: 1,
-                errMessage: "Service not found",
-                service: null,
-            });
-        }
-
-        return res.status(200).json({
+        return res.status(updated?.errCode === 0 ? 200 : 404).json({
             errCode: updated.errCode,
             errMessage: updated.errMessage,
-            service: updated.service,
+            service: updated.service || null,
         });
     } catch (e) {
         console.error(e);
-        return res.status(400).json({
-            errCode: 1,
-            errMessage: e.toString(),
-        });
+        return res.status(400).json({ errCode: 1, errMessage: e.toString() });
     }
 };
 
