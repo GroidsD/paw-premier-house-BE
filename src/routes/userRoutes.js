@@ -56,11 +56,11 @@ let initWebRoutes = (app) => {
     router.post(
         "/api/update-user",
         authMiddleware,
-        userSingleUpload,
         rbacMiddleware,
         permissionMiddleware({
             all: ["user:update"],
         }),
+        userSingleUpload,
         userController.updateUser,
     );
     router.post("/api/register", userController.registerUser);
