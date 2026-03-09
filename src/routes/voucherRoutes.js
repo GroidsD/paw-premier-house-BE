@@ -6,17 +6,25 @@ import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-
 router.post(
-    "/api/voucher/apply",
+    "/api/voucher/validate",
     authMiddleware,
     rbacMiddleware,
     permissionMiddleware({
         all: ["voucher:apply"],
     }),
-    voucherController.applyVoucher,
+    voucherController.validateVoucher,
 );
 
+router.post(
+    "/api/voucher/redeem",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["voucher:apply"],
+    }),
+    voucherController.redeemVoucher,
+);
 
 router.post(
     "/api/voucher/create",
@@ -25,7 +33,7 @@ router.post(
     permissionMiddleware({ any: ["dashboard:admin"], all: ["voucher:create"] }),
     voucherController.createVoucher,
 );
-// LIST VOUCHERS (ADMIN)
+
 router.get(
     "/api/voucher/list",
     authMiddleware,
@@ -36,7 +44,6 @@ router.get(
     voucherController.listVouchers,
 );
 
-// STATS (ADMIN)
 router.get(
     "/api/voucher/stats",
     authMiddleware,
@@ -44,6 +51,7 @@ router.get(
     permissionMiddleware({ all: ["voucher:read"] }),
     voucherController.getVoucherStats,
 );
+
 router.put(
     "/api/voucher/:id",
     authMiddleware,
@@ -51,4 +59,5 @@ router.put(
     permissionMiddleware({ any: ["dashboard:admin"], all: ["voucher:update"] }),
     voucherController.updateVoucher,
 );
+
 export default router;

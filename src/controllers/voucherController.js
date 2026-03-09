@@ -1,11 +1,34 @@
 import VoucherService from "../services/VoucherService.js";
 
-const applyVoucher = async (req, res) => {
+const validateVoucher = async (req, res) => {
+    try {
+        const { code, totalPrice, applyFor } = req.body;
+
+        const result = await VoucherService.validateVoucher({
+            code,
+            totalPrice,
+            applyFor: applyFor || "order",
+        });
+
+        return res.json({
+            errCode: 0,
+            message: "Voucher hợp lệ",
+            data: result,
+        });
+    } catch (error) {
+        return res.status(400).json({
+            errCode: 1,
+            errMessage: error.message,
+        });
+    }
+};
+
+const redeemVoucher = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const { code, totalPrice, orderId, bookingId } = req.body;
 
-        const result = await VoucherService.applyVoucher({
+        const result = await VoucherService.redeemVoucher({
             code,
             userId,
             totalPrice,
@@ -15,8 +38,8 @@ const applyVoucher = async (req, res) => {
 
         return res.json({
             errCode: 0,
-            message: "Áp voucher thành công",
-            ...result,
+            message: "Redeem voucher thành công",
+            data: result,
         });
     } catch (error) {
         return res.status(400).json({
@@ -25,6 +48,7 @@ const applyVoucher = async (req, res) => {
         });
     }
 };
+
 const createVoucher = async (req, res) => {
     try {
         const voucher = await VoucherService.createVoucher(req.body);
@@ -68,6 +92,7 @@ const getVoucherStats = async (req, res) => {
         return res.status(500).json({ errCode: 1, errMessage: e.message });
     }
 };
+
 const updateVoucher = async (req, res) => {
     try {
         const { id } = req.params;
@@ -85,8 +110,10 @@ const updateVoucher = async (req, res) => {
         });
     }
 };
+
 export default {
-    applyVoucher,
+    validateVoucher,
+    redeemVoucher,
     createVoucher,
     listVouchers,
     getVoucherStats,

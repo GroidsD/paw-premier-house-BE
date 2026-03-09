@@ -6,6 +6,7 @@ const calculateDiscount = (voucher, totalPrice) => {
 
     if (voucher.discount_type === "percent") {
         discountAmount = (Number(totalPrice) * Number(voucher.discount)) / 100;
+
         if (voucher.max_discount) {
             discountAmount = Math.min(
                 discountAmount,
@@ -19,7 +20,72 @@ const calculateDiscount = (voucher, totalPrice) => {
     return Math.min(discountAmount, Number(totalPrice));
 };
 
-const applyVoucher = async ({
+// helper check voucher chung
+const findAndValidateVoucher = async ({
+    code,
+    totalPrice,
+    applyFor = "order",
+    transaction = null,
+    lock = false,
+}) => {
+    const now = new Date();
+
+    const voucher = await db.Voucher.findOne({
+        where: {
+            code,
+            is_active: true,
+            start_date: { [Op.lte]: now },
+            end_date: { [Op.gte]: now },
+        },
+        transaction,
+        ...(lock ? { lock: transaction.LOCK.UPDATE } : {}),
+    });
+
+    if (!voucher) throw new Error("Voucher không hợp lệ");
+
+    // check loại áp dụng
+    if (voucher.apply_for !== "all" && voucher.apply_for !== applyFor) {
+        throw new Error("Voucher không áp dụng cho giao dịch này");
+    }
+
+    // check usage_limit
+    if (voucher.usage_limit && voucher.used_count >= voucher.usage_limit) {
+        throw new Error("Voucher đã hết lượt sử dụng");
+    }
+
+    // check min order
+    if (
+        voucher.min_order_value &&
+        Number(totalPrice) < Number(voucher.min_order_value)
+    ) {
+        throw new Error("Đơn hàng chưa đủ điều kiện áp voucher");
+    }
+
+    return voucher;
+};
+
+// 1) validate trước ở cart/checkout
+const validateVoucher = async ({ code, totalPrice, applyFor = "order" }) => {
+    const voucher = await findAndValidateVoucher({
+        code,
+        totalPrice,
+        applyFor,
+    });
+
+    const discountAmount = calculateDiscount(voucher, totalPrice);
+
+    return {
+        voucherId: voucher.voucher_id,
+        code: voucher.code,
+        discountType: voucher.discount_type,
+        discountValue: Number(voucher.discount),
+        discountAmount,
+        finalPrice: Math.max(0, Number(totalPrice) - discountAmount),
+    };
+};
+
+// 2) redeem sau khi đã tạo order/booking thành công
+const redeemVoucher = async ({
     code,
     userId,
     totalPrice,
@@ -27,43 +93,27 @@ const applyVoucher = async ({
     bookingId = null,
 }) => {
     return await db.sequelize.transaction(async (t) => {
-        const now = new Date();
+        let applyFor = "order";
+        if (bookingId) applyFor = "booking";
 
-        // 1) lock voucher row
-        const voucher = await db.Voucher.findOne({
-            where: {
-                code,
-                is_active: true,
-                start_date: { [Op.lte]: now },
-                end_date: { [Op.gte]: now },
-            },
+        const voucher = await findAndValidateVoucher({
+            code,
+            totalPrice,
+            applyFor,
             transaction: t,
-            lock: t.LOCK.UPDATE,
+            lock: true,
         });
 
-        if (!voucher) throw new Error("Voucher không hợp lệ");
-
-        // 2) check apply_for
-        if (voucher.apply_for === "order" && !orderId)
-            throw new Error("Voucher chỉ áp dụng cho Order");
-        if (voucher.apply_for === "booking" && !bookingId)
-            throw new Error("Voucher chỉ áp dụng cho Booking");
-        // all => ok
-
-        // 3) check usage_limit
-        if (voucher.usage_limit && voucher.used_count >= voucher.usage_limit) {
-            throw new Error("Voucher đã hết lượt sử dụng");
+        if (voucher.apply_for === "order" && !orderId) {
+            throw new Error("Voucher này yêu cầu orderId");
         }
 
-        // 4) check min order
-        if (
-            voucher.min_order_value &&
-            Number(totalPrice) < Number(voucher.min_order_value)
-        ) {
-            throw new Error("Đơn hàng chưa đủ điều kiện áp voucher");
+        if (voucher.apply_for === "booking" && !bookingId) {
+            throw new Error("Voucher này yêu cầu bookingId");
         }
 
-        // 5) create usage FIRST (unique index đảm bảo 1 user 1 lần)
+        const discountAmount = calculateDiscount(voucher, totalPrice);
+
         try {
             await db.VoucherUsage.create(
                 {
@@ -72,26 +122,24 @@ const applyVoucher = async ({
                     order_id: orderId,
                     booking_id: bookingId,
                     status: "used",
-                    used_at: now,
+                    used_at: new Date(),
                 },
                 { transaction: t },
             );
         } catch (err) {
-            // SequelizeUniqueConstraintError
             if (err?.name === "SequelizeUniqueConstraintError") {
                 throw new Error("Bạn đã dùng voucher này rồi");
             }
             throw err;
         }
 
-        // 6) then increment used_count
         await voucher.increment("used_count", { by: 1, transaction: t });
 
-        const discountAmount = calculateDiscount(voucher, totalPrice);
-
         return {
+            voucherId: voucher.voucher_id,
+            code: voucher.code,
             discountAmount,
-            finalPrice: Number(totalPrice) - discountAmount,
+            finalPrice: Math.max(0, Number(totalPrice) - discountAmount),
         };
     });
 };
@@ -106,9 +154,10 @@ const createVoucher = async (data) => {
         throw new Error("discount_type không hợp lệ");
     if (!["order", "booking", "all"].includes(data.apply_for || "all"))
         throw new Error("apply_for không hợp lệ");
+
     const voucher = await db.Voucher.create({
         code: data.code,
-        discount_type: data.discount_type, 
+        discount_type: data.discount_type,
         discount: data.discount,
         description: data.description || null,
         max_discount: data.max_discount || null,
@@ -123,12 +172,13 @@ const createVoucher = async (data) => {
 
     return voucher;
 };
+
 const listVouchers = async ({
     page = 1,
     pageSize = 10,
     search = "",
-    type = "", // percent | fixed
-    status = "", // active | inactive | expired
+    type = "",
+    status = "",
 }) => {
     const now = new Date();
     const limit = Math.max(1, Number(pageSize) || 10);
@@ -141,7 +191,7 @@ const listVouchers = async ({
     }
 
     if (type) {
-        where.discount_type = type; // percent | fixed
+        where.discount_type = type;
     }
 
     if (status) {
@@ -150,7 +200,6 @@ const listVouchers = async ({
             where.start_date = { [Op.lte]: now };
             where.end_date = { [Op.gte]: now };
         } else if (status === "inactive") {
-            // inactive = is_active false (admin tắt)
             where.is_active = false;
         } else if (status === "expired") {
             where.end_date = { [Op.lt]: now };
@@ -185,7 +234,6 @@ const getVoucherStats = async () => {
         },
     });
 
-    // expiringSoon: 7 ngày tới (bạn muốn mấy ngày thì đổi)
     const in7Days = new Date(now);
     in7Days.setDate(in7Days.getDate() + 7);
 
@@ -196,16 +244,15 @@ const getVoucherStats = async () => {
         },
     });
 
-    // usedVouchers: tổng lượt dùng (sum used_count)
     const usedVouchers = (await db.Voucher.sum("used_count")) || 0;
 
     return { totalVouchers, activeVouchers, expiringSoon, usedVouchers };
 };
+
 const updateVoucher = async (id, data) => {
     const voucher = await db.Voucher.findByPk(id);
     if (!voucher) throw new Error("Voucher không tồn tại");
 
-    // nếu đổi code thì check trùng
     if (data.code && data.code !== voucher.code) {
         const existed = await db.Voucher.findOne({
             where: { code: data.code },
@@ -213,13 +260,13 @@ const updateVoucher = async (id, data) => {
         if (existed) throw new Error("Voucher code đã tồn tại");
     }
 
-    // validate enum nếu gửi lên
     if (
         data.discount_type &&
         !["percent", "fixed"].includes(data.discount_type)
     ) {
         throw new Error("discount_type không hợp lệ");
     }
+
     if (
         data.apply_for &&
         !["order", "booking", "all"].includes(data.apply_for)
@@ -227,17 +274,17 @@ const updateVoucher = async (id, data) => {
         throw new Error("apply_for không hợp lệ");
     }
 
-    // validate date nếu có
     const start = data.start_date
         ? new Date(data.start_date)
         : new Date(voucher.start_date);
     const end = data.end_date
         ? new Date(data.end_date)
         : new Date(voucher.end_date);
-    if (start && end && start >= end)
-        throw new Error("start_date phải trước end_date");
 
-    // cập nhật fields cho phép edit
+    if (start && end && start >= end) {
+        throw new Error("start_date phải trước end_date");
+    }
+
     await voucher.update({
         code: data.code ?? voucher.code,
         discount_type: data.discount_type ?? voucher.discount_type,
@@ -257,11 +304,12 @@ const updateVoucher = async (id, data) => {
 
     return voucher;
 };
+
 export default {
-    applyVoucher,
+    validateVoucher,
+    redeemVoucher,
     createVoucher,
     listVouchers,
     getVoucherStats,
     updateVoucher,
-    
 };
