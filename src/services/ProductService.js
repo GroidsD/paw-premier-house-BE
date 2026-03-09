@@ -2,7 +2,6 @@ import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
-
 let createProduct = async (data) => {
     try {
         let {
@@ -14,9 +13,50 @@ let createProduct = async (data) => {
             discount_type = "percent",
             quantity = 0,
             media = [],
-            tags = [],
         } = data;
 
+        // ===== VALIDATION RULES =====
+        const validations = [
+            {
+                condition: !name || name.trim() === "",
+                message: "Product name is required",
+            },
+            {
+                condition: !productCategories_id,
+                message: "Product category is required",
+            },
+            {
+                condition:
+                    original_price === undefined || original_price === null,
+                message: "Original price is required",
+            },
+            {
+                condition: Number(original_price) < 0,
+                message: "Original price must be greater than 0",
+            },
+            {
+                condition: Number(quantity) < 0,
+                message: "Quantity cannot be negative",
+            },
+            {
+                condition:
+                    discount_type &&
+                    !["percent", "fixed"].includes(discount_type),
+                message: "Discount type must be 'percent' or 'fixed'",
+            },
+        ];
+
+        // ===== LOOP VALIDATION =====
+        for (const rule of validations) {
+            if (rule.condition) {
+                return {
+                    errCode: 1,
+                    errMessage: rule.message,
+                };
+            }
+        }
+
+        // ===== GENERATE SLUG =====
         let baseSlug = generateSlug(data.slug || name);
         let slug = baseSlug;
         let count = 1;
@@ -26,6 +66,7 @@ let createProduct = async (data) => {
             count++;
         }
 
+        // ===== CREATE PRODUCT =====
         let product = await db.Product.create({
             productCategories_id,
             name,
@@ -37,42 +78,20 @@ let createProduct = async (data) => {
             quantity,
         });
 
-        await mediaService.createMediaForEntity(
-            media,
-            product.product_id,
-            "product",
-        );
-
-        for (const tagName of tags) {
-            let tagSlug = generateSlug(tagName);
-
-            const [tag] = await db.Tag.findOrCreate({
-                where: { slug: tagSlug },
-                defaults: {
-                    name: tagName,
-                    slug: tagSlug,
-                },
-            });
-
-            await db.ProductTag.findOrCreate({
-                where: {
-                    product_id: product.product_id,
-                    tag_id: tag.tag_id,
-                },
-            });
+        // ===== CREATE MEDIA =====
+        if (Array.isArray(media) && media.length > 0) {
+            await mediaService.createMediaForEntity(
+                media,
+                product.product_id,
+                "product",
+            );
         }
 
+        // ===== GET PRODUCT WITH MEDIA =====
         let productWithRelations = await db.Product.findByPk(
             product.product_id,
             {
-                include: [
-                    { model: db.Media, as: "media" },
-                    {
-                        model: db.Tag,
-                        as: "tags",
-                        through: { attributes: [] },
-                    },
-                ],
+                include: [{ model: db.Media, as: "media" }],
             },
         );
 
@@ -82,7 +101,11 @@ let createProduct = async (data) => {
             product: productWithRelations,
         };
     } catch (e) {
-        throw e;
+        return {
+            errCode: -1,
+            errMessage: "Server error",
+            details: e.message,
+        };
     }
 };
 
@@ -109,12 +132,6 @@ let getAllProducts = () => {
                         attributes: ["productCategories_id", "type"],
                     },
                     {
-                        model: db.Tag,
-                        as: "tags",
-                        attributes: ["tag_id", "name", "slug"],
-                        through: { attributes: [] },
-                    },
-                    {
                         model: db.Media,
                         as: "media",
                     },
@@ -128,7 +145,6 @@ let getAllProducts = () => {
         }
     });
 };
-
 let getProductById = (product_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -149,12 +165,6 @@ let getProductById = (product_id) => {
                         model: db.ProductCategory,
                         as: "category",
                         attributes: ["productCategories_id", "type"],
-                    },
-                    {
-                        model: db.Tag,
-                        as: "tags",
-                        attributes: ["tag_id", "name", "slug"],
-                        through: { attributes: [] },
                     },
                     {
                         model: db.Media,
@@ -185,7 +195,6 @@ let getProductById = (product_id) => {
         }
     });
 };
-
 let updateProduct = async (product_id, data, files) => {
     try {
         let {

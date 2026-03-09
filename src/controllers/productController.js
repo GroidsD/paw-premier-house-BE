@@ -4,24 +4,20 @@ const createProduct = async (req, res) => {
     try {
         const data = { ...req.body };
 
+        // convert number
         data.productCategories_id = data.productCategories_id
             ? Number(data.productCategories_id)
             : null;
+
         data.original_price = Number(data.original_price || 0);
         data.discount = Number(data.discount || 0);
         data.quantity = Number(data.quantity || 0);
 
-        if (typeof data.tags === "string") {
-            try {
-                data.tags = JSON.parse(data.tags);
-            } catch {
-                data.tags = [];
-            }
-        }
-
         const mainIndex = Number(data.mainIndex || 0);
 
         const files = req.files || [];
+
+        // build media array
         data.media = files.map((f, idx) => ({
             url: `/uploadImageProducts/${f.filename}`,
             type: "image",
@@ -30,6 +26,7 @@ const createProduct = async (req, res) => {
         }));
 
         const result = await ProductService.createProduct(data);
+
         return res.status(200).json(result);
     } catch (e) {
         return res.status(500).json({
