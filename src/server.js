@@ -20,6 +20,7 @@ import shiftRoutes from "./routes/shiftRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
 import rbacRoutes from "./routes/rbacRoutes.js";
+import revenueRoutes from "./routes/revenueRoutes.js";
 import { initRedis } from "./config/redis.js";
 
 require("dotenv").config();
@@ -128,7 +129,7 @@ app.use("/", petRoutes);
 
 app.use("/", voucherRoutes);
 app.use("/", rbacRoutes);
-
+app.use("/", revenueRoutes);
 connectDB();
 
 let port = process.env.PORT || 5059;

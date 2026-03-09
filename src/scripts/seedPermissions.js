@@ -11,7 +11,7 @@ const permissionMap = {
     "dashboard:admin": "Admin Dashboard",
     "dashboard:manager": "Manager Dashboard",
     "dashboard:staff": "Staff Dashboard",
-
+    "revenue:read": "View revenue dashboard and reports",
     "booking:create": "Create booking",
     "booking:read": "View bookings",
     "booking:update": "Update booking",
@@ -131,7 +131,7 @@ const seed = async () => {
         await roleMap.admin.setPermissions(
             permissions.filter(
                 (p) =>
-                    ["dashboard:view", "dashboard:admin"].includes(p.action) ||
+                    ["dashboard:admin", "revenue:read"].includes(p.action) ||
                     p.action.startsWith("booking:") ||
                     p.action.startsWith("order:") ||
                     p.action.startsWith("product:") ||
@@ -150,7 +150,7 @@ const seed = async () => {
         await roleMap.manager.setPermissions(
             permissions.filter(
                 (p) =>
-                    ["dashboard:manager"].includes(p.action) ||
+                    ["dashboard:manager", "revenue:read"].includes(p.action) ||
                     p.action.startsWith("booking:") ||
                     p.action.startsWith("order:") ||
                     p.action.startsWith("product:") ||

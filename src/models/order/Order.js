@@ -102,19 +102,103 @@ module.exports = (sequelize, DataTypes) => {
             updatedAt: "updated_at",
             hooks: {
                 beforeSave: (order) => {
-                    let finalTotal = order.original_price;
+                    let finalTotal = Number(order.original_price || 0);
+                    const discount = Number(order.discount || 0);
 
-                    if (order.discount && order.discount > 0) {
+                    if (discount > 0) {
                         if (order.discount_type === "percent") {
                             finalTotal =
-                                order.original_price -
-                                (order.original_price * order.discount) / 100;
+                                finalTotal - (finalTotal * discount) / 100;
                         } else if (order.discount_type === "fixed") {
-                            finalTotal = order.original_price - order.discount;
+                            finalTotal = finalTotal - discount;
                         }
                     }
 
                     order.total_price = finalTotal < 0 ? 0 : finalTotal;
+                },
+
+                afterUpdate: async (order, options) => {
+                    const RevenueTransaction =
+                        sequelize.models.RevenueTransaction;
+
+                    const prevStatus = order._previousDataValues.status;
+                    const newStatus = order.status;
+
+                    const grossAmount = Number(order.original_price || 0);
+                    let discountAmount = 0;
+
+                    if (Number(order.discount || 0) > 0) {
+                        if (order.discount_type === "percent") {
+                            discountAmount =
+                                (grossAmount * Number(order.discount)) / 100;
+                        } else {
+                            discountAmount = Number(order.discount || 0);
+                        }
+                    }
+
+                    const netAmount = Number(order.total_price || 0);
+
+                    // Từ trạng thái khác => completed
+                    if (
+                        prevStatus !== "completed" &&
+                        newStatus === "completed"
+                    ) {
+                        const existedIncome = await RevenueTransaction.findOne({
+                            where: {
+                                source_type: "order",
+                                order_id: order.order_id,
+                                transaction_type: "income",
+                            },
+                        });
+
+                        if (!existedIncome) {
+                            await RevenueTransaction.create(
+                                {
+                                    source_type: "order",
+                                    order_id: order.order_id,
+                                    booking_id: null,
+                                    transaction_type: "income",
+                                    gross_amount: grossAmount,
+                                    discount_amount: discountAmount,
+                                    net_amount: netAmount,
+                                    transaction_date: new Date(),
+                                    note: `Revenue from order #${order.order_id}`,
+                                },
+                                { transaction: options.transaction },
+                            );
+                        }
+                    }
+
+                    // Từ completed => cancelled
+                    if (
+                        prevStatus === "completed" &&
+                        newStatus === "cancelled"
+                    ) {
+                        const existedRefund = await RevenueTransaction.findOne({
+                            where: {
+                                source_type: "order",
+                                order_id: order.order_id,
+                                transaction_type: "refund",
+                            },
+                        });
+
+                        if (!existedRefund) {
+                            await RevenueTransaction.create(
+                                {
+                                    source_type: "order",
+                                    order_id: order.order_id,
+                                    booking_id: null,
+                                    transaction_type: "refund",
+                                    gross_amount: grossAmount,
+                                    discount_amount: discountAmount,
+                                    net_amount: -netAmount,
+                                    transaction_date: new Date(),
+                                    note: `Refund for cancelled order #${order.order_id}`,
+                                },
+                                { transaction: options.transaction },
+                            );
+                        }
+                    }
                 },
             },
         },

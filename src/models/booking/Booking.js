@@ -31,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "booking_id",
                 as: "bookingItems",
             });
+
             Booking.belongsTo(models.Voucher, {
                 foreignKey: "voucher_id",
                 as: "voucher",
@@ -144,6 +145,81 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
+            hooks: {
+                afterUpdate: async (booking, options) => {
+                    const RevenueTransaction =
+                        sequelize.models.RevenueTransaction;
+
+                    const prevStatus = booking._previousDataValues.status;
+                    const newStatus = booking.status;
+
+                    const grossAmount = Number(booking.original_price || 0);
+                    const discountAmount = Number(booking.discount || 0);
+                    const netAmount = Number(booking.total_price || 0);
+
+                    // Từ trạng thái khác => completed
+                    if (
+                        prevStatus !== "completed" &&
+                        newStatus === "completed"
+                    ) {
+                        const existedIncome = await RevenueTransaction.findOne({
+                            where: {
+                                source_type: "booking",
+                                booking_id: booking.booking_id,
+                                transaction_type: "income",
+                            },
+                        });
+
+                        if (!existedIncome) {
+                            await RevenueTransaction.create(
+                                {
+                                    source_type: "booking",
+                                    order_id: null,
+                                    booking_id: booking.booking_id,
+                                    transaction_type: "income",
+                                    gross_amount: grossAmount,
+                                    discount_amount: discountAmount,
+                                    net_amount: netAmount,
+                                    transaction_date: new Date(),
+                                    note: `Revenue from booking #${booking.booking_id}`,
+                                },
+                                { transaction: options.transaction },
+                            );
+                        }
+                    }
+
+                    // Từ completed => cancelled
+                    if (
+                        prevStatus === "completed" &&
+                        newStatus === "cancelled"
+                    ) {
+                        const existedRefund = await RevenueTransaction.findOne({
+                            where: {
+                                source_type: "booking",
+                                booking_id: booking.booking_id,
+                                transaction_type: "refund",
+                            },
+                        });
+
+                        if (!existedRefund) {
+                            await RevenueTransaction.create(
+                                {
+                                    source_type: "booking",
+                                    order_id: null,
+                                    booking_id: booking.booking_id,
+                                    transaction_type: "refund",
+                                    gross_amount: grossAmount,
+                                    discount_amount: discountAmount,
+                                    net_amount: -netAmount,
+                                    transaction_date: new Date(),
+                                    note: `Refund for cancelled booking #${booking.booking_id}`,
+                                },
+                                { transaction: options.transaction },
+                            );
+                        }
+                    }
+                },
+            },
         },
     );
 
