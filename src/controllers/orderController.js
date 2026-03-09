@@ -22,7 +22,6 @@ const verifyOrder = async (req, res) => {
             !orderResult ||
             (orderResult.errCode !== 0 && orderResult.errCode !== undefined)
         ) {
-            // OrderService.getOrderById may return an object or an {errCode:1,...}
             return res
                 .status(404)
                 .json({ errCode: 1, message: "Order not found" });

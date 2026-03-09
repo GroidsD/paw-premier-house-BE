@@ -44,7 +44,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
-            
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -63,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
             duration: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
-                defaultValue: 60,
+                defaultValue: 1440,
                 comment: "Duration in minutes",
             },
 
