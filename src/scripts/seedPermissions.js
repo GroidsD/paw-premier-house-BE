@@ -12,54 +12,82 @@ const permissionMap = {
     "dashboard:manager": "Manager Dashboard",
     "dashboard:staff": "Staff Dashboard",
 
+    "revenue:read": "View revenue dashboard and reports",
+
     "booking:create": "Create booking",
     "booking:read": "View bookings",
     "booking:update": "Update booking",
-    "booking:delete": "Delete booking (soft delete)",
+    "booking:delete": "Delete booking",
     "booking:restore": "Restore deleted booking",
 
     "order:create": "Create order",
     "order:read": "View orders",
     "order:update": "Update order",
-    "order:delete": "Delete order (soft delete)",
+    "order:delete": "Delete order",
     "order:restore": "Restore deleted order",
 
     "pet:create": "Create pet profile",
     "pet:read": "View pets",
     "pet:update": "Update pet information",
-    "pet:delete": "Delete pet (soft delete)",
+    "pet:delete": "Delete pet",
     "pet:restore": "Restore deleted pet",
 
     "product:create": "Create product",
     "product:read": "View products",
     "product:update": "Update product",
-    "product:delete": "Delete product (soft delete)",
+    "product:delete": "Delete product",
     "product:restore": "Restore deleted product",
 
     "category:create": "Create category",
     "category:read": "View categories",
     "category:update": "Update category",
-    "category:delete": "Delete category (soft delete)",
+    "category:delete": "Delete category",
     "category:restore": "Restore deleted category",
 
     "voucher:create": "Create voucher",
     "voucher:read": "View vouchers",
     "voucher:update": "Update voucher",
-    "voucher:delete": "Delete voucher (soft delete)",
+    "voucher:delete": "Delete voucher",
     "voucher:restore": "Restore deleted voucher",
     "voucher:apply": "Apply voucher",
 
-    "shift:read": "View work shifts",
+    "service:create": "Create service",
+    "service:read": "View services",
+    "service:update": "Update service",
+    "service:delete": "Delete service",
+    "service:restore": "Restore deleted service",
+
+    "feature:create": "Create feature",
+    "feature:read": "View features",
+    "feature:update": "Update feature",
+    "feature:delete": "Delete feature",
+
+    "service-feature:add": "Add feature to service",
+    "service-feature:remove": "Remove feature from service",
+    "service-feature:read": "View service features",
+
+    "notification:create": "Create notification",
+    "notification:read": "View notifications",
+    "notification:update": "Update notification",
+    "notification:delete": "Delete notification",
+
     "shift:create": "Create shift",
+    "shift:read": "View shifts",
     "shift:update": "Update shift",
     "shift:delete": "Delete shift",
 
-    "schedule:create": "Register work schedule",
-    "schedule:read": "View work schedules",
-    "schedule:update": "Update own work schedule",
+    "schedule:create": "Create schedule",
+    "schedule:read": "View schedules",
+    "schedule:update": "Update schedule",
     "schedule:delete": "Delete schedule",
-    "schedule:approve": "Approve or reject staff schedule",
-    "schedule:replace": "Replace staff in schedule",
+    "schedule:approve": "Approve schedule",
+    "schedule:replace": "Replace staff",
+
+    "user:create": "Create user",
+    "user:read": "View users",
+    "user:update": "Update user",
+    "user:delete": "Delete user",
+    "user:restore": "Restore user",
 
     "rbac:role:read": "View roles",
     "rbac:role:create": "Create role",
@@ -67,28 +95,17 @@ const permissionMap = {
     "rbac:role:delete": "Delete role",
 
     "rbac:permission:read": "View permissions",
-    "rbac:permission:assign": "Assign permissions to role",
+    "rbac:permission:assign": "Assign permissions",
 
-    "rbac:user-role:assign": "Assign roles to user",
+    "rbac:user-role:assign": "Assign role to user",
     "rbac:user-permission:assign": "Override user permissions",
-
-    "user:create": "Create user",
-    "user:read": "View users",
-    "user:update": "Update user",
-    "user:delete": "Delete user",
-    "user:restore": "Restore deleted user",
-
-    "service:create": "Create service",
-    "service:read": "View services",
-    "service:update": "Update service",
-    "service:delete": "Delete service (soft/hard)",
-    "service:restore": "Restore deleted service",
 };
 
 const actions = Object.keys(permissionMap);
 
 const seed = async () => {
     const transaction = await db.sequelize.transaction();
+
     try {
         for (const action of actions) {
             await db.Permission.findOrCreate({
@@ -128,48 +145,29 @@ const seed = async () => {
         const roleMap = {};
         roles.forEach((r) => (roleMap[r.name] = r));
 
-        await roleMap.admin.setPermissions(
-            permissions.filter(
-                (p) =>
-                    ["dashboard:view", "dashboard:admin"].includes(p.action) ||
-                    p.action.startsWith("booking:") ||
-                    p.action.startsWith("order:") ||
-                    p.action.startsWith("product:") ||
-                    p.action.startsWith("category:") ||
-                    p.action.startsWith("voucher:") ||
-                    p.action.startsWith("pet:") ||
-                    p.action.startsWith("service:") ||
-                    p.action.startsWith("shift:") ||
-                    p.action.startsWith("schedule:") ||
-                    p.action.startsWith("rbac:") ||
-                    p.action.startsWith("user:"),
-            ),
-            { transaction },
-        );
+        await roleMap.admin.setPermissions(permissions, { transaction });
 
         await roleMap.manager.setPermissions(
             permissions.filter(
                 (p) =>
-                    ["dashboard:manager"].includes(p.action) ||
                     p.action.startsWith("booking:") ||
                     p.action.startsWith("order:") ||
                     p.action.startsWith("product:") ||
                     p.action.startsWith("category:") ||
                     p.action.startsWith("voucher:") ||
                     p.action.startsWith("service:") ||
+                    p.action.startsWith("feature:") ||
+                    p.action.startsWith("service-feature:") ||
+                    p.action.startsWith("notification:") ||
                     p.action.startsWith("pet:") ||
                     p.action.startsWith("shift:") ||
+                    p.action.startsWith("schedule:") ||
                     [
-                        "schedule:create",
-                        "schedule:read",
-                        "schedule:update",
-                        "schedule:approve",
-                        "schedule:replace",
-                    ].includes(p.action) ||
-                    ["user:read", "user:update"].includes(p.action) ||
-                    ["rbac:role:read", "rbac:permission:read"].includes(
-                        p.action,
-                    ),
+                        "dashboard:manager",
+                        "user:read",
+                        "user:update",
+                        "revenue:read",
+                    ].includes(p.action),
             ),
             { transaction },
         );
@@ -194,10 +192,8 @@ const seed = async () => {
                     "schedule:create",
                     "schedule:read",
                     "schedule:update",
-                    "user:read",
-                    "user:update",
                     "service:read",
-                    "service:update",
+                    "feature:read",
                 ].includes(p.action),
             ),
             { transaction },
@@ -224,10 +220,12 @@ const seed = async () => {
         );
 
         await transaction.commit();
-        console.log("✅ RBAC seeded with resource:action format");
+
+        console.log("✅ RBAC Seed completed successfully");
         process.exit(0);
     } catch (err) {
         await transaction.rollback();
+
         console.error("❌ Seed failed:", err);
         process.exit(1);
     }

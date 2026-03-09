@@ -20,6 +20,8 @@ import shiftRoutes from "./routes/shiftRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
 import rbacRoutes from "./routes/rbacRoutes.js";
+import featuresRoutes from "./routes/FeatureRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import { initRedis } from "./config/redis.js";
 
 require("dotenv").config();
@@ -125,6 +127,8 @@ app.use("/", scheduleRoutes);
 app.use("/", shiftRoutes);
 app.use("/", bookingRoutes);
 app.use("/", petRoutes);
+app.use("/", featuresRoutes);
+app.use("/", notificationRoutes);
 
 app.use("/", voucherRoutes);
 app.use("/", rbacRoutes);
