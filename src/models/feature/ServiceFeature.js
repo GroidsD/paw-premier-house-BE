@@ -2,48 +2,47 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-    class ProductTag extends Model {
+    class ServiceFeature extends Model {
         static associate(models) {
-            ProductTag.belongsTo(models.Product, {
-                foreignKey: "product_id",
-                as: "product",
+            ServiceFeature.belongsTo(models.Service, {
+                foreignKey: "service_id",
+                as: "service",
             });
 
-            ProductTag.belongsTo(models.Tag, {
-                foreignKey: "tag_id",
-                as: "tag",
+            ServiceFeature.belongsTo(models.Feature, {
+                foreignKey: "feature_id",
+                as: "feature",
             });
         }
     }
 
-    ProductTag.init(
+    ServiceFeature.init(
         {
             id: {
                 type: DataTypes.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
+                allowNull: false,
             },
 
-            product_id: {
+            service_id: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 references: {
-                    model: "products",
-                    key: "product_id",
+                    model: "services",
+                    key: "service_id",
                 },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
+                comment: "Service sử dụng feature",
             },
 
-            tag_id: {
+            feature_id: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 references: {
-                    model: "tags",
-                    key: "tag_id",
+                    model: "features",
+                    key: "feature_id",
                 },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
+                comment: "Feature được gắn",
             },
 
             created_at: {
@@ -53,12 +52,12 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: "ProductTag",
-            tableName: "product_tags",
+            modelName: "ServiceFeature",
+            tableName: "service_features",
             freezeTableName: true,
             timestamps: false,
-        }
+        },
     );
 
-    return ProductTag;
+    return ServiceFeature;
 };

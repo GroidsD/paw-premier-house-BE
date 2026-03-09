@@ -1,36 +1,38 @@
 "use strict";
 
-
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("product_tags", {
+        await queryInterface.createTable("service_features", {
             id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
+                allowNull: false,
                 primaryKey: true,
-                allowNull: false,
+                comment: "Khóa chính",
             },
 
-            product_id: {
+            service_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
+                comment: "Service sử dụng feature",
                 references: {
-                    model: "products",
-                    key: "product_id",
+                    model: "services",
+                    key: "service_id",
                 },
-                onUpdate: "CASCADE",
                 onDelete: "CASCADE",
+                onUpdate: "CASCADE",
             },
 
-            tag_id: {
+            feature_id: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
+                comment: "Feature được gắn vào service",
                 references: {
-                    model: "tags",
-                    key: "tag_id",
+                    model: "features",
+                    key: "feature_id",
                 },
-                onUpdate: "CASCADE",
                 onDelete: "CASCADE",
+                onUpdate: "CASCADE",
             },
 
             created_at: {
@@ -39,15 +41,9 @@ module.exports = {
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
         });
-
-        await queryInterface.addConstraint("product_tags", {
-            fields: ["product_id", "tag_id"],
-            type: "unique",
-            name: "uniq_product_tag",
-        });
     },
 
     async down(queryInterface) {
-        await queryInterface.dropTable("product_tags");
+        await queryInterface.dropTable("service_features");
     },
 };

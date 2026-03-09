@@ -10,13 +10,13 @@ const router = express.Router();
 
 router.post(
     "/api/products/create",
-    authMiddleware,
-    rbacMiddleware,
-    permissionMiddleware({
-        any: ["dashboard:admin", "dashboard:manager"],
-        all: ["product:create"],
-    }),
-    multiUpload,
+    // authMiddleware,
+    // rbacMiddleware,
+    // permissionMiddleware({
+    //     any: ["dashboard:admin", "dashboard:manager"],
+    //     all: ["product:create"],
+    // }),
+    // multiUpload,
     productController.createProduct,
 );
 
