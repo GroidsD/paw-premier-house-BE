@@ -36,16 +36,6 @@ router.get(
     scheduleController.getSchedulesByWeek,
 );
 
-router.get(
-    "/api/schedules/:schedule_id",
-    authMiddleware,
-    rbacMiddleware,
-    permissionMiddleware({
-        all: ["schedule:read"],
-    }),
-    scheduleController.getById,
-);
-
 router.post(
     "/api/schedules/register",
     authMiddleware,
@@ -76,6 +66,27 @@ router.put(
         all: ["schedule:update"],
     }),
     scheduleController.openWeekSchedules,
+);
+
+router.put(
+    "/api/schedules/update-weekly",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["schedule:update"],
+    }),
+    scheduleController.updateWeekly,
+);
+
+router.get(
+    "/api/schedules/:schedule_id",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["schedule:read"],
+    }),
+    scheduleController.getById,
 );
 
 router.put(

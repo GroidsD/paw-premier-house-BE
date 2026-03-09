@@ -24,11 +24,6 @@ let getById = async (req, res) => {
 
 let register = async (req, res) => {
     try {
-        if (req.user.role !== "staff")
-            return res
-                .status(403)
-                .json({ message: "Only staff can register shifts" });
-
         const { shift_id, work_date } = req.body;
 
         if (!shift_id || !work_date)
@@ -50,8 +45,8 @@ let register = async (req, res) => {
 
 let approve = async (req, res) => {
     try {
-        if (!["admin", "manager"].includes(req.user.role))
-            return res.status(403).json({ message: "Permission denied" });
+        // if (!["admin", "manager"].includes(req.user.role))
+        //     return res.status(403).json({ message: "Permission denied" });
 
         const { schedule_staff_id } = req.params;
         const { action } = req.body;
@@ -109,16 +104,25 @@ let remove = async (req, res) => {
 };
 let createWeekly = async (req, res) => {
     try {
-        const { start_date, shifts, max_people } = req.body;
+        const { startDate, shifts, maxPeople, selectedDays } = req.body;
 
         const schedules = await ScheduleService.createWeeklySchedule(
-            start_date,
+            startDate,
             shifts,
-            max_people,
+            maxPeople,
+            selectedDays,
         );
-        res.status(201).json(schedules);
+
+        res.status(201).json({
+            errCode: 0,
+            message: "Weekly schedules created successfully",
+            data: schedules,
+        });
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        res.status(400).json({
+            errCode: 1,
+            message: err.message,
+        });
     }
 };
 
@@ -139,7 +143,10 @@ let openWeekSchedules = async (req, res) => {
         const { week } = req.query;
         const result = await ScheduleService.openWeeklySchedule(week);
 
-        return res.status(200).json(result);
+        return res.status(200).json({
+            errCode: 0,
+            ...result,
+        });
     } catch (err) {
         return res.status(400).json({
             error: err.message,
@@ -150,11 +157,39 @@ let getSchedulesByWeek = async (req, res) => {
     try {
         const { week } = req.query;
         const data = await ScheduleService.getSchedulesByWeek(week);
-        return res.status(200).json({ errCode: 0, data });
+
+        return res.status(200).json({
+            errCode: 0,
+            message: "OK",
+            ...data,
+        });
     } catch (e) {
         return res.status(400).json({
             errCode: 1,
             message: e.message || "Get schedules by week failed",
+        });
+    }
+};
+let updateWeekly = async (req, res) => {
+    try {
+        const { startDate, shifts, maxPeople, selectedDays } = req.body;
+
+        const result = await ScheduleService.updateWeeklySchedule(
+            startDate,
+            shifts,
+            maxPeople,
+            selectedDays,
+        );
+
+        return res.status(200).json({
+            errCode: 0,
+            message: "Weekly schedules updated successfully",
+            data: result,
+        });
+    } catch (err) {
+        return res.status(400).json({
+            errCode: 1,
+            message: err.message,
         });
     }
 };
@@ -170,4 +205,5 @@ export default {
     getMySchedule,
     openWeekSchedules,
     getSchedulesByWeek,
+    updateWeekly,
 };
