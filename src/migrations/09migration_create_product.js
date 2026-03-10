@@ -35,7 +35,11 @@ module.exports = {
                 allowNull: false,
                 unique: true,
             },
-
+            has_variants: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
