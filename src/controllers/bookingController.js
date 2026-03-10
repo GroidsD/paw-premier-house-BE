@@ -2,6 +2,7 @@ import BookingService from "../services/BookingService.js";
 import { sendEmail } from "../services/EmailService.js";
 import buildUrlEmail from "../utils/buildUrlEmail.js";
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
+import sendBookingEmail from "../services/EmailTemplateService.js";
 
 const verifyBooking = async (req, res) => {
     try {
@@ -9,10 +10,11 @@ const verifyBooking = async (req, res) => {
 
         const decoded = verifyToken(token);
 
+        // kiểm tra bookingId trong token
         if (Number(decoded.bookingId) !== Number(bookingId)) {
             return res.status(400).json({
                 errCode: 1,
-                message: "Invalid token",
+                message: "Invalid booking",
             });
         }
 
@@ -25,10 +27,20 @@ const verifyBooking = async (req, res) => {
             });
         }
 
+        const booking = bookingResult.data;
+
+        // kiểm tra userId trong token
+        if (decoded.userId !== booking.customer_id) {
+            return res.status(403).json({
+                errCode: 1,
+                message: "Unauthorized booking",
+            });
+        }
+
         return res.status(200).json({
             errCode: 0,
             message: "Booking confirmed",
-            data: bookingResult.data,
+            booking,
         });
     } catch (error) {
         return res.status(400).json({
@@ -45,42 +57,25 @@ const createBooking = async (req, res) => {
     if (result.errCode !== 0) {
         return res.status(400).json(result);
     }
+
     const { booking, user } = result;
-    const token = generateVerifyToken(booking.booking_id);
+
+    // token chứa userId + bookingId
+    const token = generateVerifyToken(userId, booking.booking_id);
+
     const url = buildUrlEmail("booking", booking.booking_id, token);
+
     try {
-        await sendEmail({
-            to: user.email,
-            subject: "Booking Confirmation",
-            html: `
-                <h2>Booking Successful 🎉</h2>
-                <p>Hello <b>${user.fullname}</b>,</p>
-                <p>Your booking has been created successfully.</p>
-
-                <ul>
-                    <li><b>Booking ID:</b> ${booking.booking_id}</li>
-                    <li><b>Date:</b> ${booking.date}</li>
-                    <li><b>Total:</b> ${booking.total_price} VND</li>
-                    <li><b>Status:</b> ${booking.status}</li>
-                    <a href="${url}" 
-                    style="
-                        display:inline-block;
-                        padding:12px 20px;
-                        background:#4CAF50;
-                        color:#fff;
-                        text-decoration:none;
-                        border-radius:6px;
-                    ">
-                        View Booking</a>
-                </ul>
-
-                <p>Thank you for using our service.</p>
-            `,
+        await sendBookingEmail({
+            user,
+            booking,
+            token,
         });
-    } catch (emailError) {
-        console.error("Email send failed:", emailError);
+    } catch (err) {
+        console.error("Send booking email failed:", err);
     }
-    return res.status(200).json(result);
+    // trả về cả url để test, thực tế sẽ không trả về url này
+    return res.status(200).json({ ...result, url });
 };
 
 const getMyBookings = async (req, res) => {
