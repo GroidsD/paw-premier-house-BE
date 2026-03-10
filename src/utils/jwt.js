@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
-const JWT_EXPIRES = "7d"; 
+const JWT_EXPIRES = "7d";
 
 exports.generateToken = (user) => {
     return jwt.sign(
@@ -15,12 +15,18 @@ exports.generateToken = (user) => {
     );
 };
 
-exports.generateVerifyToken = (bookingId) => {
-    return jwt.sign({ bookingId }, process.env.JWT_SECRET, {
-        expiresIn: "24h",
-    });
+// token verify booking
+exports.generateVerifyToken = (userId, bookingId) => {
+    return jwt.sign(
+        {
+            userId,
+            bookingId,
+        },
+        JWT_SECRET,
+        { expiresIn: "24h" },
+    );
 };
 
 exports.verifyToken = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET);
 };

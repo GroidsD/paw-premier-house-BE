@@ -293,7 +293,15 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
 };
 
 const getBookingById = async (id) => {
-    const booking = await db.Booking.findByPk(id);
+    const booking = await db.Booking.findByPk(id, {
+        include: [
+            {
+                model: db.User,
+                as: "customer",
+                attributes: ["user_id", "fullname", "email", "phone"],
+            },
+        ],
+    });
 
     if (!booking) {
         return {
