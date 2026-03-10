@@ -316,4 +316,5 @@ export default {
     updateBookingStatus,
     cancelBooking,
     assignBookingToStaff,
+    getBookingById,
 };
