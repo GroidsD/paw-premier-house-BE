@@ -1,6 +1,5 @@
 "use strict";
 
-
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("orders", {
@@ -22,33 +21,80 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
+            receiver_name: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+
+            receiver_phone: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+
+            receiver_province: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+
+            receiver_district: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+
+            receiver_address: {
+                type: Sequelize.TEXT,
+                allowNull: false,
+            },
+
+            note: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+
+            payment_method: {
+                type: Sequelize.ENUM("COD", "BANK", "WALLET", "CARD"),
+                allowNull: false,
+                defaultValue: "COD",
+            },
+
+            voucher_code: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Tổng giá trị gốc của đơn hàng (trước khi giảm giá)",
+                comment: "Tổng giá trị gốc của đơn hàng trước giảm giá",
             },
 
             discount: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: true,
                 defaultValue: 0,
-                comment:
-                    "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
+                comment: "Giá trị giảm giá của đơn hàng",
             },
 
             discount_type: {
                 type: Sequelize.ENUM("percent", "fixed"),
                 allowNull: false,
-                defaultValue: "percent",
-                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
+                defaultValue: "fixed",
+                comment: "Loại giảm giá: percent hoặc fixed",
+            },
+
+            shipping_fee: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Phí vận chuyển",
             },
 
             total_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Tổng giá trị đơn hàng sau khi áp dụng chiết khấu",
+                comment: "Tổng thanh toán cuối cùng của đơn hàng",
             },
 
             status: {
@@ -58,11 +104,12 @@ module.exports = {
                     "shipped",
                     "completed",
                     "cancelled",
+                    "deleted",
                 ),
                 allowNull: false,
                 defaultValue: "pending",
                 comment:
-                    "Trạng thái đơn hàng: pending, confirmed, shipped, completed, cancelled",
+                    "Trạng thái đơn hàng: pending, confirmed, shipped, completed, cancelled, deleted",
             },
 
             created_at: {
@@ -89,6 +136,9 @@ module.exports = {
         );
         await queryInterface.sequelize.query(
             'DROP TYPE IF EXISTS "enum_orders_discount_type";',
+        );
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_orders_payment_method";',
         );
     },
 };

@@ -1,6 +1,5 @@
 "use strict";
 
-
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("products", {
@@ -22,7 +21,6 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
-            
             name: {
                 type: Sequelize.STRING,
                 allowNull: false,
@@ -38,7 +36,6 @@ module.exports = {
                 unique: true,
             },
 
-            
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
@@ -63,7 +60,6 @@ module.exports = {
                 defaultValue: 0,
             },
 
-            
             quantity: {
                 type: Sequelize.INTEGER,
                 allowNull: false,

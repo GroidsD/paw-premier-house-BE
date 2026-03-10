@@ -48,7 +48,11 @@ module.exports = {
                 },
                 onDelete: "SET NULL",
             },
-
+            discount_amount: {
+                type: Sequelize.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+            },
             status: {
                 type: Sequelize.ENUM("used", "refunded"),
                 defaultValue: "used",
