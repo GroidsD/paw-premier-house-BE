@@ -29,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
                 allowNull: false,
             },
+
             customer_id: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -40,33 +41,80 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
+            receiver_name: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+
+            receiver_phone: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+
+            receiver_province: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+
+            receiver_district: {
+                type: DataTypes.STRING,
+                allowNull: false,
+            },
+
+            receiver_address: {
+                type: DataTypes.TEXT,
+                allowNull: false,
+            },
+
+            note: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+
+            payment_method: {
+                type: DataTypes.ENUM("COD", "BANK", "WALLET", "CARD"),
+                allowNull: false,
+                defaultValue: "COD",
+            },
+
+            voucher_code: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Tổng giá trị gốc của đơn hàng (trước khi giảm giá)",
+                comment: "Tổng giá trị gốc của đơn hàng trước giảm giá",
             },
 
             discount: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
                 defaultValue: 0,
-                comment:
-                    "Giá trị chiết khấu (theo phần trăm hoặc số tiền cố định)",
+                comment: "Giá trị giảm giá của đơn hàng",
             },
 
             discount_type: {
                 type: DataTypes.ENUM("percent", "fixed"),
                 allowNull: false,
-                defaultValue: "percent",
-                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
+                defaultValue: "fixed",
+                comment: "Loại giảm giá: percent hoặc fixed",
+            },
+
+            shipping_fee: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Phí vận chuyển",
             },
 
             total_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Tổng giá trị đơn hàng sau khi áp dụng giảm giá",
+                comment: "Tổng thanh toán cuối cùng của đơn hàng",
             },
 
             status: {
@@ -80,13 +128,14 @@ module.exports = (sequelize, DataTypes) => {
                 ),
                 defaultValue: "pending",
                 comment:
-                    "Trạng thái đơn: pending, confirmed, shipped, completed, cancelled",
+                    "Trạng thái đơn: pending, confirmed, shipped, completed, cancelled, deleted",
             },
 
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
             },
+
             updated_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
@@ -104,6 +153,7 @@ module.exports = (sequelize, DataTypes) => {
                 beforeSave: (order) => {
                     let finalTotal = Number(order.original_price || 0);
                     const discount = Number(order.discount || 0);
+                    const shippingFee = Number(order.shipping_fee || 0);
 
                     if (discount > 0) {
                         if (order.discount_type === "percent") {
@@ -114,6 +164,7 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
+                    finalTotal += shippingFee;
                     order.total_price = finalTotal < 0 ? 0 : finalTotal;
                 },
 
@@ -136,9 +187,9 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
+                    const shippingFee = Number(order.shipping_fee || 0);
                     const netAmount = Number(order.total_price || 0);
 
-                    // Từ trạng thái khác => completed
                     if (
                         prevStatus !== "completed" &&
                         newStatus === "completed"
@@ -158,7 +209,7 @@ module.exports = (sequelize, DataTypes) => {
                                     order_id: order.order_id,
                                     booking_id: null,
                                     transaction_type: "income",
-                                    gross_amount: grossAmount,
+                                    gross_amount: grossAmount + shippingFee,
                                     discount_amount: discountAmount,
                                     net_amount: netAmount,
                                     transaction_date: new Date(),
@@ -169,7 +220,6 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // Từ completed => cancelled
                     if (
                         prevStatus === "completed" &&
                         newStatus === "cancelled"
@@ -189,7 +239,7 @@ module.exports = (sequelize, DataTypes) => {
                                     order_id: order.order_id,
                                     booking_id: null,
                                     transaction_type: "refund",
-                                    gross_amount: grossAmount,
+                                    gross_amount: grossAmount + shippingFee,
                                     discount_amount: discountAmount,
                                     net_amount: -netAmount,
                                     transaction_date: new Date(),

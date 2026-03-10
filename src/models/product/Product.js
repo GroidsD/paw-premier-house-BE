@@ -24,6 +24,13 @@ module.exports = (sequelize, DataTypes) => {
                 scope: { entity_type: "product" },
                 as: "media",
             });
+
+            Product.hasMany(models.ProductVariant, {
+                foreignKey: "product_id",
+                as: "variants",
+                onUpdate: "CASCADE",
+                onDelete: "CASCADE",
+            });
         }
     }
 
@@ -55,12 +62,31 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+
             slug: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 unique: true,
             },
 
+            /*
+            ====================================================
+            PRODUCT VARIANT MODE
+            ====================================================
+            Nếu true → sản phẩm có nhiều biến thể
+            Giá và tồn kho sẽ lấy từ ProductVariant
+            */
+            has_variants: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+
+            /*
+            ====================================================
+            FALLBACK PRICE (dùng khi product không có variant)
+            ====================================================
+            */
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
@@ -82,6 +108,11 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
 
+            /*
+            ====================================================
+            FALLBACK STOCK (dùng khi không có variant)
+            ====================================================
+            */
             quantity: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,
@@ -92,6 +123,11 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
 
+            /*
+            ====================================================
+            PRODUCT STATUS
+            ====================================================
+            */
             isActive: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,
@@ -120,17 +156,18 @@ module.exports = (sequelize, DataTypes) => {
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
+
             hooks: {
                 beforeSave: (product) => {
-                    let finalPrice = product.original_price;
+                    let finalPrice = Number(product.original_price || 0);
+                    const discount = Number(product.discount || 0);
 
-                    if (product.discount > 0) {
+                    if (discount > 0) {
                         if (product.discount_type === "percent") {
-                            finalPrice -=
-                                (product.original_price * product.discount) /
-                                100;
+                            finalPrice =
+                                finalPrice - (finalPrice * discount) / 100;
                         } else {
-                            finalPrice -= product.discount;
+                            finalPrice = finalPrice - discount;
                         }
                     }
 

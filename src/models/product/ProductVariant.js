@@ -2,106 +2,110 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-    class OrderItem extends Model {
+    class ProductVariant extends Model {
         static associate(models) {
-            OrderItem.belongsTo(models.Order, {
-                foreignKey: "order_id",
-                as: "order",
+            ProductVariant.belongsTo(models.Product, {
+                foreignKey: "product_id",
+                as: "product",
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             });
 
-            OrderItem.belongsTo(models.Product, {
-                foreignKey: "product_id",
-                as: "product",
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
-            });
-            OrderItem.belongsTo(models.ProductVariant, {
+            ProductVariant.hasMany(models.OrderItem, {
                 foreignKey: "productVariant_id",
-                as: "variant",
+                as: "orderItems",
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             });
         }
     }
 
-    OrderItem.init(
+    ProductVariant.init(
         {
-            orderItem_id: {
+            productVariant_id: {
                 type: DataTypes.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
                 allowNull: false,
             },
 
-            order_id: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: {
-                    model: "orders",
-                    key: "order_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
-            },
-
             product_id: {
                 type: DataTypes.INTEGER,
-                allowNull: true,
+                allowNull: false,
                 references: {
                     model: "products",
                     key: "product_id",
                 },
                 onUpdate: "CASCADE",
-                onDelete: "SET NULL",
+                onDelete: "CASCADE",
+            },
+
+            sku: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                unique: true,
+            },
+
+            variant_label: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "Tên hiển thị gọn của biến thể, ví dụ: Đỏ / Size M",
             },
 
             pet_weight: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                comment: "Phân loại trọng lượng vật nuôi được chọn khi mua",
             },
 
-            quantity: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                defaultValue: 1,
+            color: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+
+            size: {
+                type: DataTypes.STRING,
+                allowNull: true,
             },
 
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Giá gốc của sản phẩm trong đơn (trước khi giảm giá)",
             },
 
             discount: {
                 type: DataTypes.DECIMAL(10, 2),
-                allowNull: true,
+                allowNull: false,
                 defaultValue: 0,
-                comment: "Giá trị chiết khấu của sản phẩm",
             },
 
             discount_type: {
                 type: DataTypes.ENUM("percent", "fixed"),
                 allowNull: false,
                 defaultValue: "fixed",
-                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
             },
 
             price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Đơn giá sau khi áp dụng chiết khấu",
             },
 
-            total_price: {
-                type: DataTypes.DECIMAL(10, 2),
+            quantity: {
+                type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Thành tiền của dòng sản phẩm = price * quantity",
+            },
+
+            reserved_quantity: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
+
+            isActive: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: true,
             },
 
             created_at: {
@@ -116,35 +120,47 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: "OrderItem",
-            tableName: "orderItems",
+            modelName: "ProductVariant",
+            tableName: "productVariants",
             freezeTableName: true,
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
+            indexes: [
+                {
+                    unique: true,
+                    fields: ["product_id", "pet_weight", "color", "size"],
+                },
+            ],
             hooks: {
-                beforeSave: (item) => {
-                    let finalPrice = Number(item.original_price || 0);
-                    const discount = Number(item.discount || 0);
-                    const quantity = Number(item.quantity || 1);
+                beforeSave: (variant) => {
+                    let finalPrice = Number(variant.original_price || 0);
+                    const discount = Number(variant.discount || 0);
 
                     if (discount > 0) {
-                        if (item.discount_type === "percent") {
+                        if (variant.discount_type === "percent") {
                             finalPrice =
                                 finalPrice - (finalPrice * discount) / 100;
-                        } else if (item.discount_type === "fixed") {
+                        } else {
                             finalPrice = finalPrice - discount;
                         }
                     }
 
-                    item.price = finalPrice < 0 ? 0 : finalPrice;
-                    item.total_price = (Number(item.price) * quantity).toFixed(
-                        2,
-                    );
+                    variant.price = finalPrice < 0 ? 0 : finalPrice;
+
+                    if (!variant.variant_label) {
+                        const parts = [
+                            variant.color,
+                            variant.size,
+                            variant.pet_weight,
+                        ].filter(Boolean);
+
+                        variant.variant_label = parts.join(" / ") || null;
+                    }
                 },
             },
         },
     );
 
-    return OrderItem;
+    return ProductVariant;
 };

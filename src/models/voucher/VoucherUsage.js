@@ -37,21 +37,51 @@ module.exports = (sequelize, DataTypes) => {
             voucher_id: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
+                references: {
+                    model: "vouchers",
+                    key: "voucher_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "CASCADE",
             },
 
             user_id: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                references: {
+                    model: "users",
+                    key: "user_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "CASCADE",
             },
 
             booking_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
+                references: {
+                    model: "bookings",
+                    key: "booking_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "SET NULL",
             },
 
             order_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
+                references: {
+                    model: "orders",
+                    key: "order_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "SET NULL",
+            },
+
+            discount_amount: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: false,
+                defaultValue: 0,
             },
 
             status: {
@@ -74,14 +104,14 @@ module.exports = (sequelize, DataTypes) => {
             modelName: "VoucherUsage",
             tableName: "voucher_usages",
             timestamps: false,
-
             indexes: [
                 {
                     unique: true,
                     fields: ["voucher_id", "user_id"],
                 },
             ],
-        }
+        },
     );
+
     return VoucherUsage;
 };

@@ -2,7 +2,118 @@ import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
+
+const hasMultiValueField = (variant) => {
+    return [variant.size, variant.color, variant.pet_weight].some((field) =>
+        String(field || "").includes(","),
+    );
+};
+
+const buildVariantKey = (variant) => {
+    return [
+        String(variant.size || "")
+            .trim()
+            .toLowerCase(),
+        String(variant.color || "")
+            .trim()
+            .toLowerCase(),
+        String(variant.pet_weight || "")
+            .trim()
+            .toLowerCase(),
+    ].join("|");
+};
+
+const calcFinalPrice = (
+    originalPrice = 0,
+    discount = 0,
+    discountType = "fixed",
+) => {
+    const base = Number(originalPrice || 0);
+    const discountValue = Number(discount || 0);
+
+    let finalPrice = base;
+
+    if (discountValue > 0) {
+        finalPrice =
+            discountType === "percent"
+                ? base - (base * discountValue) / 100
+                : base - discountValue;
+    }
+
+    return finalPrice < 0 ? 0 : finalPrice;
+};
+
+const validateVariants = (variants = []) => {
+    if (!Array.isArray(variants) || variants.length === 0) {
+        return "Variants are required when has_variants = true";
+    }
+
+    for (const variant of variants) {
+        if (hasMultiValueField(variant)) {
+            return "Each variant must contain only one size, one color, and one pet weight.";
+        }
+
+        if (Number(variant.original_price || 0) <= 0) {
+            return "Each variant original price must be greater than 0.";
+        }
+
+        if (Number(variant.quantity || 0) < 0) {
+            return "Variant quantity cannot be negative.";
+        }
+
+        if (Number(variant.discount || 0) < 0) {
+            return "Variant discount cannot be negative.";
+        }
+
+        if (!["percent", "fixed"].includes(variant.discount_type || "fixed")) {
+            return "Variant discount type must be 'percent' or 'fixed'.";
+        }
+
+        if (
+            (variant.discount_type || "fixed") === "percent" &&
+            Number(variant.discount || 0) > 100
+        ) {
+            return "Variant percent discount cannot be greater than 100.";
+        }
+    }
+
+    const keys = variants.map(buildVariantKey);
+    if (new Set(keys).size !== keys.length) {
+        return "Duplicate variant combinations detected.";
+    }
+
+    return null;
+};
+
+const calcProductSummaryFromVariants = (variants = []) => {
+    const activeVariants = variants.filter((v) => !!v.isActive);
+    const source = activeVariants.length > 0 ? activeVariants : variants;
+
+    const minPrice =
+        source.length > 0
+            ? Math.min(...source.map((v) => Number(v.price || 0)))
+            : 0;
+
+    const minOriginalPrice =
+        source.length > 0
+            ? Math.min(...source.map((v) => Number(v.original_price || 0)))
+            : 0;
+
+    const totalQuantity = source.reduce(
+        (sum, v) => sum + Number(v.quantity || 0),
+        0,
+    );
+
+    return {
+        minPrice,
+        minOriginalPrice,
+        totalQuantity,
+    };
+};
+
 let createProduct = async (data) => {
+    const t = await db.sequelize.transaction();
+
     try {
         let {
             productCategories_id,
@@ -12,10 +123,11 @@ let createProduct = async (data) => {
             discount = 0,
             discount_type = "percent",
             quantity = 0,
+            has_variants = false,
+            variants = [],
             media = [],
         } = data;
 
-        // ===== VALIDATION RULES =====
         const validations = [
             {
                 condition: !name || name.trim() === "",
@@ -26,29 +138,33 @@ let createProduct = async (data) => {
                 message: "Product category is required",
             },
             {
-                condition:
-                    original_price === undefined || original_price === null,
-                message: "Original price is required",
+                condition: !["percent", "fixed"].includes(discount_type),
+                message: "Discount type must be 'percent' or 'fixed'",
             },
             {
-                condition: Number(original_price) < 0,
-                message: "Original price must be greater than 0",
+                condition: !has_variants && Number(original_price) < 0,
+                message: "Original price must be greater than or equal to 0",
             },
             {
-                condition: Number(quantity) < 0,
+                condition: !has_variants && Number(quantity) < 0,
                 message: "Quantity cannot be negative",
             },
             {
+                condition: !has_variants && Number(discount || 0) < 0,
+                message: "Discount cannot be negative",
+            },
+            {
                 condition:
-                    discount_type &&
-                    !["percent", "fixed"].includes(discount_type),
-                message: "Discount type must be 'percent' or 'fixed'",
+                    !has_variants &&
+                    discount_type === "percent" &&
+                    Number(discount || 0) > 100,
+                message: "Percent discount cannot be greater than 100",
             },
         ];
 
-        // ===== LOOP VALIDATION =====
         for (const rule of validations) {
             if (rule.condition) {
+                await t.rollback();
                 return {
                     errCode: 1,
                     errMessage: rule.message,
@@ -56,42 +172,118 @@ let createProduct = async (data) => {
             }
         }
 
-        // ===== GENERATE SLUG =====
+        if (has_variants) {
+            const variantError = validateVariants(variants);
+            if (variantError) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: variantError,
+                };
+            }
+        }
+
         let baseSlug = generateSlug(data.slug || name);
         let slug = baseSlug;
         let count = 1;
 
-        while (await db.Product.findOne({ where: { slug } })) {
+        while (await db.Product.findOne({ where: { slug }, transaction: t })) {
             slug = `${baseSlug}-${count}`;
             count++;
         }
 
-        // ===== CREATE PRODUCT =====
-        let product = await db.Product.create({
-            productCategories_id,
-            name,
-            slug,
-            description,
-            original_price,
-            discount,
-            discount_type,
-            quantity,
-        });
+        const basePrice = Number(original_price || 0);
+        const newDiscount = Number(discount || 0);
+        const newDiscountType = discount_type || "fixed";
 
-        // ===== CREATE MEDIA =====
+        const product = await db.Product.create(
+            {
+                productCategories_id,
+                name,
+                slug,
+                description,
+                has_variants,
+                original_price: has_variants ? 0 : basePrice,
+                discount: has_variants ? 0 : newDiscount,
+                discount_type: has_variants ? "fixed" : newDiscountType,
+                quantity: has_variants ? 0 : Number(quantity || 0),
+                reserved_quantity: 0,
+                price: has_variants
+                    ? 0
+                    : calcFinalPrice(basePrice, newDiscount, newDiscountType),
+            },
+            { transaction: t },
+        );
+
         if (Array.isArray(media) && media.length > 0) {
             await mediaService.createMediaForEntity(
                 media,
                 product.product_id,
                 "product",
+                t,
             );
         }
 
-        // ===== GET PRODUCT WITH MEDIA =====
-        let productWithRelations = await db.Product.findByPk(
+        let createdVariants = [];
+
+        if (has_variants) {
+            createdVariants = await Promise.all(
+                variants.map(async (variant) => {
+                    return await db.ProductVariant.create(
+                        {
+                            product_id: product.product_id,
+                            sku: variant.sku || null,
+                            color: variant.color || null,
+                            size: variant.size || null,
+                            pet_weight: variant.pet_weight || null,
+                            variant_label: variant.variant_label || null,
+                            original_price: Number(variant.original_price || 0),
+                            discount: Number(variant.discount || 0),
+                            discount_type: variant.discount_type || "fixed",
+                            quantity: Number(variant.quantity || 0),
+                            reserved_quantity: Number(
+                                variant.reserved_quantity || 0,
+                            ),
+                            price: calcFinalPrice(
+                                Number(variant.original_price || 0),
+                                Number(variant.discount || 0),
+                                variant.discount_type || "fixed",
+                            ),
+                            isActive:
+                                variant.isActive !== undefined
+                                    ? !!variant.isActive
+                                    : true,
+                        },
+                        { transaction: t },
+                    );
+                }),
+            );
+
+            const { minPrice, minOriginalPrice, totalQuantity } =
+                calcProductSummaryFromVariants(createdVariants);
+
+            await product.update(
+                {
+                    price: minPrice,
+                    original_price: minOriginalPrice,
+                    quantity: totalQuantity,
+                    discount: 0,
+                    discount_type: "fixed",
+                },
+                { transaction: t },
+            );
+        }
+
+        await t.commit();
+
+        const productWithRelations = await db.Product.findByPk(
             product.product_id,
             {
-                include: [{ model: db.Media, as: "media" }],
+                include: [
+                    { model: db.Media, as: "media" },
+                    { model: db.ProductCategory, as: "category" },
+                    { model: db.ProductVariant, as: "variants" },
+                ],
             },
         );
 
@@ -101,6 +293,7 @@ let createProduct = async (data) => {
             product: productWithRelations,
         };
     } catch (e) {
+        await t.rollback();
         return {
             errCode: -1,
             errMessage: "Server error",
@@ -123,6 +316,7 @@ let getAllProducts = () => {
                     "original_price",
                     "quantity",
                     "isActive",
+                    "has_variants",
                     "created_at",
                 ],
                 include: [
@@ -135,6 +329,10 @@ let getAllProducts = () => {
                         model: db.Media,
                         as: "media",
                     },
+                    {
+                        model: db.ProductVariant,
+                        as: "variants",
+                    },
                 ],
                 order: [["product_id", "ASC"]],
             });
@@ -145,6 +343,7 @@ let getAllProducts = () => {
         }
     });
 };
+
 let getProductById = (product_id) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -155,8 +354,10 @@ let getProductById = (product_id) => {
                     "name",
                     "slug",
                     "price",
+                    "original_price",
                     "quantity",
                     "isActive",
+                    "has_variants",
                     "description",
                     "created_at",
                 ],
@@ -169,6 +370,10 @@ let getProductById = (product_id) => {
                     {
                         model: db.Media,
                         as: "media",
+                    },
+                    {
+                        model: db.ProductVariant,
+                        as: "variants",
                     },
                 ],
             });
@@ -195,7 +400,10 @@ let getProductById = (product_id) => {
         }
     });
 };
+
 let updateProduct = async (product_id, data, files) => {
+    const t = await db.sequelize.transaction();
+
     try {
         let {
             productCategories_id,
@@ -207,28 +415,21 @@ let updateProduct = async (product_id, data, files) => {
             quantity,
             isActive,
             isDelete,
+            has_variants,
+            variants = [],
+            removedVariantIds = [],
             removedMediaIds = [],
             replaceAllImages = false,
             mainIndex = 0,
             mainOldId = null,
         } = data;
 
-        if (typeof removedMediaIds === "string") {
-            try {
-                removedMediaIds = JSON.parse(removedMediaIds);
-            } catch {}
-        }
+        const product = await db.Product.findByPk(product_id, {
+            transaction: t,
+        });
 
-        if (Array.isArray(removedMediaIds)) {
-            removedMediaIds = removedMediaIds
-                .map((x) => Number(x))
-                .filter((x) => Number.isFinite(x));
-        } else {
-            removedMediaIds = [];
-        }
-
-        const product = await db.Product.findByPk(product_id);
         if (!product) {
+            await t.rollback();
             return {
                 errCode: 1,
                 errMessage: "Product not found",
@@ -236,43 +437,212 @@ let updateProduct = async (product_id, data, files) => {
             };
         }
 
-        const basePrice =
-            original_price !== undefined
-                ? Number(original_price)
-                : Number(product.original_price);
+        const nextHasVariants =
+            has_variants !== undefined
+                ? !!has_variants
+                : !!product.has_variants;
 
-        const newDiscount =
-            discount !== undefined
-                ? Number(discount)
-                : Number(product.discount);
+        await product.update(
+            {
+                productCategories_id:
+                    productCategories_id ?? product.productCategories_id,
+                name: name ?? product.name,
+                description: description ?? product.description,
+                isActive: isActive ?? product.isActive,
+                isDelete: isDelete ?? product.isDelete,
+                has_variants: nextHasVariants,
+            },
+            { transaction: t },
+        );
 
-        const newDiscountType =
-            discount_type !== undefined ? discount_type : product.discount_type;
+        if (nextHasVariants) {
+            if (!Array.isArray(variants)) {
+                variants = [];
+            }
 
-        let finalPrice = basePrice;
+            const variantError =
+                variants.length > 0 ? validateVariants(variants) : null;
 
-        if (Number(newDiscount) > 0) {
-            finalPrice =
-                newDiscountType === "percent"
-                    ? basePrice - (basePrice * newDiscount) / 100
-                    : basePrice - newDiscount;
+            if (variantError) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: variantError,
+                };
+            }
+
+            if (
+                Array.isArray(removedVariantIds) &&
+                removedVariantIds.length > 0
+            ) {
+                await db.ProductVariant.destroy({
+                    where: {
+                        productVariant_id: removedVariantIds,
+                        product_id: product_id,
+                    },
+                    transaction: t,
+                });
+            }
+
+            for (const variant of variants) {
+                const payload = {
+                    product_id: product_id,
+                    sku: variant.sku || null,
+                    color: variant.color || null,
+                    size: variant.size || null,
+                    pet_weight: variant.pet_weight || null,
+                    variant_label: variant.variant_label || null,
+                    original_price: Number(variant.original_price || 0),
+                    discount: Number(variant.discount || 0),
+                    discount_type: variant.discount_type || "fixed",
+                    price: calcFinalPrice(
+                        Number(variant.original_price || 0),
+                        Number(variant.discount || 0),
+                        variant.discount_type || "fixed",
+                    ),
+                    quantity: Number(variant.quantity || 0),
+                    reserved_quantity: Number(variant.reserved_quantity || 0),
+                    isActive:
+                        variant.isActive !== undefined
+                            ? !!variant.isActive
+                            : true,
+                };
+
+                if (variant.productVariant_id) {
+                    await db.ProductVariant.update(payload, {
+                        where: {
+                            productVariant_id: variant.productVariant_id,
+                            product_id: product_id,
+                        },
+                        transaction: t,
+                    });
+                } else {
+                    await db.ProductVariant.create(payload, {
+                        transaction: t,
+                    });
+                }
+            }
+
+            const allVariants = await db.ProductVariant.findAll({
+                where: {
+                    product_id: product_id,
+                },
+                transaction: t,
+            });
+
+            if (!allVariants.length) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage:
+                        "At least one variant is required when has_variants = true.",
+                };
+            }
+
+            const fullVariantError = validateVariants(
+                allVariants.map((v) => v.get({ plain: true })),
+            );
+
+            if (fullVariantError) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: fullVariantError,
+                };
+            }
+
+            const { minPrice, minOriginalPrice, totalQuantity } =
+                calcProductSummaryFromVariants(allVariants);
+
+            await product.update(
+                {
+                    price: minPrice,
+                    original_price: minOriginalPrice,
+                    quantity: totalQuantity,
+                    discount: 0,
+                    discount_type: "fixed",
+                },
+                { transaction: t },
+            );
+        } else {
+            const basePrice =
+                original_price !== undefined
+                    ? Number(original_price)
+                    : Number(product.original_price);
+
+            const newDiscount =
+                discount !== undefined
+                    ? Number(discount)
+                    : Number(product.discount);
+
+            const newDiscountType =
+                discount_type !== undefined
+                    ? discount_type
+                    : product.discount_type;
+
+            if (newDiscount < 0) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: "Discount cannot be negative",
+                };
+            }
+
+            if (newDiscountType === "percent" && newDiscount > 100) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: "Percent discount cannot be greater than 100",
+                };
+            }
+
+            if (!["percent", "fixed"].includes(newDiscountType)) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: "Discount type must be 'percent' or 'fixed'",
+                };
+            }
+
+            if (basePrice < 0) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage:
+                        "Original price must be greater than or equal to 0",
+                };
+            }
+
+            if (Number(quantity ?? product.quantity) < 0) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: "Quantity cannot be negative",
+                };
+            }
+
+            const finalPrice = calcFinalPrice(
+                basePrice,
+                newDiscount,
+                newDiscountType,
+            );
+
+            await product.update(
+                {
+                    original_price: basePrice,
+                    discount: newDiscount,
+                    discount_type: newDiscountType,
+                    price: finalPrice,
+                    quantity: quantity ?? product.quantity,
+                },
+                { transaction: t },
+            );
+
+            await db.ProductVariant.destroy({
+                where: { product_id: product_id },
+                transaction: t,
+            });
         }
-
-        finalPrice = finalPrice < 0 ? 0 : finalPrice;
-
-        await product.update({
-            productCategories_id:
-                productCategories_id ?? product.productCategories_id,
-            name: name ?? product.name,
-            description: description ?? product.description,
-            original_price: basePrice,
-            discount: newDiscount,
-            discount_type: newDiscountType,
-            price: finalPrice,
-            quantity: quantity ?? product.quantity,
-            isActive: isActive ?? product.isActive,
-            isDelete: isDelete ?? product.isDelete,
-        });
 
         const setMainById = async (media_id) => {
             await db.Media.update(
@@ -282,6 +652,7 @@ let updateProduct = async (product_id, data, files) => {
                         entity_type: "product",
                         entity_id: String(product_id),
                     },
+                    transaction: t,
                 },
             );
 
@@ -293,9 +664,18 @@ let updateProduct = async (product_id, data, files) => {
                         entity_type: "product",
                         entity_id: String(product_id),
                     },
+                    transaction: t,
                 },
             );
         };
+
+        if (!Array.isArray(removedMediaIds)) {
+            removedMediaIds = [];
+        }
+
+        removedMediaIds = removedMediaIds
+            .map((x) => Number(x))
+            .filter((x) => Number.isFinite(x));
 
         if (replaceAllImages) {
             const oldMedia = await db.Media.findAll({
@@ -303,6 +683,7 @@ let updateProduct = async (product_id, data, files) => {
                     entity_type: "product",
                     entity_id: String(product_id),
                 },
+                transaction: t,
             });
 
             for (const m of oldMedia) {
@@ -315,6 +696,7 @@ let updateProduct = async (product_id, data, files) => {
                     entity_id: String(product_id),
                 },
                 force: true,
+                transaction: t,
             });
         }
 
@@ -325,6 +707,7 @@ let updateProduct = async (product_id, data, files) => {
                     entity_type: "product",
                     entity_id: String(product_id),
                 },
+                transaction: t,
             });
 
             for (const m of removeList) {
@@ -338,6 +721,7 @@ let updateProduct = async (product_id, data, files) => {
                     entity_id: String(product_id),
                 },
                 force: true,
+                transaction: t,
             });
 
             if (mainOldId && removedMediaIds.includes(Number(mainOldId))) {
@@ -353,6 +737,7 @@ let updateProduct = async (product_id, data, files) => {
                         entity_type: "product",
                         entity_id: String(product_id),
                     },
+                    transaction: t,
                 },
             );
 
@@ -360,13 +745,16 @@ let updateProduct = async (product_id, data, files) => {
                 const f = files[i];
                 const url = `/uploadImageProducts/${f.filename}`;
 
-                await db.Media.create({
-                    entity_type: "product",
-                    entity_id: String(product_id),
-                    url,
-                    is_main: i === Number(mainIndex),
-                    alt_text: name || product.name,
-                });
+                await db.Media.create(
+                    {
+                        entity_type: "product",
+                        entity_id: String(product_id),
+                        url,
+                        is_main: i === Number(mainIndex),
+                        alt_text: name || product.name,
+                    },
+                    { transaction: t },
+                );
             }
         } else if (mainOldId) {
             await setMainById(mainOldId);
@@ -377,6 +765,7 @@ let updateProduct = async (product_id, data, files) => {
                     entity_id: String(product_id),
                 },
                 order: [["media_id", "ASC"]],
+                transaction: t,
             });
 
             if (remaining.length > 0) {
@@ -387,10 +776,13 @@ let updateProduct = async (product_id, data, files) => {
             }
         }
 
+        await t.commit();
+
         const updatedProduct = await db.Product.findByPk(product_id, {
             include: [
                 { model: db.Media, as: "media" },
                 { model: db.ProductCategory, as: "category" },
+                { model: db.ProductVariant, as: "variants" },
             ],
         });
 
@@ -400,6 +792,7 @@ let updateProduct = async (product_id, data, files) => {
             product: updatedProduct,
         };
     } catch (e) {
+        await t.rollback();
         return {
             errCode: -1,
             errMessage: "Server error",
@@ -435,7 +828,9 @@ let hardDeleteProduct = async (id) => {
         where: { entity_type: "product", entity_id: String(id) },
     });
 
-    for (const m of mediaList) await safeUnlinkByUrl(m.url);
+    for (const m of mediaList) {
+        await safeUnlinkByUrl(m.url);
+    }
 
     await db.Media.destroy({
         where: { entity_type: "product", entity_id: String(id) },

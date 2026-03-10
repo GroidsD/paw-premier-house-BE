@@ -285,6 +285,7 @@ const updateVoucher = async (id, data) => {
         throw new Error("start_date phải trước end_date");
     }
 
+    
     await voucher.update({
         code: data.code ?? voucher.code,
         discount_type: data.discount_type ?? voucher.discount_type,

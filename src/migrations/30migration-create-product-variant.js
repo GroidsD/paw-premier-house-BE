@@ -2,81 +2,91 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("orderItems", {
-            orderItem_id: {
+        await queryInterface.createTable("productVariants", {
+            productVariant_id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
                 primaryKey: true,
                 allowNull: false,
             },
 
-            order_id: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                references: {
-                    model: "orders",
-                    key: "order_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "CASCADE",
-            },
-
             product_id: {
                 type: Sequelize.INTEGER,
-                allowNull: true,
+                allowNull: false,
                 references: {
                     model: "products",
                     key: "product_id",
                 },
                 onUpdate: "CASCADE",
-                onDelete: "SET NULL",
+                onDelete: "CASCADE",
+            },
+
+            sku: {
+                type: Sequelize.STRING,
+                allowNull: true,
+                unique: true,
+            },
+
+            variant_label: {
+                type: Sequelize.STRING,
+                allowNull: true,
+                comment: "Tên hiển thị gọn của biến thể, ví dụ: Đỏ / Size M",
             },
 
             pet_weight: {
                 type: Sequelize.STRING,
                 allowNull: true,
-                comment: "Phân loại trọng lượng vật nuôi được chọn khi mua",
             },
 
-            quantity: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                defaultValue: 1,
+            color: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+
+            size: {
+                type: Sequelize.STRING,
+                allowNull: true,
             },
 
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Giá gốc của sản phẩm trong đơn (trước khi giảm giá)",
             },
 
             discount: {
                 type: Sequelize.DECIMAL(10, 2),
-                allowNull: true,
+                allowNull: false,
                 defaultValue: 0,
-                comment: "Giá trị chiết khấu của sản phẩm",
             },
 
             discount_type: {
                 type: Sequelize.ENUM("percent", "fixed"),
                 allowNull: false,
                 defaultValue: "fixed",
-                comment: "Loại chiết khấu: percent = %, fixed = số tiền",
             },
 
             price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Đơn giá sau khi áp dụng chiết khấu",
             },
 
-            total_price: {
-                type: Sequelize.DECIMAL(10, 2),
+            quantity: {
+                type: Sequelize.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
-                comment: "Thành tiền của dòng sản phẩm = price * quantity",
+            },
+
+            reserved_quantity: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
+
+            isActive: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: true,
             },
 
             created_at: {
@@ -93,13 +103,22 @@ module.exports = {
                 ),
             },
         });
+
+        await queryInterface.addIndex("productVariants", {
+            fields: ["product_id", "pet_weight", "color", "size"],
+            unique: true,
+            name: "product_variants_unique_combination",
+        });
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable("orderItems");
-
+        await queryInterface.removeIndex(
+            "productVariants",
+            "product_variants_unique_combination",
+        );
+        await queryInterface.dropTable("productVariants");
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_orderItems_discount_type";',
+            'DROP TYPE IF EXISTS "enum_productVariants_discount_type";',
         );
     },
 };
