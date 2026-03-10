@@ -8,16 +8,10 @@ const router = express.Router();
 
 router.post("/api/orders/verify", orderController.verifyOrder);
 
-router.post(
-    "/api/orders/create",
-    authMiddleware,
-    rbacMiddleware,
-    permissionMiddleware({
-        all: ["order:create"],
-    }),
-    orderController.createOrder,
-);
+// customer hoặc guest checkout
+router.post("/api/orders/create", orderController.createOrder);
 
+// admin/manager xem tất cả đơn
 router.get(
     "/api/orders/get-all",
     authMiddleware,
@@ -29,6 +23,7 @@ router.get(
     orderController.getAllOrders,
 );
 
+// user đã login xem chi tiết đơn
 router.get(
     "/api/orders/get-by-id",
     authMiddleware,
@@ -39,6 +34,7 @@ router.get(
     orderController.getOrderById,
 );
 
+// user xem đơn của chính họ hoặc admin xem theo customer_id
 router.get(
     "/api/orders/get-by-user",
     authMiddleware,
@@ -49,6 +45,7 @@ router.get(
     orderController.getAllOrdersByUserId,
 );
 
+// admin/staff xác nhận đơn
 router.post(
     "/api/orders/confirm",
     authMiddleware,
@@ -59,6 +56,7 @@ router.post(
     orderController.confirmOrder,
 );
 
+// admin/staff hủy đơn
 router.post(
     "/api/orders/cancel",
     authMiddleware,
@@ -69,6 +67,7 @@ router.post(
     orderController.cancelOrder,
 );
 
+// admin/staff update status
 router.patch(
     "/api/orders/update-status",
     authMiddleware,
@@ -79,6 +78,7 @@ router.patch(
     orderController.updateStatus,
 );
 
+// manager/admin soft delete
 router.delete(
     "/api/orders/soft-delete",
     authMiddleware,
@@ -90,6 +90,7 @@ router.delete(
     orderController.softDeleteOrder,
 );
 
+// admin hard delete
 router.delete(
     "/api/orders/hard-delete",
     authMiddleware,
