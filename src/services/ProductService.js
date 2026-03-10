@@ -23,6 +23,26 @@ const buildVariantKey = (variant) => {
     ].join("|");
 };
 
+const calcFinalPrice = (
+    originalPrice = 0,
+    discount = 0,
+    discountType = "fixed",
+) => {
+    const base = Number(originalPrice || 0);
+    const discountValue = Number(discount || 0);
+
+    let finalPrice = base;
+
+    if (discountValue > 0) {
+        finalPrice =
+            discountType === "percent"
+                ? base - (base * discountValue) / 100
+                : base - discountValue;
+    }
+
+    return finalPrice < 0 ? 0 : finalPrice;
+};
+
 const validateVariants = (variants = []) => {
     if (!Array.isArray(variants) || variants.length === 0) {
         return "Variants are required when has_variants = true";
@@ -41,8 +61,19 @@ const validateVariants = (variants = []) => {
             return "Variant quantity cannot be negative.";
         }
 
+        if (Number(variant.discount || 0) < 0) {
+            return "Variant discount cannot be negative.";
+        }
+
         if (!["percent", "fixed"].includes(variant.discount_type || "fixed")) {
             return "Variant discount type must be 'percent' or 'fixed'.";
+        }
+
+        if (
+            (variant.discount_type || "fixed") === "percent" &&
+            Number(variant.discount || 0) > 100
+        ) {
+            return "Variant percent discount cannot be greater than 100.";
         }
     }
 
@@ -56,7 +87,6 @@ const validateVariants = (variants = []) => {
 
 const calcProductSummaryFromVariants = (variants = []) => {
     const activeVariants = variants.filter((v) => !!v.isActive);
-
     const source = activeVariants.length > 0 ? activeVariants : variants;
 
     const minPrice =
@@ -119,6 +149,17 @@ let createProduct = async (data) => {
                 condition: !has_variants && Number(quantity) < 0,
                 message: "Quantity cannot be negative",
             },
+            {
+                condition: !has_variants && Number(discount || 0) < 0,
+                message: "Discount cannot be negative",
+            },
+            {
+                condition:
+                    !has_variants &&
+                    discount_type === "percent" &&
+                    Number(discount || 0) > 100,
+                message: "Percent discount cannot be greater than 100",
+            },
         ];
 
         for (const rule of validations) {
@@ -151,6 +192,10 @@ let createProduct = async (data) => {
             count++;
         }
 
+        const basePrice = Number(original_price || 0);
+        const newDiscount = Number(discount || 0);
+        const newDiscountType = discount_type || "fixed";
+
         const product = await db.Product.create(
             {
                 productCategories_id,
@@ -158,11 +203,14 @@ let createProduct = async (data) => {
                 slug,
                 description,
                 has_variants,
-                original_price: has_variants ? 0 : Number(original_price || 0),
-                discount: has_variants ? 0 : Number(discount || 0),
-                discount_type: has_variants ? "fixed" : discount_type,
+                original_price: has_variants ? 0 : basePrice,
+                discount: has_variants ? 0 : newDiscount,
+                discount_type: has_variants ? "fixed" : newDiscountType,
                 quantity: has_variants ? 0 : Number(quantity || 0),
                 reserved_quantity: 0,
+                price: has_variants
+                    ? 0
+                    : calcFinalPrice(basePrice, newDiscount, newDiscountType),
             },
             { transaction: t },
         );
@@ -196,6 +244,11 @@ let createProduct = async (data) => {
                             reserved_quantity: Number(
                                 variant.reserved_quantity || 0,
                             ),
+                            price: calcFinalPrice(
+                                Number(variant.original_price || 0),
+                                Number(variant.discount || 0),
+                                variant.discount_type || "fixed",
+                            ),
                             isActive:
                                 variant.isActive !== undefined
                                     ? !!variant.isActive
@@ -216,30 +269,6 @@ let createProduct = async (data) => {
                     quantity: totalQuantity,
                     discount: 0,
                     discount_type: "fixed",
-                },
-                { transaction: t },
-            );
-        } else {
-            const basePrice = Number(original_price || 0);
-            const newDiscount = Number(discount || 0);
-            let finalPrice = basePrice;
-
-            if (newDiscount > 0) {
-                finalPrice =
-                    discount_type === "percent"
-                        ? basePrice - (basePrice * newDiscount) / 100
-                        : basePrice - newDiscount;
-            }
-
-            finalPrice = finalPrice < 0 ? 0 : finalPrice;
-
-            await product.update(
-                {
-                    price: finalPrice,
-                    original_price: basePrice,
-                    quantity: Number(quantity || 0),
-                    discount: newDiscount,
-                    discount_type,
                 },
                 { transaction: t },
             );
@@ -466,6 +495,11 @@ let updateProduct = async (product_id, data, files) => {
                     original_price: Number(variant.original_price || 0),
                     discount: Number(variant.discount || 0),
                     discount_type: variant.discount_type || "fixed",
+                    price: calcFinalPrice(
+                        Number(variant.original_price || 0),
+                        Number(variant.discount || 0),
+                        variant.discount_type || "fixed",
+                    ),
                     quantity: Number(variant.quantity || 0),
                     reserved_quantity: Number(variant.reserved_quantity || 0),
                     isActive:
@@ -505,6 +539,18 @@ let updateProduct = async (product_id, data, files) => {
                 };
             }
 
+            const fullVariantError = validateVariants(
+                allVariants.map((v) => v.get({ plain: true })),
+            );
+
+            if (fullVariantError) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: fullVariantError,
+                };
+            }
+
             const { minPrice, minOriginalPrice, totalQuantity } =
                 calcProductSummaryFromVariants(allVariants);
 
@@ -534,6 +580,22 @@ let updateProduct = async (product_id, data, files) => {
                     ? discount_type
                     : product.discount_type;
 
+            if (newDiscount < 0) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: "Discount cannot be negative",
+                };
+            }
+
+            if (newDiscountType === "percent" && newDiscount > 100) {
+                await t.rollback();
+                return {
+                    errCode: 1,
+                    errMessage: "Percent discount cannot be greater than 100",
+                };
+            }
+
             if (!["percent", "fixed"].includes(newDiscountType)) {
                 await t.rollback();
                 return {
@@ -559,16 +621,11 @@ let updateProduct = async (product_id, data, files) => {
                 };
             }
 
-            let finalPrice = basePrice;
-
-            if (newDiscount > 0) {
-                finalPrice =
-                    newDiscountType === "percent"
-                        ? basePrice - (basePrice * newDiscount) / 100
-                        : basePrice - newDiscount;
-            }
-
-            finalPrice = finalPrice < 0 ? 0 : finalPrice;
+            const finalPrice = calcFinalPrice(
+                basePrice,
+                newDiscount,
+                newDiscountType,
+            );
 
             await product.update(
                 {
