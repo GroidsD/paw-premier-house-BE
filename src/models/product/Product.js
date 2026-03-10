@@ -24,12 +24,6 @@ module.exports = (sequelize, DataTypes) => {
                 scope: { entity_type: "product" },
                 as: "media",
             });
-            Product.belongsToMany(models.Tag, {
-                through: models.ProductTag,
-                foreignKey: "product_id",
-                otherKey: "tag_id",
-                as: "tags",
-            });
         }
     }
 
@@ -52,7 +46,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
-            
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -68,7 +61,6 @@ module.exports = (sequelize, DataTypes) => {
                 unique: true,
             },
 
-            
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
@@ -90,7 +82,6 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
 
-            
             quantity: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,
@@ -146,7 +137,7 @@ module.exports = (sequelize, DataTypes) => {
                     product.price = finalPrice < 0 ? 0 : finalPrice;
                 },
             },
-        }
+        },
     );
 
     return Product;
