@@ -10,6 +10,12 @@ module.exports = {
                 allowNull: false,
             },
 
+            order_code: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: true,
+            },
+
             customer_id: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -57,21 +63,27 @@ module.exports = {
                 defaultValue: "COD",
             },
 
+            payment_status: {
+                type: Sequelize.ENUM("unpaid", "paid", "failed", "refunded"),
+                allowNull: false,
+                defaultValue: "unpaid",
+            },
+
             voucher_code: {
                 type: Sequelize.STRING,
                 allowNull: true,
             },
 
             original_price: {
-                type: Sequelize.DECIMAL(10, 2),
+                type: Sequelize.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Tổng giá trị gốc của đơn hàng trước giảm giá",
             },
 
             discount: {
-                type: Sequelize.DECIMAL(10, 2),
-                allowNull: true,
+                type: Sequelize.DECIMAL(12, 2),
+                allowNull: false,
                 defaultValue: 0,
                 comment: "Giá trị giảm giá của đơn hàng",
             },
@@ -84,14 +96,14 @@ module.exports = {
             },
 
             shipping_fee: {
-                type: Sequelize.DECIMAL(10, 2),
+                type: Sequelize.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Phí vận chuyển",
             },
 
             total_price: {
-                type: Sequelize.DECIMAL(10, 2),
+                type: Sequelize.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Tổng thanh toán cuối cùng của đơn hàng",
@@ -101,7 +113,7 @@ module.exports = {
                 type: Sequelize.ENUM(
                     "pending",
                     "confirmed",
-                    "shipped",
+                    "shipping",
                     "completed",
                     "cancelled",
                     "deleted",
@@ -109,7 +121,12 @@ module.exports = {
                 allowNull: false,
                 defaultValue: "pending",
                 comment:
-                    "Trạng thái đơn hàng: pending, confirmed, shipped, completed, cancelled, deleted",
+                    "Trạng thái đơn hàng: pending, confirmed, shipping, completed, cancelled, deleted",
+            },
+
+            cancel_reason: {
+                type: Sequelize.TEXT,
+                allowNull: true,
             },
 
             created_at: {
@@ -139,6 +156,9 @@ module.exports = {
         );
         await queryInterface.sequelize.query(
             'DROP TYPE IF EXISTS "enum_orders_payment_method";',
+        );
+        await queryInterface.sequelize.query(
+            'DROP TYPE IF EXISTS "enum_orders_payment_status";',
         );
     },
 };
