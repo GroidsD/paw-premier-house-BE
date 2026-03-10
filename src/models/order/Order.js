@@ -1,6 +1,15 @@
 "use strict";
 const { Model } = require("sequelize");
 
+function generateOrderCode() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const random = Math.floor(1000 + Math.random() * 9000);
+    return `ORD${yyyy}${mm}${dd}${random}`;
+}
+
 module.exports = (sequelize, DataTypes) => {
     class Order extends Model {
         static associate(models) {
@@ -28,6 +37,12 @@ module.exports = (sequelize, DataTypes) => {
                 autoIncrement: true,
                 primaryKey: true,
                 allowNull: false,
+            },
+
+            order_code: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                unique: true,
             },
 
             customer_id: {
@@ -77,21 +92,27 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: "COD",
             },
 
+            payment_status: {
+                type: DataTypes.ENUM("unpaid", "paid", "failed", "refunded"),
+                allowNull: false,
+                defaultValue: "unpaid",
+            },
+
             voucher_code: {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
 
             original_price: {
-                type: DataTypes.DECIMAL(10, 2),
+                type: DataTypes.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Tổng giá trị gốc của đơn hàng trước giảm giá",
             },
 
             discount: {
-                type: DataTypes.DECIMAL(10, 2),
-                allowNull: true,
+                type: DataTypes.DECIMAL(12, 2),
+                allowNull: false,
                 defaultValue: 0,
                 comment: "Giá trị giảm giá của đơn hàng",
             },
@@ -104,14 +125,14 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             shipping_fee: {
-                type: DataTypes.DECIMAL(10, 2),
+                type: DataTypes.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Phí vận chuyển",
             },
 
             total_price: {
-                type: DataTypes.DECIMAL(10, 2),
+                type: DataTypes.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Tổng thanh toán cuối cùng của đơn hàng",
@@ -121,14 +142,20 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM(
                     "pending",
                     "confirmed",
-                    "shipped",
+                    "shipping",
                     "completed",
                     "cancelled",
                     "deleted",
                 ),
+                allowNull: false,
                 defaultValue: "pending",
                 comment:
-                    "Trạng thái đơn: pending, confirmed, shipped, completed, cancelled, deleted",
+                    "Trạng thái đơn: pending, confirmed, shipping, completed, cancelled, deleted",
+            },
+
+            cancel_reason: {
+                type: DataTypes.TEXT,
+                allowNull: true,
             },
 
             created_at: {
@@ -150,6 +177,12 @@ module.exports = (sequelize, DataTypes) => {
             createdAt: "created_at",
             updatedAt: "updated_at",
             hooks: {
+                beforeValidate: (order) => {
+                    if (!order.order_code) {
+                        order.order_code = generateOrderCode();
+                    }
+                },
+
                 beforeSave: (order) => {
                     let finalTotal = Number(order.original_price || 0);
                     const discount = Number(order.discount || 0);
@@ -165,12 +198,15 @@ module.exports = (sequelize, DataTypes) => {
                     }
 
                     finalTotal += shippingFee;
-                    order.total_price = finalTotal < 0 ? 0 : finalTotal;
+                    order.total_price =
+                        finalTotal < 0 ? 0 : Number(finalTotal.toFixed(2));
                 },
 
                 afterUpdate: async (order, options) => {
                     const RevenueTransaction =
                         sequelize.models.RevenueTransaction;
+
+                    if (!RevenueTransaction) return;
 
                     const prevStatus = order._previousDataValues.status;
                     const newStatus = order.status;
@@ -213,7 +249,7 @@ module.exports = (sequelize, DataTypes) => {
                                     discount_amount: discountAmount,
                                     net_amount: netAmount,
                                     transaction_date: new Date(),
-                                    note: `Revenue from order #${order.order_id}`,
+                                    note: `Revenue from order #${order.order_code || order.order_id}`,
                                 },
                                 { transaction: options.transaction },
                             );
@@ -243,7 +279,7 @@ module.exports = (sequelize, DataTypes) => {
                                     discount_amount: discountAmount,
                                     net_amount: -netAmount,
                                     transaction_date: new Date(),
-                                    note: `Refund for cancelled order #${order.order_id}`,
+                                    note: `Refund for cancelled order #${order.order_code || order.order_id}`,
                                 },
                                 { transaction: options.transaction },
                             );

@@ -7,6 +7,53 @@ const ROLE_DEFINITIONS = [
     { id: 4, name: "customer" },
 ];
 
+const USER_SEED_DATA = [
+    {
+        user_id: "1r5vRBf0xMfeDWu4TIKSMfhEJD43",
+        email: "staff@gmail.com",
+        full_name: "staff",
+        gender: "male",
+        avatar: null,
+        language: "vi",
+        provider: "firebase",
+        is_active: 1,
+        role_id: 3, 
+    },
+    {
+        user_id: "hARAG6MCfAbDPHRISaCXx2IM0sa2",
+        email: "manager@gmail.com",
+        full_name: "Thiên Sơn",
+        gender: "male",
+        avatar: null,
+        language: "vi",
+        provider: "firebase",
+        is_active: 1,
+        role_id: 2, // manager
+    },
+    {
+        user_id: "VnWvx8YUM2Z4WbMJYgaDqbw64cQ2",
+        email: "admin@gmail.com",
+        full_name: "Admin",
+        gender: "male",
+        avatar: "/uploadImageUsers/user-VnWvx8YUM2Z4WbMJYgaDqbw64cQ2-1773129359271.jpg",
+        language: "vi",
+        provider: "firebase",
+        is_active: 1,
+        role_id: 1, // admin
+    },
+    {
+        user_id: "YouTcECtDDhN6jk5a9vGIWJ4K8m1",
+        email: "duy@gmail.com",
+        full_name: "Duy",
+        gender: "male",
+        avatar: null,
+        language: "vi",
+        provider: "firebase",
+        is_active: 1,
+        role_id: 4, // customer
+    },
+];
+
 const permissionMap = {
     "dashboard:admin": "Admin Dashboard",
     "dashboard:manager": "Manager Dashboard",
@@ -107,6 +154,7 @@ const seed = async () => {
     const transaction = await db.sequelize.transaction();
 
     try {
+        // 1) Seed permissions
         for (const action of actions) {
             await db.Permission.findOrCreate({
                 where: { action },
@@ -115,6 +163,7 @@ const seed = async () => {
             });
         }
 
+        // 2) Seed roles
         for (const role of ROLE_DEFINITIONS) {
             const existing = await db.Role.findOne({
                 where: { name: role.name },
@@ -127,10 +176,17 @@ const seed = async () => {
                     { id: role.id, name: role.name },
                     { transaction },
                 );
-            } else if (existing.id !== role.id) {
-                await db.Role.update(
-                    { id: role.id },
-                    { where: { name: role.name }, transaction },
+            } else {
+                if (
+                    existing.deletedAt &&
+                    typeof existing.restore === "function"
+                ) {
+                    await existing.restore({ transaction });
+                }
+
+                await existing.update(
+                    { id: role.id, name: role.name },
+                    { transaction },
                 );
             }
         }
@@ -139,11 +195,14 @@ const seed = async () => {
             transaction,
         });
 
+        // 3) Assign permissions to roles
         const permissions = await db.Permission.findAll({ transaction });
         const roles = await db.Role.findAll({ transaction });
 
         const roleMap = {};
-        roles.forEach((r) => (roleMap[r.name] = r));
+        roles.forEach((r) => {
+            roleMap[r.name] = r;
+        });
 
         await roleMap.admin.setPermissions(permissions, { transaction });
 
@@ -219,13 +278,61 @@ const seed = async () => {
             { transaction },
         );
 
-        await transaction.commit();
+        // 4) Seed users
+        const roleById = {};
+        roles.forEach((r) => {
+            roleById[r.id] = r;
+        });
 
-        console.log("✅ RBAC Seed completed successfully");
+        for (const item of USER_SEED_DATA) {
+            const existingUser = await db.User.findOne({
+                where: { user_id: item.user_id },
+                paranoid: false,
+                transaction,
+            });
+
+            const userPayload = {
+                user_id: item.user_id,
+                email: item.email,
+                full_name: item.full_name,
+                gender: item.gender,
+                avatar: item.avatar,
+                language: item.language,
+                provider: item.provider,
+                is_active: item.is_active,
+            };
+
+            let user;
+
+            if (!existingUser) {
+                user = await db.User.create(userPayload, { transaction });
+            } else {
+                if (
+                    existingUser.deletedAt &&
+                    typeof existingUser.restore === "function"
+                ) {
+                    await existingUser.restore({ transaction });
+                }
+
+                await existingUser.update(userPayload, { transaction });
+                user = existingUser;
+            }
+
+            // 5) Assign exact role in user_roles
+            const role = roleById[item.role_id];
+            if (!role) {
+                throw new Error(`Role with id ${item.role_id} not found`);
+            }
+
+            // setRoles để đảm bảo mỗi user chỉ có đúng 1 role như data bạn đưa
+            await user.setRoles([role], { transaction });
+        }
+
+        await transaction.commit();
+        console.log("✅ RBAC + Users + UserRoles Seed completed successfully");
         process.exit(0);
     } catch (err) {
         await transaction.rollback();
-
         console.error("❌ Seed failed:", err);
         process.exit(1);
     }

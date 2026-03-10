@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             });
+
             OrderItem.belongsTo(models.ProductVariant, {
                 foreignKey: "productVariant_id",
                 as: "variant",
@@ -57,6 +58,41 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
+            productVariant_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "productVariants",
+                    key: "productVariant_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "SET NULL",
+            },
+
+            product_name: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                comment: "Tên sản phẩm tại thời điểm đặt hàng",
+            },
+
+            variant_label: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "Tên biến thể tại thời điểm đặt hàng",
+            },
+
+            sku: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "SKU tại thời điểm đặt hàng",
+            },
+
+            product_image: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "Ảnh sản phẩm tại thời điểm đặt hàng",
+            },
+
             pet_weight: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -70,15 +106,15 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             original_price: {
-                type: DataTypes.DECIMAL(10, 2),
+                type: DataTypes.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Giá gốc của sản phẩm trong đơn (trước khi giảm giá)",
             },
 
             discount: {
-                type: DataTypes.DECIMAL(10, 2),
-                allowNull: true,
+                type: DataTypes.DECIMAL(12, 2),
+                allowNull: false,
                 defaultValue: 0,
                 comment: "Giá trị chiết khấu của sản phẩm",
             },
@@ -91,14 +127,14 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             price: {
-                type: DataTypes.DECIMAL(10, 2),
+                type: DataTypes.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Đơn giá sau khi áp dụng chiết khấu",
             },
 
             total_price: {
-                type: DataTypes.DECIMAL(10, 2),
+                type: DataTypes.DECIMAL(12, 2),
                 allowNull: false,
                 defaultValue: 0,
                 comment: "Thành tiền của dòng sản phẩm = price * quantity",
@@ -137,9 +173,10 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    item.price = finalPrice < 0 ? 0 : finalPrice;
-                    item.total_price = (Number(item.price) * quantity).toFixed(
-                        2,
+                    item.price =
+                        finalPrice < 0 ? 0 : Number(finalPrice.toFixed(2));
+                    item.total_price = Number(
+                        (item.price * quantity).toFixed(2),
                     );
                 },
             },
