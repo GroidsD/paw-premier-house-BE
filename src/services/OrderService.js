@@ -158,7 +158,205 @@ const getUserForOrderMail = async (customer_id) => {
     };
 };
 
-const restoreStockForOrder = async (order, transaction) => {
+const getAvailableStock = (stockSource) => {
+    const quantity = toNumber(stockSource?.quantity, 0);
+    const reserved = toNumber(stockSource?.reserved_quantity, 0);
+    return Math.max(0, quantity - reserved);
+};
+
+const reserveStockForItems = async (items, transaction) => {
+    for (const item of items) {
+        const qty = toNumber(item.quantity, 0);
+        if (qty <= 0) continue;
+
+        if (item.productVariant_id) {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
+
+            if (!variant) {
+                throw new Error(
+                    `Variant ${item.productVariant_id} not found during reserve`,
+                );
+            }
+
+            const available = getAvailableStock(variant);
+            if (qty > available) {
+                throw new Error(
+                    `Insufficient stock for variant ${item.productVariant_id}`,
+                );
+            }
+
+            await variant.update(
+                {
+                    reserved_quantity:
+                        toNumber(variant.reserved_quantity, 0) + qty,
+                },
+                { transaction },
+            );
+        } else if (item.product_id) {
+            const product = await db.Product.findByPk(item.product_id, {
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            if (!product) {
+                throw new Error(
+                    `Product ${item.product_id} not found during reserve`,
+                );
+            }
+
+            const available = getAvailableStock(product);
+            if (qty > available) {
+                throw new Error(
+                    `Insufficient stock for product ${item.product_id}`,
+                );
+            }
+
+            await product.update(
+                {
+                    reserved_quantity:
+                        toNumber(product.reserved_quantity, 0) + qty,
+                },
+                { transaction },
+            );
+        }
+    }
+};
+
+const confirmReservedStockForOrder = async (order, transaction) => {
+    if (!order?.orderItems?.length) return;
+
+    for (const item of order.orderItems) {
+        const qty = toNumber(item.quantity, 0);
+        if (qty <= 0) continue;
+
+        if (item.productVariant_id) {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
+
+            if (!variant) {
+                throw new Error(
+                    `Variant ${item.productVariant_id} not found during confirm`,
+                );
+            }
+
+            const currentQty = toNumber(variant.quantity, 0);
+            const currentReserved = toNumber(variant.reserved_quantity, 0);
+
+            if (currentReserved < qty) {
+                throw new Error(
+                    `Reserved stock is insufficient for variant ${item.productVariant_id}`,
+                );
+            }
+
+            if (currentQty < qty) {
+                throw new Error(
+                    `Actual stock is insufficient for variant ${item.productVariant_id}`,
+                );
+            }
+
+            await variant.update(
+                {
+                    quantity: currentQty - qty,
+                    reserved_quantity: currentReserved - qty,
+                },
+                { transaction },
+            );
+        } else if (item.product_id) {
+            const product = await db.Product.findByPk(item.product_id, {
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            if (!product) {
+                throw new Error(
+                    `Product ${item.product_id} not found during confirm`,
+                );
+            }
+
+            const currentQty = toNumber(product.quantity, 0);
+            const currentReserved = toNumber(product.reserved_quantity, 0);
+
+            if (currentReserved < qty) {
+                throw new Error(
+                    `Reserved stock is insufficient for product ${item.product_id}`,
+                );
+            }
+
+            if (currentQty < qty) {
+                throw new Error(
+                    `Actual stock is insufficient for product ${item.product_id}`,
+                );
+            }
+
+            await product.update(
+                {
+                    quantity: currentQty - qty,
+                    reserved_quantity: currentReserved - qty,
+                },
+                { transaction },
+            );
+        }
+    }
+};
+
+const releaseReservedStockForOrder = async (order, transaction) => {
+    if (!order?.orderItems?.length) return;
+
+    for (const item of order.orderItems) {
+        const qty = toNumber(item.quantity, 0);
+        if (qty <= 0) continue;
+
+        if (item.productVariant_id) {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
+
+            if (variant) {
+                const currentReserved = toNumber(variant.reserved_quantity, 0);
+
+                await variant.update(
+                    {
+                        reserved_quantity: Math.max(0, currentReserved - qty),
+                    },
+                    { transaction },
+                );
+            }
+        } else if (item.product_id) {
+            const product = await db.Product.findByPk(item.product_id, {
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            if (product) {
+                const currentReserved = toNumber(product.reserved_quantity, 0);
+
+                await product.update(
+                    {
+                        reserved_quantity: Math.max(0, currentReserved - qty),
+                    },
+                    { transaction },
+                );
+            }
+        }
+    }
+};
+
+const restoreActualStockForOrder = async (order, transaction) => {
     if (!order?.orderItems?.length) return;
 
     for (const item of order.orderItems) {
@@ -200,7 +398,7 @@ const restoreStockForOrder = async (order, transaction) => {
     }
 };
 
-let createOrder = async (data) => {
+let createOrder = async (userId, data) => {
     const transaction = await db.sequelize.transaction();
 
     try {
@@ -319,13 +517,13 @@ let createOrder = async (data) => {
             }
 
             const stockSource = variant || product;
-            const availableStock = toNumber(stockSource.quantity, 0);
+            const availableStock = getAvailableStock(stockSource);
 
             if (quantity > availableStock) {
                 if (!transaction.finished) await transaction.rollback();
                 return {
                     errCode: 9,
-                    errMessage: `Insufficient stock for ${
+                    errMessage: `Insufficient available stock for ${
                         variant
                             ? `variant ${productVariantId}`
                             : `product ${product.product_id}`
@@ -374,13 +572,6 @@ let createOrder = async (data) => {
                 price: finalUnitPrice,
                 total_price: lineTotal,
             });
-
-            await stockSource.update(
-                {
-                    quantity: availableStock - quantity,
-                },
-                { transaction },
-            );
         }
 
         subtotalOriginal = Number(subtotalOriginal.toFixed(2));
@@ -444,6 +635,8 @@ let createOrder = async (data) => {
             })),
             { transaction },
         );
+
+        await reserveStockForItems(orderItemsData, transaction);
 
         await transaction.commit();
 
@@ -651,8 +844,19 @@ let updateOrderStatus = async (order_id, newStatus) => {
             };
         }
 
+        if (currentStatus === "pending" && newStatus === "confirmed") {
+            await confirmReservedStockForOrder(order, transaction);
+        }
+
         if (newStatus === "cancelled") {
-            await restoreStockForOrder(order, transaction);
+            if (currentStatus === "pending") {
+                await releaseReservedStockForOrder(order, transaction);
+            } else if (
+                currentStatus === "confirmed" ||
+                currentStatus === "shipping"
+            ) {
+                await restoreActualStockForOrder(order, transaction);
+            }
         }
 
         const updateData = { status: newStatus };

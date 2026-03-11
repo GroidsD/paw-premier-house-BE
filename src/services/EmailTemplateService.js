@@ -1,5 +1,5 @@
 const { sendEmail } = require("./EmailService");
-const { buildUrlEmail } = require("../utils/buildUrlEmail");
+const buildUrlEmail = require("../utils/buildUrlEmail");
 
 const sendBookingEmail = async ({ user, booking, token }) => {
     const url = buildUrlEmail("booking", booking.booking_id, token);
