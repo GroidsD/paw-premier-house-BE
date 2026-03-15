@@ -53,6 +53,15 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 defaultValue: 0,
             },
+            check_in: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+
+            check_out: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,

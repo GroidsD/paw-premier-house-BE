@@ -118,11 +118,18 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DATE,
                 allowNull: false,
             },
+            check_in: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            check_out: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
             cancelled_by: {
                 type: DataTypes.ENUM("customer", "staff", "system"),
                 allowNull: true,
             },
-
             cancel_reason: {
                 type: DataTypes.STRING,
                 allowNull: true,

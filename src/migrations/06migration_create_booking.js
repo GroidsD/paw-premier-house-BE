@@ -1,5 +1,6 @@
 "use strict";
- module.exports = {
+
+module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("bookings", {
             booking_id: {
@@ -8,6 +9,7 @@
                 primaryKey: true,
                 allowNull: false,
             },
+
             customer_id: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -15,6 +17,7 @@
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
             staff_id: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -22,6 +25,7 @@
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
             pet_id: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
@@ -29,21 +33,35 @@
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
+            check_in: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
+
+            check_out: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
+
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
             },
+
             discount: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
             },
+
             total_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
             },
+
             voucher_id: {
                 type: Sequelize.INTEGER,
                 allowNull: true,
@@ -51,37 +69,49 @@
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+
             status: {
                 type: Sequelize.ENUM(
                     "pending",
                     "assigned",
                     "cancelled",
-                    "completed"
+                    "completed",
                 ),
                 defaultValue: "pending",
             },
-            
+
             cancelled_by: {
                 type: Sequelize.ENUM("customer", "staff", "system"),
                 allowNull: true,
             },
-            cancel_reason: { type: Sequelize.STRING, allowNull: true },
-            date: { type: Sequelize.DATE, allowNull: false },
+
+            cancel_reason: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+
+            date: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+
             created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
+
             updated_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });
     },
-    async down(queryInterface) {
+
+    async down(queryInterface, Sequelize) {
         await queryInterface.dropTable("bookings");
     },
 };
