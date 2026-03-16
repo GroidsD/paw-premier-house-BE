@@ -11,18 +11,18 @@ const USER_SEED_DATA = [
     {
         user_id: "1r5vRBf0xMfeDWu4TIKSMfhEJD43",
         email: "staff@gmail.com",
-        full_name: "staff",
+        fullname: "staff",
         gender: "male",
         avatar: null,
         language: "vi",
         provider: "firebase",
         is_active: 1,
-        role_id: 3, 
+        role_id: 3,
     },
     {
         user_id: "hARAG6MCfAbDPHRISaCXx2IM0sa2",
         email: "manager@gmail.com",
-        full_name: "Thiên Sơn",
+        fullname: "Thiên Sơn",
         gender: "male",
         avatar: null,
         language: "vi",
@@ -33,7 +33,7 @@ const USER_SEED_DATA = [
     {
         user_id: "VnWvx8YUM2Z4WbMJYgaDqbw64cQ2",
         email: "admin@gmail.com",
-        full_name: "Admin",
+        fullname: "Admin",
         gender: "male",
         avatar: "/uploadImageUsers/user-VnWvx8YUM2Z4WbMJYgaDqbw64cQ2-1773129359271.jpg",
         language: "vi",
@@ -44,7 +44,7 @@ const USER_SEED_DATA = [
     {
         user_id: "YouTcECtDDhN6jk5a9vGIWJ4K8m1",
         email: "duy@gmail.com",
-        full_name: "Duy",
+        fullname: "Duy",
         gender: "male",
         avatar: null,
         language: "vi",
@@ -204,8 +204,14 @@ const seed = async () => {
             roleMap[r.name] = r;
         });
 
-        await roleMap.admin.setPermissions(permissions, { transaction });
-
+        await roleMap.admin.setPermissions(
+            permissions.filter(
+                (p) =>
+                    !p.action.startsWith("dashboard:") ||
+                    p.action === "dashboard:admin",
+            ),
+            { transaction },
+        );
         await roleMap.manager.setPermissions(
             permissions.filter(
                 (p) =>

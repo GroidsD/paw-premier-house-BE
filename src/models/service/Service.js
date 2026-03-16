@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
                 scope: { entity_type: "service" },
                 as: "media",
             });
+            Service.belongsToMany(models.Feature, {
+                through: models.ServiceFeature,
+                foreignKey: "service_id",
+                otherKey: "feature_id",
+                as: "features",
+            });
         }
     }
 

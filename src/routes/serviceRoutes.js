@@ -28,7 +28,6 @@ router.get("/api/service/get-by-id", serviceController.getServiceById);
 
 router.get(
     "/api/service/get-by-category",
-
     serviceController.getServicesByCategory,
 );
 
