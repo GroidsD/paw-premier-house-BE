@@ -1,5 +1,4 @@
 import db from "../models";
-import { Op } from "sequelize";
 
 const VALID_STATUSES = [
     "pending",
@@ -12,7 +11,7 @@ const VALID_STATUSES = [
 
 const PAYMENT_STATUSES = ["unpaid", "paid", "failed", "refunded"];
 
-const ORDER_INCLUDE = [
+const ORDER_INCLUDE_SAFE = [
     {
         model: db.User,
         as: "customer",
@@ -22,19 +21,27 @@ const ORDER_INCLUDE = [
     {
         model: db.OrderItem,
         as: "orderItems",
+        required: false,
+    },
+];
+
+const ORDER_INCLUDE_FULL = [
+    {
+        model: db.User,
+        as: "customer",
+        attributes: ["user_id", "fullname", "email", "phone"],
+        required: false,
+    },
+    {
+        model: db.OrderItem,
+        as: "orderItems",
+        required: false,
         include: [
             {
                 model: db.Product,
                 as: "product",
                 required: false,
-                include: [
-                    { model: db.Media, as: "media", required: false },
-                    {
-                        model: db.ProductTranslate,
-                        as: "translates",
-                        required: false,
-                    },
-                ],
+                include: [{ model: db.Media, as: "media", required: false }],
             },
             {
                 model: db.ProductVariant,
@@ -55,7 +62,11 @@ const normalizeQuantity = (value) => {
     return Number.isInteger(quantity) && quantity > 0 ? quantity : 0;
 };
 
-const calcDiscountedPrice = (originalPrice, discount = 0, discountType = "fixed") => {
+const calcDiscountedPrice = (
+    originalPrice,
+    discount = 0,
+    discountType = "fixed",
+) => {
     let finalPrice = toNumber(originalPrice, 0);
     const d = toNumber(discount, 0);
 
@@ -70,7 +81,11 @@ const calcDiscountedPrice = (originalPrice, discount = 0, discountType = "fixed"
     return finalPrice < 0 ? 0 : Number(finalPrice.toFixed(2));
 };
 
-const calcOrderDiscountValue = (subtotal, discount = 0, discountType = "fixed") => {
+const calcOrderDiscountValue = (
+    subtotal,
+    discount = 0,
+    discountType = "fixed",
+) => {
     const sub = toNumber(subtotal, 0);
     const d = toNumber(discount, 0);
 
@@ -89,9 +104,13 @@ const calcOrderDiscountValue = (subtotal, discount = 0, discountType = "fixed") 
     return Number(value.toFixed(2));
 };
 
-const getOrderWithRelations = async (orderId, transaction = null) => {
+const getOrderWithRelations = async (
+    orderId,
+    transaction = null,
+    useSafeInclude = false,
+) => {
     return db.Order.findByPk(orderId, {
-        include: ORDER_INCLUDE,
+        include: useSafeInclude ? ORDER_INCLUDE_SAFE : ORDER_INCLUDE_FULL,
         transaction,
     });
 };
@@ -122,7 +141,94 @@ const buildImage = (variant, product) => {
     );
 };
 
-const restoreStockForOrder = async (order, transaction) => {
+const getUserForOrderMail = async (customer_id) => {
+    if (!customer_id) return null;
+
+    const foundUser = await db.User.findOne({
+        where: { user_id: customer_id },
+        attributes: ["user_id", "fullname", "email"],
+    });
+
+    if (!foundUser) return null;
+
+    return {
+        user_id: foundUser.user_id,
+        fullname: foundUser.fullname,
+        email: foundUser.email,
+    };
+};
+
+const getAvailableStock = (stockSource) => {
+    const quantity = toNumber(stockSource?.quantity, 0);
+    const reserved = toNumber(stockSource?.reserved_quantity, 0);
+    return Math.max(0, quantity - reserved);
+};
+
+const reserveStockForItems = async (items, transaction) => {
+    for (const item of items) {
+        const qty = toNumber(item.quantity, 0);
+        if (qty <= 0) continue;
+
+        if (item.productVariant_id) {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
+
+            if (!variant) {
+                throw new Error(
+                    `Variant ${item.productVariant_id} not found during reserve`,
+                );
+            }
+
+            const available = getAvailableStock(variant);
+            if (qty > available) {
+                throw new Error(
+                    `Insufficient stock for variant ${item.productVariant_id}`,
+                );
+            }
+
+            await variant.update(
+                {
+                    reserved_quantity:
+                        toNumber(variant.reserved_quantity, 0) + qty,
+                },
+                { transaction },
+            );
+        } else if (item.product_id) {
+            const product = await db.Product.findByPk(item.product_id, {
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            if (!product) {
+                throw new Error(
+                    `Product ${item.product_id} not found during reserve`,
+                );
+            }
+
+            const available = getAvailableStock(product);
+            if (qty > available) {
+                throw new Error(
+                    `Insufficient stock for product ${item.product_id}`,
+                );
+            }
+
+            await product.update(
+                {
+                    reserved_quantity:
+                        toNumber(product.reserved_quantity, 0) + qty,
+                },
+                { transaction },
+            );
+        }
+    }
+};
+
+const confirmReservedStockForOrder = async (order, transaction) => {
     if (!order?.orderItems?.length) return;
 
     for (const item of order.orderItems) {
@@ -130,17 +236,148 @@ const restoreStockForOrder = async (order, transaction) => {
         if (qty <= 0) continue;
 
         if (item.productVariant_id) {
-            const variant = await db.ProductVariant.findByPk(item.productVariant_id, {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
+
+            if (!variant) {
+                throw new Error(
+                    `Variant ${item.productVariant_id} not found during confirm`,
+                );
+            }
+
+            const currentQty = toNumber(variant.quantity, 0);
+            const currentReserved = toNumber(variant.reserved_quantity, 0);
+
+            if (currentReserved < qty) {
+                throw new Error(
+                    `Reserved stock is insufficient for variant ${item.productVariant_id}`,
+                );
+            }
+
+            if (currentQty < qty) {
+                throw new Error(
+                    `Actual stock is insufficient for variant ${item.productVariant_id}`,
+                );
+            }
+
+            await variant.update(
+                {
+                    quantity: currentQty - qty,
+                    reserved_quantity: currentReserved - qty,
+                },
+                { transaction },
+            );
+        } else if (item.product_id) {
+            const product = await db.Product.findByPk(item.product_id, {
                 transaction,
                 lock: transaction.LOCK.UPDATE,
             });
+
+            if (!product) {
+                throw new Error(
+                    `Product ${item.product_id} not found during confirm`,
+                );
+            }
+
+            const currentQty = toNumber(product.quantity, 0);
+            const currentReserved = toNumber(product.reserved_quantity, 0);
+
+            if (currentReserved < qty) {
+                throw new Error(
+                    `Reserved stock is insufficient for product ${item.product_id}`,
+                );
+            }
+
+            if (currentQty < qty) {
+                throw new Error(
+                    `Actual stock is insufficient for product ${item.product_id}`,
+                );
+            }
+
+            await product.update(
+                {
+                    quantity: currentQty - qty,
+                    reserved_quantity: currentReserved - qty,
+                },
+                { transaction },
+            );
+        }
+    }
+};
+
+const releaseReservedStockForOrder = async (order, transaction) => {
+    if (!order?.orderItems?.length) return;
+
+    for (const item of order.orderItems) {
+        const qty = toNumber(item.quantity, 0);
+        if (qty <= 0) continue;
+
+        if (item.productVariant_id) {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
+
+            if (variant) {
+                const currentReserved = toNumber(variant.reserved_quantity, 0);
+
+                await variant.update(
+                    {
+                        reserved_quantity: Math.max(0, currentReserved - qty),
+                    },
+                    { transaction },
+                );
+            }
+        } else if (item.product_id) {
+            const product = await db.Product.findByPk(item.product_id, {
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            if (product) {
+                const currentReserved = toNumber(product.reserved_quantity, 0);
+
+                await product.update(
+                    {
+                        reserved_quantity: Math.max(0, currentReserved - qty),
+                    },
+                    { transaction },
+                );
+            }
+        }
+    }
+};
+
+const restoreActualStockForOrder = async (order, transaction) => {
+    if (!order?.orderItems?.length) return;
+
+    for (const item of order.orderItems) {
+        const qty = toNumber(item.quantity, 0);
+        if (qty <= 0) continue;
+
+        if (item.productVariant_id) {
+            const variant = await db.ProductVariant.findByPk(
+                item.productVariant_id,
+                {
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                },
+            );
 
             if (variant) {
                 await variant.update(
                     {
                         quantity: toNumber(variant.quantity, 0) + qty,
                     },
-                    { transaction }
+                    { transaction },
                 );
             }
         } else if (item.product_id) {
@@ -154,14 +391,14 @@ const restoreStockForOrder = async (order, transaction) => {
                     {
                         quantity: toNumber(product.quantity, 0) + qty,
                     },
-                    { transaction }
+                    { transaction },
                 );
             }
         }
     }
 };
 
-let createOrder = async (data) => {
+let createOrder = async (userId, data) => {
     const transaction = await db.sequelize.transaction();
 
     try {
@@ -183,7 +420,7 @@ let createOrder = async (data) => {
         } = data;
 
         if (!Array.isArray(items) || items.length === 0) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 1,
                 errMessage: "Missing items",
@@ -197,7 +434,7 @@ let createOrder = async (data) => {
             !receiver_district ||
             !receiver_address
         ) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 2,
                 errMessage: "Missing receiver information",
@@ -205,7 +442,7 @@ let createOrder = async (data) => {
         }
 
         if (!["COD", "BANK", "WALLET", "CARD"].includes(payment_method)) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 3,
                 errMessage: "Invalid payment_method",
@@ -213,7 +450,7 @@ let createOrder = async (data) => {
         }
 
         if (!PAYMENT_STATUSES.includes(payment_status)) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 4,
                 errMessage: "Invalid payment_status",
@@ -232,7 +469,7 @@ let createOrder = async (data) => {
             const quantity = normalizeQuantity(rawItem.quantity);
 
             if (!productId || !quantity) {
-                await transaction.rollback();
+                if (!transaction.finished) await transaction.rollback();
                 return {
                     errCode: 5,
                     errMessage: "Invalid product_id or quantity",
@@ -245,7 +482,7 @@ let createOrder = async (data) => {
             });
 
             if (!product) {
-                await transaction.rollback();
+                if (!transaction.finished) await transaction.rollback();
                 return {
                     errCode: 6,
                     errMessage: `Product ${productId} not found`,
@@ -260,7 +497,7 @@ let createOrder = async (data) => {
                 });
 
                 if (!variant) {
-                    await transaction.rollback();
+                    if (!transaction.finished) await transaction.rollback();
                     return {
                         errCode: 7,
                         errMessage: `Variant ${productVariantId} not found`,
@@ -271,7 +508,7 @@ let createOrder = async (data) => {
                     variant.product_id &&
                     Number(variant.product_id) !== Number(product.product_id)
                 ) {
-                    await transaction.rollback();
+                    if (!transaction.finished) await transaction.rollback();
                     return {
                         errCode: 8,
                         errMessage: `Variant ${productVariantId} does not belong to product ${productId}`,
@@ -280,13 +517,13 @@ let createOrder = async (data) => {
             }
 
             const stockSource = variant || product;
-            const availableStock = toNumber(stockSource.quantity, 0);
+            const availableStock = getAvailableStock(stockSource);
 
             if (quantity > availableStock) {
-                await transaction.rollback();
+                if (!transaction.finished) await transaction.rollback();
                 return {
                     errCode: 9,
-                    errMessage: `Insufficient stock for ${
+                    errMessage: `Insufficient available stock for ${
                         variant
                             ? `variant ${productVariantId}`
                             : `product ${product.product_id}`
@@ -296,19 +533,20 @@ let createOrder = async (data) => {
 
             const originalPrice = toNumber(
                 variant ? variant.original_price : product.original_price,
-                0
+                0,
             );
             const itemDiscount = toNumber(
                 variant ? variant.discount : product.discount,
-                0
+                0,
             );
             const itemDiscountType =
-                (variant ? variant.discount_type : product.discount_type) || "fixed";
+                (variant ? variant.discount_type : product.discount_type) ||
+                "fixed";
 
             const finalUnitPrice = calcDiscountedPrice(
                 originalPrice,
                 itemDiscount,
-                itemDiscountType
+                itemDiscountType,
             );
             const lineTotal = Number((finalUnitPrice * quantity).toFixed(2));
 
@@ -334,17 +572,12 @@ let createOrder = async (data) => {
                 price: finalUnitPrice,
                 total_price: lineTotal,
             });
-
-            await stockSource.update(
-                {
-                    quantity: availableStock - quantity,
-                },
-                { transaction }
-            );
         }
 
         subtotalOriginal = Number(subtotalOriginal.toFixed(2));
-        subtotalAfterItemDiscount = Number(subtotalAfterItemDiscount.toFixed(2));
+        subtotalAfterItemDiscount = Number(
+            subtotalAfterItemDiscount.toFixed(2),
+        );
 
         const safeOrderDiscountType =
             orderDiscountTypeInput === "percent" ? "percent" : "fixed";
@@ -352,7 +585,7 @@ let createOrder = async (data) => {
         const orderDiscountValue = calcOrderDiscountValue(
             subtotalAfterItemDiscount,
             orderDiscountInput,
-            safeOrderDiscountType
+            safeOrderDiscountType,
         );
 
         const shippingFee =
@@ -369,8 +602,8 @@ let createOrder = async (data) => {
                     subtotalAfterItemDiscount -
                     orderDiscountValue +
                     shippingFee
-                ).toFixed(2)
-            )
+                ).toFixed(2),
+            ),
         );
 
         const order = await db.Order.create(
@@ -392,7 +625,7 @@ let createOrder = async (data) => {
                 total_price: totalPrice,
                 status: "pending",
             },
-            { transaction }
+            { transaction },
         );
 
         await db.OrderItem.bulkCreate(
@@ -400,44 +633,80 @@ let createOrder = async (data) => {
                 ...item,
                 order_id: order.order_id,
             })),
-            { transaction }
+            { transaction },
         );
+
+        await reserveStockForItems(orderItemsData, transaction);
 
         await transaction.commit();
 
-        const newOrder = await getOrderWithRelations(order.order_id);
-
+        let newOrder = null;
         let user = null;
-        if (customer_id) {
-            const foundUser = await db.User.findByPk(customer_id, {
-                attributes: ["fullname", "email"],
-            });
-            if (foundUser) {
-                user = {
-                    fullname: foundUser.fullname,
-                    email: foundUser.email,
-                };
+
+        try {
+            user = await getUserForOrderMail(customer_id);
+
+            try {
+                newOrder = await getOrderWithRelations(
+                    order.order_id,
+                    null,
+                    false,
+                );
+            } catch (fullIncludeError) {
+                console.error(
+                    "getOrderWithRelations FULL failed, fallback SAFE:",
+                    fullIncludeError,
+                );
+                newOrder = await getOrderWithRelations(
+                    order.order_id,
+                    null,
+                    true,
+                );
             }
+        } catch (afterCommitError) {
+            console.error("Post-commit fetch error:", afterCommitError);
+            return {
+                errCode: 0,
+                errMessage: "Order created successfully, but reload failed",
+                order,
+                user,
+            };
         }
 
         return {
             errCode: 0,
             errMessage: "Order created successfully",
-            order: newOrder,
+            order: newOrder || order,
             user,
         };
     } catch (e) {
-        await transaction.rollback();
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
         throw e;
     }
 };
 
 let getAllOrders = async () => {
     try {
-        const orders = await db.Order.findAll({
-            include: ORDER_INCLUDE,
-            order: [["order_id", "DESC"]],
-        });
+        let orders = [];
+
+        try {
+            orders = await db.Order.findAll({
+                include: ORDER_INCLUDE_FULL,
+                order: [["order_id", "DESC"]],
+            });
+        } catch (fullIncludeError) {
+            console.error(
+                "getAllOrders FULL include failed, fallback SAFE:",
+                fullIncludeError,
+            );
+
+            orders = await db.Order.findAll({
+                include: ORDER_INCLUDE_SAFE,
+                order: [["order_id", "DESC"]],
+            });
+        }
 
         return {
             errCode: 0,
@@ -458,10 +727,24 @@ let getOrderById = async (order_id) => {
             };
         }
 
-        const order = await db.Order.findOne({
-            where: { order_id },
-            include: ORDER_INCLUDE,
-        });
+        let order = null;
+
+        try {
+            order = await db.Order.findOne({
+                where: { order_id },
+                include: ORDER_INCLUDE_FULL,
+            });
+        } catch (fullIncludeError) {
+            console.error(
+                "getOrderById FULL include failed, fallback SAFE:",
+                fullIncludeError,
+            );
+
+            order = await db.Order.findOne({
+                where: { order_id },
+                include: ORDER_INCLUDE_SAFE,
+            });
+        }
 
         if (!order) {
             return {
@@ -485,7 +768,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
 
     try {
         if (!order_id || !newStatus) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 1,
                 errMessage: "Missing order_id or status",
@@ -493,7 +776,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
         }
 
         if (!VALID_STATUSES.includes(newStatus)) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 2,
                 errMessage: `Invalid status: ${newStatus}`,
@@ -507,7 +790,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
         });
 
         if (!order) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 3,
                 errMessage: "Order not found",
@@ -515,7 +798,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
         }
 
         if (order.status === "deleted") {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 4,
                 errMessage: "Cannot update a deleted order",
@@ -523,7 +806,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
         }
 
         if (order.status === "cancelled" && newStatus !== "deleted") {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 5,
                 errMessage: "Cancelled order can only be moved to deleted",
@@ -545,7 +828,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
             currentStatus !== newStatus &&
             !allowedTransitions[currentStatus]?.includes(newStatus)
         ) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 6,
                 errMessage: `Cannot change status from ${currentStatus} to ${newStatus}`,
@@ -553,7 +836,7 @@ let updateOrderStatus = async (order_id, newStatus) => {
         }
 
         if (currentStatus === newStatus) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 0,
                 errMessage: "Status is already up to date",
@@ -561,8 +844,19 @@ let updateOrderStatus = async (order_id, newStatus) => {
             };
         }
 
+        if (currentStatus === "pending" && newStatus === "confirmed") {
+            await confirmReservedStockForOrder(order, transaction);
+        }
+
         if (newStatus === "cancelled") {
-            await restoreStockForOrder(order, transaction);
+            if (currentStatus === "pending") {
+                await releaseReservedStockForOrder(order, transaction);
+            } else if (
+                currentStatus === "confirmed" ||
+                currentStatus === "shipping"
+            ) {
+                await restoreActualStockForOrder(order, transaction);
+            }
         }
 
         const updateData = { status: newStatus };
@@ -575,15 +869,27 @@ let updateOrderStatus = async (order_id, newStatus) => {
 
         await transaction.commit();
 
-        const updatedOrder = await getOrderWithRelations(order_id);
+        let updatedOrder = null;
+
+        try {
+            updatedOrder = await getOrderWithRelations(order_id, null, false);
+        } catch (fullIncludeError) {
+            console.error(
+                "updateOrderStatus FULL include failed, fallback SAFE:",
+                fullIncludeError,
+            );
+            updatedOrder = await getOrderWithRelations(order_id, null, true);
+        }
 
         return {
             errCode: 0,
             errMessage: `Order status updated to ${newStatus}`,
-            order: updatedOrder,
+            order: updatedOrder || order,
         };
     } catch (e) {
-        await transaction.rollback();
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
         throw e;
     }
 };
@@ -605,7 +911,7 @@ let hardDeleteOrder = async (order_id) => {
 
     try {
         if (!order_id) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 1,
                 errMessage: "Missing order_id",
@@ -619,7 +925,7 @@ let hardDeleteOrder = async (order_id) => {
         });
 
         if (!order) {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 2,
                 errMessage: "Order not found",
@@ -627,7 +933,7 @@ let hardDeleteOrder = async (order_id) => {
         }
 
         if (order.status !== "deleted") {
-            await transaction.rollback();
+            if (!transaction.finished) await transaction.rollback();
             return {
                 errCode: 3,
                 errMessage: "Only deleted orders can be hard deleted",
@@ -651,7 +957,9 @@ let hardDeleteOrder = async (order_id) => {
             errMessage: "Order hard deleted successfully",
         };
     } catch (e) {
-        await transaction.rollback();
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
         throw e;
     }
 };
@@ -665,11 +973,26 @@ let getAllOrdersByUserId = async (customer_id) => {
             };
         }
 
-        const orders = await db.Order.findAll({
-            where: { customer_id },
-            include: ORDER_INCLUDE,
-            order: [["order_id", "DESC"]],
-        });
+        let orders = [];
+
+        try {
+            orders = await db.Order.findAll({
+                where: { customer_id },
+                include: ORDER_INCLUDE_FULL,
+                order: [["order_id", "DESC"]],
+            });
+        } catch (fullIncludeError) {
+            console.error(
+                "getAllOrdersByUserId FULL include failed, fallback SAFE:",
+                fullIncludeError,
+            );
+
+            orders = await db.Order.findAll({
+                where: { customer_id },
+                include: ORDER_INCLUDE_SAFE,
+                order: [["order_id", "DESC"]],
+            });
+        }
 
         return {
             errCode: 0,

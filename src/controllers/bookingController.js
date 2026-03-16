@@ -1,8 +1,7 @@
 import BookingService from "../services/BookingService.js";
-import { sendEmail } from "../services/EmailService.js";
 import buildUrlEmail from "../utils/buildUrlEmail.js";
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
-import sendBookingEmail from "../services/EmailTemplateService.js";
+import { sendBookingEmail } from "../services/EmailTemplateService.js";
 
 const verifyBooking = async (req, res) => {
     try {
@@ -11,7 +10,7 @@ const verifyBooking = async (req, res) => {
         const decoded = verifyToken(token);
 
         // kiểm tra bookingId trong token
-        if (Number(decoded.bookingId) !== Number(bookingId)) {
+        if (Number(decoded.type) !== Number(bookingId)) {
             return res.status(400).json({
                 errCode: 1,
                 message: "Invalid booking",

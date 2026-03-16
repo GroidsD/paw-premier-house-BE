@@ -16,11 +16,11 @@ exports.generateToken = (user) => {
 };
 
 // token verify booking
-exports.generateVerifyToken = (userId, bookingId) => {
+exports.generateVerifyToken = (userId, type) => {
     return jwt.sign(
         {
             userId,
-            bookingId,
+            type,
         },
         JWT_SECRET,
         { expiresIn: "24h" },

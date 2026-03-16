@@ -1,6 +1,5 @@
 import OrderService from "../services/OrderService.js";
-import { sendEmail } from "../services/EmailService.js";
-import buildUrlEmail from "../utils/buildUrlEmail.js";
+const { sendOrderEmail } = require("../services/OrderEmailService");
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
 
 const verifyOrder = async (req, res) => {
@@ -15,8 +14,7 @@ const verifyOrder = async (req, res) => {
         }
 
         const decoded = verifyToken(token);
-
-        if (Number(decoded.orderId) !== Number(orderId)) {
+        if (Number(decoded.type) !== Number(orderId)) {
             return res.status(400).json({
                 errCode: 2,
                 message: "Invalid token",
@@ -24,6 +22,7 @@ const verifyOrder = async (req, res) => {
         }
 
         const result = await OrderService.getOrderById(orderId);
+        // console.log(result.order);
 
         if (!result || result.errCode !== 0) {
             return res.status(404).json({
@@ -46,8 +45,11 @@ const verifyOrder = async (req, res) => {
 };
 
 let createOrder = async (req, res) => {
+    // console.log(req.body.customer_id);
     try {
-        const result = await OrderService.createOrder(req.body);
+        const userId = req.body.customer_id || req.user?.user_id;
+
+        const result = await OrderService.createOrder(userId, req.body);
 
         if (!result || result.errCode !== 0) {
             return res.status(400).json(
@@ -59,42 +61,13 @@ let createOrder = async (req, res) => {
         }
 
         const { order, user } = result;
+        // console.log(user, order);
 
-        if (order && user?.email) {
-            const token = generateVerifyToken(order.order_id);
-            const url = buildUrlEmail("order", order.order_id, token);
-
-            try {
-                await sendEmail({
-                    to: user.email,
-                    subject: "Order Confirmation",
-                    html: `
-                        <h2>Order Successful 🎉</h2>
-                        <p>Hello <b>${user.fullname || "Customer"}</b>,</p>
-                        <p>Your order has been created successfully.</p>
-                        <ul>
-                            <li><b>Order ID:</b> ${order.order_id}</li>
-                            <li><b>Order Code:</b> ${order.order_code || ""}</li>
-                            <li><b>Total:</b> ${order.total_price} VND</li>
-                            <li><b>Status:</b> ${order.status}</li>
-                        </ul>
-                        <a href="${url}" 
-                        style="
-                            display:inline-block;
-                            padding:12px 20px;
-                            background:#4CAF50;
-                            color:#fff;
-                            text-decoration:none;
-                            border-radius:6px;
-                        ">
-                            View Order
-                        </a>
-                        <p>Thank you for using our service.</p>
-                    `,
-                });
-            } catch (emailError) {
-                console.error("Order email send failed:", emailError);
-            }
+        const token = generateVerifyToken(userId, order.order_id);
+        try {
+            await sendOrderEmail({ user, order, token });
+        } catch (emailError) {
+            console.error("Order email send failed:", emailError);
         }
 
         return res.status(200).json(result);
