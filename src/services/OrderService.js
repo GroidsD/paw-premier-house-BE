@@ -132,13 +132,12 @@ const buildSku = (variant, product) => {
 };
 
 const buildImage = (variant, product) => {
-    return (
-        variant?.image ||
-        variant?.thumbnail ||
-        product?.image ||
-        product?.thumbnail ||
-        null
-    );
+    const mainMedia =
+        product?.media?.find((item) => item.is_main)?.url ||
+        product?.media?.[0]?.url ||
+        null;
+
+    return mainMedia;
 };
 
 const getUserForOrderMail = async (customer_id) => {
@@ -479,6 +478,13 @@ let createOrder = async (userId, data) => {
             const product = await db.Product.findByPk(productId, {
                 transaction,
                 lock: transaction.LOCK.UPDATE,
+                include: [
+                    {
+                        model: db.Media,
+                        as: "media",
+                        required: false,
+                    },
+                ],
             });
 
             if (!product) {
@@ -571,6 +577,15 @@ let createOrder = async (userId, data) => {
                 discount_type: itemDiscountType,
                 price: finalUnitPrice,
                 total_price: lineTotal,
+            });
+            console.log("PRODUCT MEDIA DEBUG:", {
+                productId: product.product_id,
+                media: product.media?.map((m) => ({
+                    media_id: m.media_id,
+                    url: m.url,
+                    is_main: m.is_main,
+                })),
+                finalImage: buildImage(variant, product),
             });
         }
 
@@ -845,6 +860,17 @@ let updateOrderStatus = async (order_id, newStatus) => {
         }
 
         if (currentStatus === "pending" && newStatus === "confirmed") {
+            if (
+                order.payment_method !== "COD" &&
+                order.payment_status !== "paid"
+            ) {
+                if (!transaction.finished) await transaction.rollback();
+                return {
+                    errCode: 7,
+                    errMessage: "Order has not been paid yet",
+                };
+            }
+
             await confirmReservedStockForOrder(order, transaction);
         }
 

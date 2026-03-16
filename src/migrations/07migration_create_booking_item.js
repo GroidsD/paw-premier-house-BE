@@ -1,6 +1,5 @@
 "use strict";
 
-
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("bookingItems", {
@@ -32,6 +31,15 @@ module.exports = {
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+            check_in: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
+
+            check_out: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
 
             price: {
                 type: Sequelize.DECIMAL(10, 2),
@@ -49,7 +57,7 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal(
-                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                    "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
                 ),
             },
         });

@@ -14,6 +14,8 @@ const createBooking = async (user_id, data) => {
                 pet_id: data.pet_id,
                 date: data.date,
                 status: "pending",
+                check_in: data.check_in || null,
+                check_out: data.check_out || null,
             },
             { transaction: t },
         );

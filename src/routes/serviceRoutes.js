@@ -27,6 +27,7 @@ router.get("/api/service/get-all", serviceController.getAllServices);
 router.get("/api/service/get-by-id", serviceController.getServiceById);
 
 router.get(
+<<<<<<< HEAD
   "/api/service/get-by-category",
   authMiddleware,
   rbacMiddleware,
@@ -34,6 +35,11 @@ router.get(
     all: ["service:read"],
   }),
   serviceController.getServicesByCategory,
+=======
+    "/api/service/get-by-category",
+
+    serviceController.getServicesByCategory,
+>>>>>>> 6781314b54e86875beadc3b24c8fd18688b64782
 );
 
 router.put(
