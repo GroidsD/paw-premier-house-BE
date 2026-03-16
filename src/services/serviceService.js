@@ -127,10 +127,22 @@ const getServicesByCategory = async (category_id) => {
                 {
                     model: db.ServiceCategory,
                     as: "category",
+                    attributes: [
+                        "serviceCategories_id",
+                        "type",
+                        "isActive",
+                        "isDeleted",
+                    ],
                 },
                 {
                     model: db.Media,
                     as: "media",
+                },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    // attributes: ["feature_id", "feature_name", "description"],
+                    through: { attributes: [] },
                 },
             ],
             order: [["created_at", "DESC"]],
