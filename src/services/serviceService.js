@@ -4,6 +4,7 @@ import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
 
 const createService = async (data) => {
     const t = await db.sequelize.transaction();
+
     try {
         const service = await db.Service.create(
             {
@@ -16,6 +17,12 @@ const createService = async (data) => {
             { transaction: t },
         );
 
+        // attach features
+        if (Array.isArray(data.feature_ids) && data.feature_ids.length > 0) {
+            await service.setFeatures(data.feature_ids, { transaction: t });
+        }
+
+        // media
         if (Array.isArray(data.media) && data.media.length > 0) {
             await MediaService.createMediaForEntity(
                 data.media,
@@ -30,7 +37,6 @@ const createService = async (data) => {
         const created = await db.Service.findByPk(service.service_id, {
             include: [{ model: db.Media, as: "media" }],
         });
-
         return {
             errCode: 0,
             errMessage: "Service created successfully",
@@ -58,6 +64,11 @@ const getAllServices = async () => {
                 {
                     model: db.Media,
                     as: "media",
+                },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    through: { attributes: [] },
                 },
             ],
             order: [["created_at", "DESC"]],
@@ -91,6 +102,11 @@ const getServiceById = async (id) => {
                 {
                     model: db.Media,
                     as: "media",
+                },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    through: { attributes: [] },
                 },
             ],
         });
@@ -141,7 +157,6 @@ const getServicesByCategory = async (category_id) => {
                 {
                     model: db.Feature,
                     as: "features",
-                    // attributes: ["feature_id", "feature_name", "description"],
                     through: { attributes: [] },
                 },
             ],
@@ -160,7 +175,6 @@ const getServicesByCategory = async (category_id) => {
         };
     }
 };
-
 const updateService = async (id, data) => {
     const t = await db.sequelize.transaction();
     let oldMedia = [];
@@ -179,11 +193,14 @@ const updateService = async (id, data) => {
             if (Array.isArray(data.media) && data.media[0]?.url) {
                 await safeUnlinkByUrl(data.media[0].url);
             }
+
             return { errCode: 1, errMessage: "Service not found" };
         }
 
+        // lưu media cũ
         oldMedia = (service.media || []).map((m) => m.url).filter(Boolean);
 
+        // update service
         await service.update(
             {
                 name: data.name ?? service.name,
@@ -200,8 +217,15 @@ const updateService = async (id, data) => {
             { transaction: t },
         );
 
+        // update features
+        if (Array.isArray(data.feature_ids)) {
+            await service.setFeatures(data.feature_ids, { transaction: t });
+        }
+
+        // update media
         if (Array.isArray(data.media) && data.media.length > 0) {
             newUploadedMedia = data.media.map((m) => m.url).filter(Boolean);
+
             await MediaService.updateMediaForEntity(
                 data.media,
                 id,
@@ -212,14 +236,24 @@ const updateService = async (id, data) => {
 
         await t.commit();
 
+        // xoá media cũ không còn dùng
         if (newUploadedMedia.length > 0 && oldMedia.length > 0) {
             for (const url of oldMedia) {
-                if (!newUploadedMedia.includes(url)) await safeUnlinkByUrl(url);
+                if (!newUploadedMedia.includes(url)) {
+                    await safeUnlinkByUrl(url);
+                }
             }
         }
 
         const updated = await db.Service.findByPk(id, {
-            include: [{ model: db.Media, as: "media" }],
+            include: [
+                { model: db.Media, as: "media" },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    through: { attributes: [] },
+                },
+            ],
         });
 
         return {
@@ -238,6 +272,7 @@ const updateService = async (id, data) => {
         return { errCode: 1, errMessage: error.message };
     }
 };
+
 const softDeleteService = async (id) => {
     try {
         const service = await db.Service.findByPk(id);
