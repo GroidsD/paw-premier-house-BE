@@ -19,21 +19,13 @@ router.post(
 
 router.get(
     "/api/product-categories/get-all",
-    authMiddleware,
-    rbacMiddleware,
-    permissionMiddleware({
-        all: ["category:read"],
-    }),
+
     productCategoryController.getAllCategories,
 );
 
 router.get(
     "/api/product-categories/get-by-id",
-    authMiddleware,
-    rbacMiddleware,
-    permissionMiddleware({
-        all: ["category:read"],
-    }),
+
     productCategoryController.getCategoryById,
 );
 

@@ -13,33 +13,79 @@ const verifyOrder = async (req, res) => {
             });
         }
 
-        const decoded = verifyToken(token);
-        if (Number(decoded.type) !== Number(orderId)) {
+        let decoded;
+        try {
+            decoded = verifyToken(token);
+        } catch (error) {
             return res.status(400).json({
                 errCode: 2,
+                message: "Token expired or invalid",
+            });
+        }
+
+        if (Number(decoded.type) !== Number(orderId)) {
+            return res.status(400).json({
+                errCode: 3,
                 message: "Invalid token",
             });
         }
 
-        const result = await OrderService.getOrderById(orderId);
-        // console.log(result.order);
+        const foundOrder = await OrderService.getOrderById(orderId);
 
-        if (!result || result.errCode !== 0) {
+        if (!foundOrder || foundOrder.errCode !== 0) {
             return res.status(404).json({
-                errCode: result?.errCode || 3,
-                message: result?.errMessage || "Order not found",
+                errCode: foundOrder?.errCode || 4,
+                message: foundOrder?.errMessage || "Order not found",
+            });
+        }
+
+        const currentOrder = foundOrder.order;
+
+        if (currentOrder.status === "confirmed") {
+            return res.status(200).json({
+                errCode: 0,
+                message: "Order already confirmed",
+                data: currentOrder,
+            });
+        }
+
+        if (currentOrder.status !== "pending") {
+            return res.status(400).json({
+                errCode: 5,
+                message: `Cannot verify order in status ${currentOrder.status}`,
+            });
+        }
+
+        // validate payment
+        if (
+            currentOrder.payment_method !== "COD" &&
+            currentOrder.payment_status !== "paid"
+        ) {
+            return res.status(400).json({
+                errCode: 6,
+                message: "Order has not been paid yet",
+            });
+        }
+
+        const confirmResult = await OrderService.confirmOrder(orderId);
+
+        if (!confirmResult || confirmResult.errCode !== 0) {
+            return res.status(400).json({
+                errCode: confirmResult?.errCode || 7,
+                message: confirmResult?.errMessage || "Confirm order failed",
             });
         }
 
         return res.status(200).json({
             errCode: 0,
-            message: "Order verified",
-            data: result.order,
+            message: "Order verified and confirmed successfully",
+            data: confirmResult.order,
         });
     } catch (error) {
-        return res.status(400).json({
+        console.error("verifyOrder error:", error);
+        return res.status(500).json({
             errCode: -1,
-            message: "Token expired or invalid",
+            message: "Server error",
         });
     }
 };
