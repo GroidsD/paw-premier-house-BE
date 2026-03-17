@@ -23,7 +23,7 @@ const renderOrderItems = (orderItems = []) => {
     if (!orderItems.length) {
         return `
             <tr>
-                <td colspan="5" style="padding:14px; font-size:14px; color:#8b6f68; text-align:center;">
+                <td colspan="5" style="padding:14px; font-size:14px; color:#6b7280; text-align:center;">
                     No items found
                 </td>
             </tr>
@@ -43,7 +43,7 @@ const renderOrderItems = (orderItems = []) => {
 
             return `
                 <tr>
-                    <td style="padding:12px 8px; border-bottom:1px solid #f3d9d2;" align="center">
+                    <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb;" align="center">
                         ${
                             imageUrl
                                 ? `<img 
@@ -57,7 +57,7 @@ const renderOrderItems = (orderItems = []) => {
                                             height:56px;
                                             object-fit:cover;
                                             border-radius:12px;
-                                            border:1px solid #f3d9d2;
+                                            border:1px solid #e5e7eb;
                                             background:#ffffff;
                                         "
                                    />`
@@ -67,27 +67,27 @@ const renderOrderItems = (orderItems = []) => {
                                         line-height:56px;
                                         text-align:center;
                                         border-radius:12px;
-                                        border:1px solid #f3d9d2;
-                                        background:#fff7f5;
+                                        border:1px solid #e5e7eb;
+                                        background:#f9fafb;
                                         font-size:12px;
-                                        color:#b79b93;
+                                        color:#9ca3af;
                                    ">No image</div>`
                         }
                     </td>
 
-                    <td style="padding:12px 8px; border-bottom:1px solid #f3d9d2; font-size:14px; color:#4b342f; font-weight:600;">
+                    <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; font-size:14px; color:#111827; font-weight:600;">
                         ${productName}${variantLabel}
                     </td>
 
-                    <td style="padding:12px 8px; border-bottom:1px solid #f3d9d2; font-size:14px; color:#4b342f;" align="center">
+                    <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; font-size:14px; color:#374151;" align="center">
                         ${quantity}
                     </td>
 
-                    <td style="padding:12px 8px; border-bottom:1px solid #f3d9d2; font-size:14px; color:#4b342f;" align="right">
+                    <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; font-size:14px; color:#374151;" align="right">
                         ${unitPrice}
                     </td>
 
-                    <td style="padding:12px 8px; border-bottom:1px solid #f3d9d2; font-size:14px; color:#f77762; font-weight:700;" align="right">
+                    <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; font-size:14px; color:#0f766e; font-weight:700;" align="right">
                         ${totalPrice}
                     </td>
                 </tr>
@@ -101,23 +101,23 @@ const sendOrderEmail = async ({ user, order, token }) => {
 
     return sendEmail({
         to: user.email,
-        subject: "Xác nhận đơn hàng",
+        subject: "Order Confirmation",
         html: `
             <div style="
                 margin:0;
                 padding:0;
-                background-color:#fff7f5;
-                font-family:Arial,Helvetica,sans-serif;
-                color:#4b342f;
+                background-color:#f3f4f6;
+                font-family:Arial, Helvetica, sans-serif;
+                color:#111827;
             ">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fff7f5; margin:0; padding:28px 0;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:28px 0;">
                     <tr>
                         <td align="center">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px; background:#ffffff; border-radius:28px; overflow:hidden; box-shadow:0 10px 30px rgba(180,120,100,0.10);">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px; background:#ffffff; border-radius:24px; overflow:hidden; border:1px solid #e5e7eb;">
                                 
                                 <tr>
                                     <td style="
-                                        background:linear-gradient(135deg,#ffb29f,#ff8f7a);
+                                        background:#1f2937;
                                         padding:34px 24px 30px;
                                         text-align:center;
                                     ">
@@ -126,7 +126,7 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             height:68px;
                                             line-height:68px;
                                             margin:0 auto 16px;
-                                            background:rgba(255,255,255,0.35);
+                                            background:#374151;
                                             border-radius:50%;
                                             font-size:30px;
                                             text-align:center;
@@ -139,16 +139,16 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             color:#ffffff;
                                             font-weight:800;
                                         ">
-                                            Đặt hàng thành công!
+                                            Order placed successfully!
                                         </h1>
 
                                         <p style="
                                             margin:12px 0 0;
                                             font-size:15px;
                                             line-height:24px;
-                                            color:#fff7f5;
+                                            color:#d1d5db;
                                         ">
-                                            Cảm ơn bạn đã mua sắm tại Paw Premier House. Vui lòng xác nhận đơn hàng để chúng tôi bắt đầu xử lý.
+                                            Thank you for shopping at Paw Premier House. Please confirm your order so we can begin processing it.
                                         </p>
                                     </td>
                                 </tr>
@@ -159,24 +159,24 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             margin:0 0 14px;
                                             font-size:16px;
                                             line-height:26px;
-                                            color:#4b342f;
+                                            color:#111827;
                                         ">
-                                            Xin chào <strong>${user?.fullname || "Customer"}</strong>,
+                                            Hello <strong>${user?.fullname || "Customer"}</strong>,
                                         </p>
 
                                         <p style="
                                             margin:0 0 22px;
                                             font-size:15px;
                                             line-height:24px;
-                                            color:#8b6f68;
+                                            color:#4b5563;
                                         ">
-                                            Đơn hàng của bạn đã được tạo thành công trong hệ thống. Dưới đây là thông tin chi tiết đơn hàng:
+                                            Your order has been created successfully in our system. Below are the details of your order:
                                         </p>
 
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            background:#fff3ef;
-                                            border:1px solid #f3d9d2;
-                                            border-radius:20px;
+                                            background:#f9fafb;
+                                            border:1px solid #e5e7eb;
+                                            border-radius:18px;
                                             margin-bottom:22px;
                                         ">
                                             <tr>
@@ -185,42 +185,42 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                                         margin:0 0 14px;
                                                         font-size:18px;
                                                         line-height:26px;
-                                                        color:#4b342f;
+                                                        color:#111827;
                                                         font-weight:800;
                                                     ">
-                                                        Thông tin đơn hàng
+                                                        Order information
                                                     </h2>
 
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                                         <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#8b6f68;">Mã đơn</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#4b342f; font-weight:700;" align="right">
+                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Order ID</td>
+                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
                                                                 #${order?.order_id || ""}
                                                             </td>
                                                         </tr>
 
                                                         <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#8b6f68;">Mã đơn hàng</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#f77762; font-weight:700;" align="right">
+                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Order code</td>
+                                                            <td style="padding:8px 0; font-size:14px; color:#2563eb; font-weight:700;" align="right">
                                                                 ${order?.order_code || "---"}
                                                             </td>
                                                         </tr>
 
                                                         <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#8b6f68;">Tổng thanh toán</td>
-                                                            <td style="padding:8px 0; font-size:18px; color:#f77762; font-weight:800;" align="right">
+                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Total payment</td>
+                                                            <td style="padding:8px 0; font-size:18px; color:#0f766e; font-weight:800;" align="right">
                                                                 ${formatPrice(order?.total_price)}
                                                             </td>
                                                         </tr>
 
                                                         <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#8b6f68;">Trạng thái</td>
+                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Status</td>
                                                             <td style="padding:8px 0;" align="right">
                                                                 <span style="
                                                                     display:inline-block;
                                                                     padding:7px 12px;
-                                                                    background:#ffe7df;
-                                                                    color:#f77762;
+                                                                    background:#e5e7eb;
+                                                                    color:#374151;
                                                                     border-radius:999px;
                                                                     font-size:12px;
                                                                     font-weight:800;
@@ -237,26 +237,26 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                         </table>
 
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            border:1px solid #f3d9d2;
-                                            border-radius:20px;
+                                            border:1px solid #e5e7eb;
+                                            border-radius:18px;
                                             overflow:hidden;
                                             margin-bottom:22px;
                                             background:#ffffff;
                                         ">
-                                            <tr style="background:#fff3ef;">
-                                                <th align="center" style="padding:12px 8px; font-size:13px; color:#8b6f68;">Ảnh</th>
-                                                <th align="left" style="padding:12px 8px; font-size:13px; color:#8b6f68;">Sản phẩm</th>
-                                                <th align="center" style="padding:12px 8px; font-size:13px; color:#8b6f68;">SL</th>
-                                                <th align="right" style="padding:12px 8px; font-size:13px; color:#8b6f68;">Giá</th>
-                                                <th align="right" style="padding:12px 8px; font-size:13px; color:#8b6f68;">Tổng</th>
+                                            <tr style="background:#f9fafb;">
+                                                <th align="center" style="padding:12px 8px; font-size:13px; color:#6b7280;">Image</th>
+                                                <th align="left" style="padding:12px 8px; font-size:13px; color:#6b7280;">Product</th>
+                                                <th align="center" style="padding:12px 8px; font-size:13px; color:#6b7280;">Qty</th>
+                                                <th align="right" style="padding:12px 8px; font-size:13px; color:#6b7280;">Price</th>
+                                                <th align="right" style="padding:12px 8px; font-size:13px; color:#6b7280;">Total</th>
                                             </tr>
                                             ${renderOrderItems(order?.orderItems || [])}
                                         </table>
 
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
                                             margin-bottom:24px;
-                                            background:#fffaf8;
-                                            border:1px solid #f3e4df;
+                                            background:#f9fafb;
+                                            border:1px solid #e5e7eb;
                                             border-radius:18px;
                                             padding:0;
                                         ">
@@ -264,26 +264,26 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                                 <td style="padding:16px 18px;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                                         <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#8b6f68;">Tạm tính</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#4b342f;">
+                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Subtotal</td>
+                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#111827;">
                                                                 ${formatPrice(order?.original_price)}
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#8b6f68;">Phí vận chuyển</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#4b342f;">
+                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Shipping fee</td>
+                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#111827;">
                                                                 ${formatPrice(order?.shipping_fee)}
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#8b6f68;">Giảm giá</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#e26a5c; font-weight:700;">
+                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Discount</td>
+                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#dc2626; font-weight:700;">
                                                                 - ${formatPrice(order?.discount)}
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td style="padding:10px 0 0; font-size:16px; color:#4b342f; font-weight:800;">Tổng cộng</td>
-                                                            <td align="right" style="padding:10px 0 0; font-size:20px; color:#f77762; font-weight:800;">
+                                                            <td style="padding:10px 0 0; font-size:16px; color:#111827; font-weight:800;">Grand total</td>
+                                                            <td align="right" style="padding:10px 0 0; font-size:20px; color:#0f766e; font-weight:800;">
                                                                 ${formatPrice(order?.total_price)}
                                                             </td>
                                                         </tr>
@@ -296,16 +296,15 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             <a href="${url}"
                                                 style="
                                                     display:inline-block;
-                                                    background:#ff8f7a;
+                                                    background:#2563eb;
                                                     color:#ffffff;
                                                     text-decoration:none;
                                                     font-size:16px;
                                                     font-weight:800;
                                                     padding:14px 30px;
                                                     border-radius:14px;
-                                                    box-shadow:0 8px 18px rgba(247,119,98,0.25);
                                                 ">
-                                                Xác nhận đơn hàng
+                                                Confirm your order
                                             </a>
                                         </div>
 
@@ -314,9 +313,9 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             text-align:center;
                                             font-size:13px;
                                             line-height:20px;
-                                            color:#8b6f68;
+                                            color:#4b5563;
                                         ">
-                                            Vui lòng xác nhận đơn hàng để chúng tôi có thể xử lý và giao hàng sớm nhất cho bạn.
+                                            Please confirm your order so we can process and deliver it as soon as possible.
                                         </p>
 
                                         <p style="
@@ -324,9 +323,9 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             text-align:center;
                                             font-size:13px;
                                             line-height:20px;
-                                            color:#b79b93;
+                                            color:#9ca3af;
                                         ">
-                                            Nếu nút không hoạt động, hãy sao chép và dán liên kết sau vào trình duyệt:
+                                            If the button does not work, please copy and paste the following link into your browser:
                                         </p>
 
                                         <p style="
@@ -336,7 +335,7 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             line-height:20px;
                                             word-break:break-all;
                                         ">
-                                            <a href="${url}" style="color:#f77762; text-decoration:none;">
+                                            <a href="${url}" style="color:#2563eb; text-decoration:none;">
                                                 ${url}
                                             </a>
                                         </p>
@@ -346,14 +345,14 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                 <tr>
                                     <td style="
                                         padding:22px 24px 26px;
-                                        border-top:1px solid #f3e4df;
+                                        border-top:1px solid #e5e7eb;
                                         text-align:center;
-                                        background:#fffaf8;
+                                        background:#f9fafb;
                                     ">
                                         <p style="
                                             margin:0 0 6px;
                                             font-size:14px;
-                                            color:#4b342f;
+                                            color:#111827;
                                             font-weight:700;
                                         ">
                                             Paw Premier House
@@ -362,9 +361,9 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                             margin:0;
                                             font-size:12px;
                                             line-height:18px;
-                                            color:#b79b93;
+                                            color:#9ca3af;
                                         ">
-                                            Đây là email tự động, vui lòng không trả lời trực tiếp email này.
+                                            This is an automated email. Please do not reply directly to this message.
                                         </p>
                                     </td>
                                 </tr>
