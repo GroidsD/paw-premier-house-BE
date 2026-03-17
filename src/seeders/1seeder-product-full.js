@@ -719,7 +719,6 @@ module.exports = {
         // =====================================================
         await queryInterface.bulkInsert("media", [
             {
-                media_id: 1,
                 entity_type: "product",
                 entity_id: "1",
                 url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=80",
@@ -729,7 +728,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 2,
                 entity_type: "product",
                 entity_id: "2",
                 url: "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=800&q=80",
@@ -739,7 +737,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 3,
                 entity_type: "product",
                 entity_id: "3",
                 url: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=800&q=80",
@@ -749,7 +746,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 4,
                 entity_type: "product",
                 entity_id: "4",
                 url: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=80",
@@ -759,7 +755,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 5,
                 entity_type: "product",
                 entity_id: "5",
                 url: "https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&w=800&q=80",
@@ -769,7 +764,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 6,
                 entity_type: "product",
                 entity_id: "6",
                 url: "https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=800&q=80",
@@ -779,7 +773,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 7,
                 entity_type: "product",
                 entity_id: "7",
                 url: "https://images.unsplash.com/photo-1511044568932-338cba0ad803?auto=format&fit=crop&w=800&q=80",
@@ -789,7 +782,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 8,
                 entity_type: "product",
                 entity_id: "8",
                 url: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?auto=format&fit=crop&w=800&q=80",
@@ -799,7 +791,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 9,
                 entity_type: "product",
                 entity_id: "9",
                 url: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=800&q=80",
@@ -809,7 +800,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 10,
                 entity_type: "product",
                 entity_id: "10",
                 url: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=800&q=80",
@@ -819,7 +809,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 11,
                 entity_type: "product",
                 entity_id: "11",
                 url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=800&q=80",
@@ -829,7 +818,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 12,
                 entity_type: "product",
                 entity_id: "12",
                 url: "https://danhchobeyeu.com/media/cache/data/IMG_7574-450x450.png",
@@ -839,7 +827,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 13,
                 entity_type: "product",
                 entity_id: "13",
                 url: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=80",
@@ -849,7 +836,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 14,
                 entity_type: "product",
                 entity_id: "14",
                 url: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=800&q=80",
@@ -859,7 +845,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 15,
                 entity_type: "product",
                 entity_id: "15",
                 url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=80",
@@ -869,7 +854,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 16,
                 entity_type: "product",
                 entity_id: "16",
                 url: "https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=800&q=80",
@@ -879,7 +863,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 17,
                 entity_type: "product",
                 entity_id: "17",
                 url: "https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?auto=format&fit=crop&w=800&q=80",
@@ -889,7 +872,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 18,
                 entity_type: "product",
                 entity_id: "18",
                 url: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=80",
@@ -899,7 +881,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 19,
                 entity_type: "product",
                 entity_id: "19",
                 url: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=80",
@@ -909,7 +890,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 20,
                 entity_type: "product",
                 entity_id: "20",
                 url: "https://images.unsplash.com/photo-1525253086316-d0c936c814f8?auto=format&fit=crop&w=800&q=80",
@@ -921,7 +901,6 @@ module.exports = {
 
             // thêm ảnh phụ cho vài sản phẩm
             {
-                media_id: 21,
                 entity_type: "product",
                 entity_id: "1",
                 url: "https://images.unsplash.com/photo-1581888227599-779811939961?auto=format&fit=crop&w=800&q=80",
@@ -931,7 +910,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 22,
                 entity_type: "product",
                 entity_id: "5",
                 url: "https://images.unsplash.com/photo-1511044568932-338cba0ad803?auto=format&fit=crop&w=800&q=80",
@@ -941,7 +919,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 23,
                 entity_type: "product",
                 entity_id: "9",
                 url: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=80",
@@ -951,7 +928,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 24,
                 entity_type: "product",
                 entity_id: "11",
                 url: "https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&w=800&q=80",
@@ -961,7 +937,6 @@ module.exports = {
                 updated_at: now,
             },
             {
-                media_id: 25,
                 entity_type: "product",
                 entity_id: "17",
                 url: "https://images.unsplash.com/photo-1571566882372-1598d88abd90?auto=format&fit=crop&w=800&q=80",

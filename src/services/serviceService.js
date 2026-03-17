@@ -35,7 +35,14 @@ const createService = async (data) => {
         await t.commit();
 
         const created = await db.Service.findByPk(service.service_id, {
-            include: [{ model: db.Media, as: "media" }],
+            include: [
+                { model: db.Media, as: "media" },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    through: { attributes: [] },
+                },
+            ],
         });
         return {
             errCode: 0,
