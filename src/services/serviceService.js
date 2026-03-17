@@ -1,7 +1,24 @@
 import db from "../models/index.js";
 import MediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
+const normalizeIds = (value) => {
+    if (Array.isArray(value)) return value.map(Number).filter(Boolean);
 
+    if (typeof value === "string") {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed))
+                return parsed.map(Number).filter(Boolean);
+        } catch {
+            return value
+                .split(",")
+                .map((id) => Number(id.trim()))
+                .filter(Boolean);
+        }
+    }
+
+    return [];
+};
 const createService = async (data) => {
     const t = await db.sequelize.transaction();
 
@@ -18,10 +35,10 @@ const createService = async (data) => {
         );
 
         // attach features
-        if (Array.isArray(data.feature_ids) && data.feature_ids.length > 0) {
-            await service.setFeatures(data.feature_ids, { transaction: t });
+        const featureIds = normalizeIds(data.feature_ids);
+        if (featureIds.length > 0) {
+            await service.setFeatures(featureIds, { transaction: t });
         }
-
         // media
         if (Array.isArray(data.media) && data.media.length > 0) {
             await MediaService.createMediaForEntity(
@@ -35,7 +52,14 @@ const createService = async (data) => {
         await t.commit();
 
         const created = await db.Service.findByPk(service.service_id, {
-            include: [{ model: db.Media, as: "media" }],
+            include: [
+                { model: db.Media, as: "media" },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    through: { attributes: [] },
+                },
+            ],
         });
         return {
             errCode: 0,
@@ -175,6 +199,103 @@ const getServicesByCategory = async (category_id) => {
         };
     }
 };
+// const updateService = async (id, data) => {
+//     const t = await db.sequelize.transaction();
+//     let oldMedia = [];
+//     let newUploadedMedia = [];
+
+//     try {
+//         const service = await db.Service.findByPk(id, {
+//             include: [{ model: db.Media, as: "media" }],
+//             transaction: t,
+//             lock: t.LOCK.UPDATE,
+//         });
+
+//         if (!service || service.isDeleted) {
+//             await t.rollback();
+
+//             if (Array.isArray(data.media) && data.media[0]?.url) {
+//                 await safeUnlinkByUrl(data.media[0].url);
+//             }
+
+//             return { errCode: 1, errMessage: "Service not found" };
+//         }
+
+//         // lưu media cũ
+//         oldMedia = (service.media || []).map((m) => m.url).filter(Boolean);
+
+//         // update service
+//         await service.update(
+//             {
+//                 name: data.name ?? service.name,
+//                 description: data.description ?? service.description,
+//                 price: data.price ?? service.price,
+//                 duration: data.duration ?? service.duration,
+//                 serviceCategories_id:
+//                     data.serviceCategories_id ?? service.serviceCategories_id,
+//                 isActive:
+//                     data.isActive !== undefined
+//                         ? data.isActive
+//                         : service.isActive,
+//             },
+//             { transaction: t },
+//         );
+
+//         // update features
+//         if (Array.isArray(data.feature_ids)) {
+//             await service.setFeatures(data.feature_ids, { transaction: t });
+//         }
+
+//         // update media
+//         if (Array.isArray(data.media) && data.media.length > 0) {
+//             newUploadedMedia = data.media.map((m) => m.url).filter(Boolean);
+
+//             await MediaService.updateMediaForEntity(
+//                 data.media,
+//                 id,
+//                 "service",
+//                 t,
+//             );
+//         }
+
+//         await t.commit();
+
+//         // xoá media cũ không còn dùng
+//         if (newUploadedMedia.length > 0 && oldMedia.length > 0) {
+//             for (const url of oldMedia) {
+//                 if (!newUploadedMedia.includes(url)) {
+//                     await safeUnlinkByUrl(url);
+//                 }
+//             }
+//         }
+
+//         const updated = await db.Service.findByPk(id, {
+//             include: [
+//                 { model: db.Media, as: "media" },
+//                 {
+//                     model: db.Feature,
+//                     as: "features",
+//                     through: { attributes: [] },
+//                 },
+//             ],
+//         });
+
+//         return {
+//             errCode: 0,
+//             errMessage: "Service updated successfully",
+//             service: updated,
+//         };
+//     } catch (error) {
+//         await t.rollback();
+
+//         if (Array.isArray(data.media) && data.media[0]?.url) {
+//             await safeUnlinkByUrl(data.media[0].url);
+//         }
+
+//         console.error("❌ Error in updateService:", error);
+//         return { errCode: 1, errMessage: error.message };
+//     }
+// };
 const updateService = async (id, data) => {
     const t = await db.sequelize.transaction();
     let oldMedia = [];
@@ -190,17 +311,17 @@ const updateService = async (id, data) => {
         if (!service || service.isDeleted) {
             await t.rollback();
 
-            if (Array.isArray(data.media) && data.media[0]?.url) {
-                await safeUnlinkByUrl(data.media[0].url);
+            if (Array.isArray(data.media)) {
+                for (const item of data.media) {
+                    if (item?.url) await safeUnlinkByUrl(item.url);
+                }
             }
 
             return { errCode: 1, errMessage: "Service not found" };
         }
 
-        // lưu media cũ
         oldMedia = (service.media || []).map((m) => m.url).filter(Boolean);
 
-        // update service
         await service.update(
             {
                 name: data.name ?? service.name,
@@ -217,13 +338,12 @@ const updateService = async (id, data) => {
             { transaction: t },
         );
 
-        // update features
-        if (Array.isArray(data.feature_ids)) {
-            await service.setFeatures(data.feature_ids, { transaction: t });
+        if (data.feature_ids !== undefined) {
+            const featureIds = normalizeIds(data.feature_ids);
+            await service.setFeatures(featureIds, { transaction: t });
         }
 
-        // update media
-        if (Array.isArray(data.media) && data.media.length > 0) {
+        if (Array.isArray(data.media)) {
             newUploadedMedia = data.media.map((m) => m.url).filter(Boolean);
 
             await MediaService.updateMediaForEntity(
@@ -236,8 +356,7 @@ const updateService = async (id, data) => {
 
         await t.commit();
 
-        // xoá media cũ không còn dùng
-        if (newUploadedMedia.length > 0 && oldMedia.length > 0) {
+        if (oldMedia.length > 0) {
             for (const url of oldMedia) {
                 if (!newUploadedMedia.includes(url)) {
                     await safeUnlinkByUrl(url);
@@ -264,8 +383,10 @@ const updateService = async (id, data) => {
     } catch (error) {
         await t.rollback();
 
-        if (Array.isArray(data.media) && data.media[0]?.url) {
-            await safeUnlinkByUrl(data.media[0].url);
+        if (Array.isArray(data.media)) {
+            for (const item of data.media) {
+                if (item?.url) await safeUnlinkByUrl(item.url);
+            }
         }
 
         console.error("❌ Error in updateService:", error);
