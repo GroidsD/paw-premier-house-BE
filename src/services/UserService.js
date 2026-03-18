@@ -11,7 +11,6 @@ dotenv.config();
 const saltRounds = 10;
 const salt = bcrypt.genSaltSync(saltRounds);
 
-
 let hashPassword = (password) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -59,17 +58,14 @@ let getUserById = (user_id) => {
 
             if (!u) return reject("User not found");
 
-            
             const permissionMap = new Map();
 
-            
             u.roles.forEach((role) => {
                 role.permissions.forEach((p) => {
                     permissionMap.set(p.action, true);
                 });
             });
 
-            
             u.permissionOverrides.forEach((o) => {
                 permissionMap.set(o.Permission.action, o.allowed);
             });
@@ -80,13 +76,10 @@ let getUserById = (user_id) => {
 
             const plain = u.toJSON();
 
-            
             plain.roles = plain.roles.map((r) => r.name);
 
-            
             plain.permissions = finalPermissions;
 
-            
             delete plain.permissionOverrides;
 
             resolve(plain);
@@ -134,14 +127,12 @@ let getAllUsers = () => {
             const result = users.map((u) => {
                 const permissionMap = new Map();
 
-                
                 u.roles.forEach((role) => {
                     role.permissions.forEach((p) => {
                         permissionMap.set(p.action, true);
                     });
                 });
 
-                
                 u.permissionOverrides.forEach((o) => {
                     permissionMap.set(o.Permission.action, o.allowed);
                 });
@@ -152,14 +143,12 @@ let getAllUsers = () => {
 
                 const plain = u.toJSON();
 
-                
                 plain.permissions = finalPermissions;
-                
+
                 if (plain.roles) {
                     plain.roles = plain.roles.map((r) => r.name);
                 }
-                
-                
+
                 delete plain.permissionOverrides;
 
                 return plain;
@@ -172,7 +161,6 @@ let getAllUsers = () => {
     });
 };
 
-
 let registerUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -183,7 +171,6 @@ let registerUser = (data) => {
                 });
             }
 
-            
             const existing = await db.User.findOne({
                 where: { email: data.email },
             });
@@ -194,10 +181,8 @@ let registerUser = (data) => {
                 });
             }
 
-            
             const hashed = await hashPassword(data.password);
 
-            
             console.log(data);
 
             const newUser = await db.User.create({
@@ -210,7 +195,6 @@ let registerUser = (data) => {
                 status: data.status || "active",
             });
 
-            
             const defaultRole = await db.Role.findOne({
                 where: { name: "customer" },
             });
@@ -224,7 +208,6 @@ let registerUser = (data) => {
             console.log(newUser.user_id);
             console.log(defaultRole);
 
-            
             await db.UserRole.create({
                 user_id: newUser.user_id,
                 role_id: defaultRole.id,
@@ -255,7 +238,6 @@ let updateUser = (user_id, data) => {
                 });
             }
 
-            
             if (data.avatar && user.avatar && user.avatar !== data.avatar) {
                 const oldFileName = path.basename(user.avatar);
                 const oldImagePath = path.join(
@@ -269,7 +251,6 @@ let updateUser = (user_id, data) => {
                 }
             }
 
-            
             await user.update(
                 {
                     fullname: data.fullname ?? user.fullname,
@@ -277,6 +258,7 @@ let updateUser = (user_id, data) => {
                     phone: data.phone ?? user.phone,
                     address: data.address ?? user.address,
                     gender: data.gender ?? user.gender,
+                    dob: data.dob ?? user.dob,
                     status: data.status ?? user.status,
                     isActive: data.isActive ?? user.isActive,
                     avatar: data.avatar ?? user.avatar,
@@ -284,9 +266,7 @@ let updateUser = (user_id, data) => {
                 { transaction },
             );
 
-            
             if (data.role) {
-                
                 const role = await db.Role.findOne({
                     where: { name: data.role },
                     transaction,
@@ -300,13 +280,11 @@ let updateUser = (user_id, data) => {
                     });
                 }
 
-                
                 await db.UserRole.destroy({
                     where: { user_id },
                     transaction,
                 });
 
-                
                 await db.UserRole.create(
                     {
                         user_id,
@@ -315,7 +293,6 @@ let updateUser = (user_id, data) => {
                     { transaction },
                 );
             }
-            
 
             await transaction.commit();
 
@@ -376,7 +353,7 @@ let hardDeleteUserById = async (user_id) => {
                         "Error deleting Firebase user:",
                         firebaseError,
                     );
-                    throw firebaseError; 
+                    throw firebaseError;
                 }
             }
         }
@@ -446,7 +423,6 @@ let login = (email, password) => {
                 });
             }
 
-            
             const userWithPassword = await db.User.findOne({
                 where: { email },
                 attributes: ["password"],
@@ -464,17 +440,14 @@ let login = (email, password) => {
                 });
             }
 
-            
             const permissionMap = new Map();
 
-            
             user.roles.forEach((role) => {
                 role.permissions.forEach((p) => {
                     permissionMap.set(p.action, true);
                 });
             });
 
-            
             user.permissionOverrides.forEach((o) => {
                 permissionMap.set(o.Permission.action, o.allowed);
             });
@@ -483,17 +456,14 @@ let login = (email, password) => {
                 .filter(([_, allowed]) => allowed)
                 .map(([action]) => action);
 
-            
             const dashboardPermissions = finalPermissions.filter(
                 (p) => p.startsWith("dashboard.") || p.startsWith("dashboard:"),
             );
 
-            
             const token = jwt.sign(
                 {
                     user_id: user.user_id,
                     email: user.email,
-                    
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: "1d" },
@@ -520,7 +490,6 @@ let login = (email, password) => {
     });
 };
 
-
 let getUsersByRole = async (roleName) => {
     try {
         if (!roleName) throw "Missing role parameter";
@@ -530,15 +499,15 @@ let getUsersByRole = async (roleName) => {
                 {
                     model: db.Role,
                     as: "roles",
-                    where: { name: roleName }, 
+                    where: { name: roleName },
                     attributes: ["id", "name"],
-                    through: { attributes: [] }, 
+                    through: { attributes: [] },
                     include: [
                         {
                             model: db.Permission,
                             as: "permissions",
                             attributes: ["id", "action"],
-                            through: { attributes: [] }, 
+                            through: { attributes: [] },
                         },
                     ],
                 },
@@ -546,7 +515,6 @@ let getUsersByRole = async (roleName) => {
             attributes: ["user_id", "fullname", "email", "isActive"],
         });
 
-        
         const result = users.map((u) => {
             const user = u.toJSON();
 
@@ -574,7 +542,6 @@ let getUsersByRole = async (roleName) => {
     }
 };
 
-
 let resetPassword = (user_id, newPassword) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -591,7 +558,6 @@ let resetPassword = (user_id, newPassword) => {
         }
     });
 };
-
 
 let changeMyPassword = (user_id, oldPassword, newPassword) => {
     return new Promise(async (resolve, reject) => {
@@ -619,14 +585,12 @@ let changeMyPassword = (user_id, oldPassword, newPassword) => {
         }
     });
 };
-
 let firebaseLogin = async (idToken) => {
     try {
         if (!idToken) {
             return { errCode: 1, errMessage: "Missing Firebase ID token" };
         }
 
-        
         const decoded = await admin.auth().verifyIdToken(idToken);
 
         const firebaseUser = {
@@ -636,9 +600,9 @@ let firebaseLogin = async (idToken) => {
             avatar: decoded.picture || "",
         };
 
-        
         let user = await db.User.findByPk(firebaseUser.uid);
 
+        // nếu login firebase nhưng user đã tồn tại bằng email
         if (!user && firebaseUser.email) {
             user = await db.User.findOne({
                 where: { email: firebaseUser.email },
@@ -652,21 +616,39 @@ let firebaseLogin = async (idToken) => {
             }
         }
 
-        
+        // nếu chưa có user → tạo mới
         if (!user) {
             user = await db.User.create({
                 user_id: firebaseUser.uid,
                 email: firebaseUser.email,
                 fullname: firebaseUser.fullname,
                 avatar: firebaseUser.avatar,
-                role: "customer",
                 status: "active",
                 isActive: true,
                 auth_provider: "firebase",
             });
         }
 
-        
+        /**
+         * AUTO ASSIGN ROLE CUSTOMER
+         */
+
+        const roles = await user.getRoles();
+
+        if (!roles || roles.length === 0) {
+            const customerRole = await db.Role.findOne({
+                where: { name: "customer" },
+            });
+
+            if (customerRole) {
+                await user.addRole(customerRole);
+            }
+        }
+
+        /**
+         * LOAD USER FULL DATA
+         */
+
         const fullUser = await db.User.findOne({
             where: { user_id: user.user_id },
             attributes: { exclude: ["password"] },
@@ -699,17 +681,18 @@ let firebaseLogin = async (idToken) => {
             ],
         });
 
-        
+        /**
+         * MERGE PERMISSIONS
+         */
+
         const permissionMap = new Map();
 
-        
         fullUser.roles.forEach((role) => {
             role.permissions.forEach((p) => {
                 permissionMap.set(p.action, true);
             });
         });
 
-        
         fullUser.permissionOverrides.forEach((o) => {
             permissionMap.set(o.Permission.action, o.allowed);
         });
@@ -718,32 +701,36 @@ let firebaseLogin = async (idToken) => {
             .filter(([_, allowed]) => allowed)
             .map(([action]) => action);
 
-        
+        /**
+         * CREATE JWT
+         */
+
         const token = jwt.sign(
             {
                 user_id: fullUser.user_id,
                 email: fullUser.email,
-                
             },
             process.env.JWT_SECRET,
             { expiresIn: "7d" },
         );
-        
+
         const dashboardPermissions = finalPermissions.filter((p) =>
             p.startsWith("dashboard:"),
         );
-        
+
         const plain = fullUser.toJSON();
 
         plain.permissions = dashboardPermissions;
         plain.roles = plain.roles.map((r) => r.name);
 
-        
         delete plain.permissionOverrides;
+
         await db.User.update(
             { last_login_at: new Date(), last_seen_at: new Date() },
             { where: { user_id: fullUser.user_id } },
         );
+
+        console.log(fullUser, "logged in with Firebase");
 
         return {
             errCode: 0,
@@ -770,14 +757,8 @@ let createUserByAdminOrManager = (permission, data) => {
                 });
             }
 
-            
-            
-            
             let assignedRole = data.role;
 
-            
-            
-            
             const existing = await db.User.findOne({
                 where: { email: data.email },
             });
@@ -801,9 +782,6 @@ let createUserByAdminOrManager = (permission, data) => {
                 status: "active",
             });
 
-            
-            
-            
             const role = await db.Role.findOne({
                 where: { name: assignedRole },
             });
