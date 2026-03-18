@@ -66,7 +66,9 @@ const createPet = async (user, data) => {
 
         return { errCode: 0, pet: createdPet };
     } catch (error) {
-        await t.rollback();
+        try {
+            await t.rollback();
+        } catch {}
         return { errCode: 1, errMessage: error.message };
     }
 };
@@ -105,6 +107,8 @@ const getPetById = async (user, pet_id) => {
 
 const updatePet = async (user, pet_id, data) => {
     const t = await db.sequelize.transaction();
+    let removedMedia = [];
+
     try {
         const pet = await db.Pet.findByPk(pet_id, { transaction: t });
 
@@ -119,7 +123,7 @@ const updatePet = async (user, pet_id, data) => {
         }
 
         const oldMedia = await db.Media.findAll({
-            where: { entity_id: pet_id, entity_type: "pet" },
+            where: { entity_id: String(pet_id), entity_type: "pet" },
             transaction: t,
         });
 
@@ -143,17 +147,22 @@ const updatePet = async (user, pet_id, data) => {
                 "pet",
                 t,
             );
+
+            const newUrls = new Set(data.media.map((m) => m.url));
+            removedMedia = oldMedia.filter((m) => !newUrls.has(m.url));
         }
 
         await t.commit();
 
-        // Xóa file vật lý của những ảnh không còn dùng nữa
-        if (Array.isArray(data.media)) {
-            const newUrls = new Set(data.media.map((m) => m.url));
-            const removedMedia = oldMedia.filter((m) => !newUrls.has(m.url));
-
-            for (const media of removedMedia) {
+        for (const media of removedMedia) {
+            try {
                 await safeUnlinkByUrl(media.url);
+            } catch (err) {
+                console.error(
+                    "❌ Failed to delete old pet image:",
+                    media.url,
+                    err.message,
+                );
             }
         }
 
@@ -163,52 +172,53 @@ const updatePet = async (user, pet_id, data) => {
 
         return { errCode: 0, pet: updatedPet };
     } catch (error) {
-        await t.rollback();
+        try {
+            await t.rollback();
+        } catch {}
         return { errCode: 1, errMessage: error.message };
     }
 };
 
 const deletePet = async (user, pet_id) => {
-    const t = await db.sequelize.transaction();
     try {
-        const pet = await db.Pet.findByPk(pet_id, { transaction: t });
-
+        const pet = await db.Pet.findByPk(pet_id);
         if (!pet) {
-            await t.rollback();
             return { errCode: 1, errMessage: "Pet not found" };
         }
 
         if (user.role === "customer" && pet.owner_id !== user.user_id) {
-            await t.rollback();
             return { errCode: 2, errMessage: "Permission denied" };
         }
 
-        const medias = await db.Media.findAll({
-            where: { entity_id: pet_id, entity_type: "pet" },
-            transaction: t,
+        const mediaList = await db.Media.findAll({
+            where: { entity_type: "pet", entity_id: String(pet_id) },
         });
+
+        for (const media of mediaList) {
+            try {
+                await safeUnlinkByUrl(media.url);
+            } catch (err) {
+                console.error(
+                    "❌ Failed to delete pet image:",
+                    media.url,
+                    err.message,
+                );
+            }
+        }
 
         await db.Media.destroy({
-            where: { entity_id: pet_id, entity_type: "pet" },
-            transaction: t,
+            where: { entity_type: "pet", entity_id: String(pet_id) },
+            force: true,
         });
 
-        await pet.destroy({ transaction: t });
-
-        await t.commit();
-
-        // Xóa file vật lý sau khi commit DB thành công
-        for (const media of medias) {
-            await safeUnlinkByUrl(media.url);
-        }
+        await pet.destroy({ force: true });
 
         return { errCode: 0, errMessage: "Pet deleted successfully" };
     } catch (error) {
-        await t.rollback();
+        console.error("❌ deletePet error:", error);
         return { errCode: 1, errMessage: error.message };
     }
 };
-
 export default {
     getAllPets,
     createPet,

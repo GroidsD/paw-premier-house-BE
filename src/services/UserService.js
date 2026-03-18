@@ -183,7 +183,7 @@ let registerUser = (data) => {
 
             const hashed = await hashPassword(data.password);
 
-            console.log(data);
+            // console.log(data);
 
             const newUser = await db.User.create({
                 user_id: data.firebaseUid || null,
@@ -205,8 +205,8 @@ let registerUser = (data) => {
                     errMessage: "Default role not found",
                 });
             }
-            console.log(newUser.user_id);
-            console.log(defaultRole);
+            // console.log(newUser.user_id);
+            // console.log(defaultRole);
 
             await db.UserRole.create({
                 user_id: newUser.user_id,
@@ -311,7 +311,7 @@ let updateUser = (user_id, data) => {
 
 let deleteUserById = async (user_id) => {
     try {
-        console.log("SERVICE DELETE → id:", user_id);
+        // console.log("SERVICE DELETE → id:", user_id);
 
         const user = await db.User.findByPk(user_id);
 
@@ -321,7 +321,7 @@ let deleteUserById = async (user_id) => {
 
         await user.update({ isActive: false });
 
-        console.log("UPDATED USER:", user.toJSON());
+        // console.log("UPDATED USER:", user.toJSON());
 
         return {
             errCode: 0,
@@ -343,7 +343,7 @@ let hardDeleteUserById = async (user_id) => {
         if (user.auth_provider.toLowerCase() === "firebase") {
             try {
                 await admin.auth().deleteUser(user_id);
-                console.log("Firebase user deleted:", user_id);
+                // console.log("Firebase user deleted:", user_id);
             } catch (firebaseError) {
                 if (firebaseError.code === "auth/user-not-found") {
                     console.warn(
@@ -731,7 +731,7 @@ let firebaseLogin = async (idToken) => {
             { where: { user_id: fullUser.user_id } },
         );
 
-        console.log(fullUser, "logged in with Firebase");
+        // console.log(fullUser, "logged in with Firebase");
 
         return {
             errCode: 0,
@@ -748,8 +748,8 @@ let firebaseLogin = async (idToken) => {
 let createUserByAdminOrManager = (permission, data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log(permission);
-            console.log(data);
+            // console.log(permission);
+            // console.log(data);
 
             if (!data.email || !data.password || !data.fullname) {
                 return resolve({
