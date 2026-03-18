@@ -257,6 +257,7 @@ let updateUser = (user_id, data) => {
                     email: data.email ?? user.email,
                     phone: data.phone ?? user.phone,
                     address: data.address ?? user.address,
+                    dob: data.dob ?? user.dob,
                     gender: data.gender ?? user.gender,
                     dob: data.dob ?? user.dob,
                     status: data.status ?? user.status,
