@@ -10,12 +10,16 @@ const createBooking = async (user_id, data) => {
     try {
         const bookingCode = await generateBookingCode();
 
+        const totalPrice = data.total_price || 0;
+
         const booking = await db.Booking.create(
             {
                 booking_code: bookingCode,
                 customer_id: user_id,
                 pet_id: data.pet_id,
                 date: data.date,
+                original_price: totalPrice,
+                total_price: totalPrice, // Initial total, will be updated after voucher
                 status: "pending",
                 check_in: data.check_in || null,
                 check_out: data.check_out || null,
@@ -25,9 +29,9 @@ const createBooking = async (user_id, data) => {
             { transaction: t },
         );
 
-        let totalPrice = 0;
-
+        // Create booking items from frontend data
         for (const item of data.services) {
+            // Verify service exists
             const service = await db.Service.findOne({
                 where: {
                     service_id: item.service_id,
@@ -39,13 +43,16 @@ const createBooking = async (user_id, data) => {
 
             if (!service) throw new Error("Service không tồn tại");
 
-            totalPrice += Number(service.price);
+            // Use price from frontend if provided, otherwise use service price
+            const itemPrice = item.price
+                ? Number(item.price)
+                : Number(service.price);
 
             await db.BookingItem.create(
                 {
                     booking_id: booking.booking_id,
                     service_id: service.service_id,
-                    price: service.price,
+                    price: itemPrice,
                 },
                 { transaction: t },
             );
@@ -62,7 +69,6 @@ const createBooking = async (user_id, data) => {
 
         await booking.update(
             {
-                original_price: totalPrice,
                 discount,
                 total_price: finalTotal,
                 voucher_id: voucher ? voucher.voucher_id : null,
