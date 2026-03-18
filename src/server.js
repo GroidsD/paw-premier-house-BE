@@ -90,6 +90,10 @@ app.use(
     "/uploadImageServices",
     express.static(path.join(__dirname, "public/uploadImageServices")),
 );
+app.use(
+    "/uploadImagePets",
+    express.static(path.join(__dirname, "public/uploadImagePets")),
+);
 
 app.use(cookieParser());
 app.use((err, req, res, next) => {
