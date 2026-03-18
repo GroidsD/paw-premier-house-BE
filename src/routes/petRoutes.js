@@ -3,6 +3,7 @@ import petController from "../controllers/petController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
 import rbacMiddleware from "../middleware/rbacMiddleware.js";
+import { petMediaUpload } from "../middleware/uploadImagePets.js";
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.post(
     permissionMiddleware({
         all: ["pet:create"],
     }),
+    petMediaUpload,
     petController.createPet,
 );
 
@@ -54,6 +56,7 @@ router.put(
     permissionMiddleware({
         all: ["pet:update"],
     }),
+    petMediaUpload,
     petController.updatePet,
 );
 
