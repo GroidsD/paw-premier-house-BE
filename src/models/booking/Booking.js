@@ -1,6 +1,17 @@
 "use strict";
 const { Model } = require("sequelize");
 
+const randomString = (length = 6) => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    return result;
+};
+
 module.exports = (sequelize, DataTypes) => {
     class Booking extends Model {
         static associate(models) {
@@ -47,59 +58,37 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
                 allowNull: false,
             },
+            booking_code: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                unique: true,
+            },
             customer_id: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                references: {
-                    model: "users",
-                    key: "user_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
             },
             staff_id: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                references: {
-                    model: "users",
-                    key: "user_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
             },
             pet_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
-                references: {
-                    model: "pets",
-                    key: "pet_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
             },
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
             },
-
             discount: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
                 defaultValue: 0,
             },
-
             voucher_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
-                references: {
-                    model: "vouchers",
-                    key: "voucher_id",
-                },
-                onUpdate: "CASCADE",
-                onDelete: "SET NULL",
             },
-
             total_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
@@ -126,6 +115,15 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DATE,
                 allowNull: true,
             },
+            check_in_date: {
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
+
+            check_out_date: {
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
             cancelled_by: {
                 type: DataTypes.ENUM("customer", "staff", "system"),
                 allowNull: true,
@@ -134,7 +132,6 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
@@ -153,6 +150,37 @@ module.exports = (sequelize, DataTypes) => {
             createdAt: "created_at",
             updatedAt: "updated_at",
             hooks: {
+                beforeValidate: async (booking) => {
+                    if (booking.booking_code) return;
+
+                    let bookingCode;
+                    let exists = true;
+                    let retry = 0;
+
+                    while (exists && retry < 10) {
+                        const now = new Date();
+                        const yyyy = now.getFullYear();
+                        const mm = String(now.getMonth() + 1).padStart(2, "0");
+                        const dd = String(now.getDate()).padStart(2, "0");
+
+                        bookingCode = `BK${yyyy}${mm}${dd}${randomString(6)}`;
+
+                        const found = await sequelize.models.Booking.findOne({
+                            where: { booking_code: bookingCode },
+                            attributes: ["booking_id"],
+                        });
+
+                        exists = !!found;
+                        retry++;
+                    }
+
+                    if (exists) {
+                        throw new Error("Không thể tạo booking code duy nhất");
+                    }
+
+                    booking.booking_code = bookingCode;
+                },
+
                 afterUpdate: async (booking, options) => {
                     const RevenueTransaction =
                         sequelize.models.RevenueTransaction;
@@ -164,7 +192,6 @@ module.exports = (sequelize, DataTypes) => {
                     const discountAmount = Number(booking.discount || 0);
                     const netAmount = Number(booking.total_price || 0);
 
-                    // Từ trạng thái khác => completed
                     if (
                         prevStatus !== "completed" &&
                         newStatus === "completed"
@@ -195,7 +222,6 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    // Từ completed => cancelled
                     if (
                         prevStatus === "completed" &&
                         newStatus === "cancelled"

@@ -3,19 +3,24 @@ import {
     applyVoucherForBooking,
     refundVoucherForBooking,
 } from "../helper/voucher.js";
-
+import generateBookingCode from "../utils/generateBookingCode.js";
 const createBooking = async (user_id, data) => {
     const t = await db.sequelize.transaction();
 
     try {
+        const bookingCode = await generateBookingCode();
+
         const booking = await db.Booking.create(
             {
+                booking_code: bookingCode,
                 customer_id: user_id,
                 pet_id: data.pet_id,
                 date: data.date,
                 status: "pending",
                 check_in: data.check_in || null,
                 check_out: data.check_out || null,
+                check_in_date: data.check_in_date || null,
+                check_out_date: data.check_out_date || null,
             },
             { transaction: t },
         );
@@ -29,6 +34,7 @@ const createBooking = async (user_id, data) => {
                     isActive: true,
                     isDeleted: false,
                 },
+                transaction: t,
             });
 
             if (!service) throw new Error("Service không tồn tại");
@@ -57,7 +63,7 @@ const createBooking = async (user_id, data) => {
         await booking.update(
             {
                 original_price: totalPrice,
-                discount: discount,
+                discount,
                 total_price: finalTotal,
                 voucher_id: voucher ? voucher.voucher_id : null,
             },
@@ -78,16 +84,54 @@ const createBooking = async (user_id, data) => {
             await voucher.increment("used_count", { transaction: t });
         }
 
-        await booking.reload({ transaction: t });
-        await t.commit();
+        const fullBooking = await db.Booking.findByPk(booking.booking_id, {
+            transaction: t,
+            include: [
+                {
+                    model: db.Pet,
+                    as: "pet",
+                    attributes: ["pet_id", "name", "species", "breed"],
+                },
+                {
+                    model: db.BookingItem,
+                    as: "bookingItems",
+                    include: [
+                        {
+                            model: db.Service,
+                            as: "service",
+                            attributes: [
+                                "service_id",
+                                "name",
+                                "price",
+                                "duration",
+                                "description",
+                            ],
+                        },
+                    ],
+                },
+                {
+                    model: db.Voucher,
+                    as: "voucher",
+                    attributes: [
+                        "voucher_id",
+                        "code",
+                        "discount_type",
+                        "discount",
+                    ],
+                },
+            ],
+        });
 
         const user = await db.User.findByPk(user_id, {
+            transaction: t,
             attributes: ["fullname", "email"],
         });
 
+        await t.commit();
+
         return {
             errCode: 0,
-            booking,
+            booking: fullBooking,
             user: user
                 ? {
                       fullname: user.fullname,
@@ -96,7 +140,10 @@ const createBooking = async (user_id, data) => {
                 : null,
         };
     } catch (error) {
-        await t.rollback();
+        if (!t.finished) {
+            await t.rollback();
+        }
+
         return {
             errCode: 1,
             errMessage: error.message,

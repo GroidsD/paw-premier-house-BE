@@ -10,6 +10,12 @@ module.exports = {
                 allowNull: false,
             },
 
+            booking_code: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: true,
+            },
+
             customer_id: {
                 type: Sequelize.STRING,
                 allowNull: true,
@@ -34,6 +40,11 @@ module.exports = {
                 onDelete: "SET NULL",
             },
 
+            date: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+
             check_in: {
                 type: Sequelize.DATE,
                 allowNull: true,
@@ -41,6 +52,16 @@ module.exports = {
 
             check_out: {
                 type: Sequelize.DATE,
+                allowNull: true,
+            },
+
+            check_in_date: {
+                type: Sequelize.DATEONLY,
+                allowNull: true,
+            },
+
+            check_out_date: {
+                type: Sequelize.DATEONLY,
                 allowNull: true,
             },
 
@@ -88,11 +109,6 @@ module.exports = {
             cancel_reason: {
                 type: Sequelize.STRING,
                 allowNull: true,
-            },
-
-            date: {
-                type: Sequelize.DATE,
-                allowNull: false,
             },
 
             created_at: {

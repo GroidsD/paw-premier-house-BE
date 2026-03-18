@@ -1,8 +1,7 @@
 import BookingService from "../services/BookingService.js";
 import buildUrlEmail from "../utils/buildUrlEmail.js";
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
-import { sendBookingEmail } from "../services/EmailTemplateService.js";
-
+const { sendBookingEmail } = require("../services/BookingEmailService.js");
 const verifyBooking = async (req, res) => {
     try {
         const { token, bookingId } = req.body;
