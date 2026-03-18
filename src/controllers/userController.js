@@ -35,8 +35,8 @@ let registerUser = async (req, res) => {
 };
 
 let updateUser = async (req, res) => {
-    console.log(" req.body:", req.body);
-    console.log(" req.file:", req.file);
+    // console.log(" req.body:", req.body);
+    // console.log(" req.file:", req.file);
 
     try {
         const { user_id, ...data } = req.body;
@@ -113,7 +113,7 @@ let logout = async (req, res) => {
 let getUsersByRole = async (req, res) => {
     try {
         const { role } = req.query;
-        console.log(role);
+        // console.log(role);
 
         const result = await userService.getUsersByRole(role);
         return res.status(200).json(result);

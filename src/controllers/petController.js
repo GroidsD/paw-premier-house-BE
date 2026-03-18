@@ -13,20 +13,15 @@ const getAllPets = async (req, res) => {
 };
 
 const createPet = async (req, res) => {
-    console.log("📡 createPet controller called");
-    console.log("👤 User info:", req.user);
-    console.log("📝 Request body:", req.body);
-    console.log("📁 Uploaded files:", req.files);
-    
     // Handle uploaded files
     const petData = { ...req.body };
     if (req.files && req.files.length > 0) {
-        petData.media = req.files.map(file => ({
+        petData.media = req.files.map((file) => ({
             url: `/uploadImagePets/${file.filename}`,
-            type: 'image'
+            type: "image",
         }));
     }
-    
+
     const result = await PetService.createPet(req.user, petData);
     console.log("📤 Result from service:", result);
     return res.status(200).json(result);
@@ -43,26 +38,21 @@ const getPetById = async (req, res) => {
 };
 
 const updatePet = async (req, res) => {
-    console.log("📡 updatePet controller called");
-    console.log("👤 User info:", req.user);
-    console.log("📝 Request body:", req.body);
-    console.log("📁 Uploaded files:", req.files);
-    
     // Handle uploaded files
     const petData = { ...req.body };
     if (req.files && req.files.length > 0) {
-        petData.media = req.files.map(file => ({
+        petData.media = req.files.map((file) => ({
             url: `/uploadImagePets/${file.filename}`,
-            type: 'image'
+            type: "image",
         }));
     }
-    
+
     const result = await PetService.updatePet(
         req.user,
         petData.pet_id,
-        petData
+        petData,
     );
-    console.log("📤 Result from service:", result);
+    console.log(" Result from service:", result);
     return res.status(200).json(result);
 };
 
