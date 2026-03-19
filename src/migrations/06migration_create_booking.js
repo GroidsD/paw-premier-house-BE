@@ -54,17 +54,10 @@ module.exports = {
                 type: Sequelize.DATE,
                 allowNull: true,
             },
-
-            check_in_date: {
-                type: Sequelize.DATEONLY,
+            note: {
+                type: Sequelize.TEXT,
                 allowNull: true,
             },
-
-            check_out_date: {
-                type: Sequelize.DATEONLY,
-                allowNull: true,
-            },
-
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),
                 allowNull: false,

@@ -115,13 +115,8 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DATE,
                 allowNull: true,
             },
-            check_in_date: {
-                type: DataTypes.DATEONLY,
-                allowNull: true,
-            },
-
-            check_out_date: {
-                type: DataTypes.DATEONLY,
+            note: {
+                type: DataTypes.TEXT,
                 allowNull: true,
             },
             cancelled_by: {

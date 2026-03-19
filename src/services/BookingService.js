@@ -4,6 +4,7 @@ import {
     refundVoucherForBooking,
 } from "../helper/voucher.js";
 import generateBookingCode from "../utils/generateBookingCode.js";
+import { includes } from "lodash";
 const createBooking = async (user_id, data) => {
     const t = await db.sequelize.transaction();
 
@@ -23,8 +24,7 @@ const createBooking = async (user_id, data) => {
                 status: "pending",
                 check_in: data.check_in || null,
                 check_out: data.check_out || null,
-                check_in_date: data.check_in_date || null,
-                check_out_date: data.check_out_date || null,
+                note: data.note || null,
             },
             { transaction: t },
         );
@@ -111,6 +111,16 @@ const createBooking = async (user_id, data) => {
                                 "price",
                                 "duration",
                                 "description",
+                            ],
+                            include: [
+                                {
+                                    model: db.ServiceCategory,
+                                    as: "category",
+                                    attributes: [
+                                        "serviceCategories_id",
+                                        "type",
+                                    ],
+                                },
                             ],
                         },
                     ],
