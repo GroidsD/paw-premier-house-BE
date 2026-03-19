@@ -587,11 +587,17 @@ let changeMyPassword = (user_id, oldPassword, newPassword) => {
     });
 };
 let firebaseLogin = async (idToken) => {
+    const t = await db.sequelize.transaction();
+
     try {
         if (!idToken) {
+            await t.rollback(); // 🔥 tránh leak transaction
             return { errCode: 1, errMessage: "Missing Firebase ID token" };
         }
 
+        /**
+         * VERIFY TOKEN
+         */
         const decoded = await admin.auth().verifyIdToken(idToken);
 
         const firebaseUser = {
@@ -601,57 +607,70 @@ let firebaseLogin = async (idToken) => {
             avatar: decoded.picture || "",
         };
 
-        let user = await db.User.findByPk(firebaseUser.uid);
+        /**
+         * 🔥 SAFE FIND OR CREATE USER
+         */
+        let user;
 
-        // nếu login firebase nhưng user đã tồn tại bằng email
-        if (!user && firebaseUser.email) {
-            user = await db.User.findOne({
-                where: { email: firebaseUser.email },
-            });
-
-            if (user) {
-                await user.update({
+        try {
+            const [instance] = await db.User.findOrCreate({
+                where: { user_id: firebaseUser.uid },
+                defaults: {
                     user_id: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    fullname: firebaseUser.fullname,
+                    avatar: firebaseUser.avatar,
+                    isActive: true,
                     auth_provider: "firebase",
-                });
+                },
+                transaction: t,
+            });
+
+            user = instance;
+        } catch (err) {
+            if (err.name === "SequelizeUniqueConstraintError") {
+                // 🔥 fallback đọc ngoài transaction
+                user = await db.User.findByPk(firebaseUser.uid);
+            } else {
+                throw err;
             }
         }
 
-        // nếu chưa có user → tạo mới
         if (!user) {
-            user = await db.User.create({
-                user_id: firebaseUser.uid,
-                email: firebaseUser.email,
-                fullname: firebaseUser.fullname,
-                avatar: firebaseUser.avatar,
-                status: "active",
-                isActive: true,
-                auth_provider: "firebase",
-            });
+            throw new Error("User is null after findOrCreate");
         }
 
         /**
-         * AUTO ASSIGN ROLE CUSTOMER
+         * 🔥 ASSIGN ROLE (SAFE)
          */
+        const customerRole = await db.Role.findOne({
+            where: { name: "customer" },
+            transaction: t,
+        });
 
-        const roles = await user.getRoles();
-
-        if (!roles || roles.length === 0) {
-            const customerRole = await db.Role.findOne({
-                where: { name: "customer" },
-            });
-
-            if (customerRole) {
-                await user.addRole(customerRole);
+        if (customerRole) {
+            try {
+                await user.addRole(customerRole, {
+                    transaction: t,
+                    ignoreDuplicates: true, // 🔥 tránh duplicate
+                });
+            } catch (err) {
+                if (err.name !== "SequelizeUniqueConstraintError") {
+                    throw err;
+                }
             }
         }
 
         /**
-         * LOAD USER FULL DATA
+         * 🔥 COMMIT TRƯỚC
          */
+        await t.commit();
 
+        /**
+         * LOAD FULL USER DATA
+         */
         const fullUser = await db.User.findOne({
-            where: { user_id: user.user_id },
+            where: { user_id: firebaseUser.uid },
             attributes: { exclude: ["password"] },
             include: [
                 {
@@ -682,20 +701,25 @@ let firebaseLogin = async (idToken) => {
             ],
         });
 
+        if (!fullUser) {
+            throw new Error("Cannot load full user after login");
+        }
+
         /**
          * MERGE PERMISSIONS
          */
-
         const permissionMap = new Map();
 
-        fullUser.roles.forEach((role) => {
-            role.permissions.forEach((p) => {
+        (fullUser.roles || []).forEach((role) => {
+            (role.permissions || []).forEach((p) => {
                 permissionMap.set(p.action, true);
             });
         });
 
-        fullUser.permissionOverrides.forEach((o) => {
-            permissionMap.set(o.Permission.action, o.allowed);
+        (fullUser.permissionOverrides || []).forEach((o) => {
+            if (o.Permission) {
+                permissionMap.set(o.Permission.action, o.allowed);
+            }
         });
 
         const finalPermissions = [...permissionMap.entries()]
@@ -705,7 +729,6 @@ let firebaseLogin = async (idToken) => {
         /**
          * CREATE JWT
          */
-
         const token = jwt.sign(
             {
                 user_id: fullUser.user_id,
@@ -715,6 +738,9 @@ let firebaseLogin = async (idToken) => {
             { expiresIn: "7d" },
         );
 
+        /**
+         * FORMAT RESPONSE
+         */
         const dashboardPermissions = finalPermissions.filter((p) =>
             p.startsWith("dashboard:"),
         );
@@ -722,16 +748,20 @@ let firebaseLogin = async (idToken) => {
         const plain = fullUser.toJSON();
 
         plain.permissions = dashboardPermissions;
-        plain.roles = plain.roles.map((r) => r.name);
+        plain.roles = (plain.roles || []).map((r) => r.name);
 
         delete plain.permissionOverrides;
 
+        /**
+         * UPDATE LAST LOGIN (không cần transaction)
+         */
         await db.User.update(
-            { last_login_at: new Date(), last_seen_at: new Date() },
+            {
+                last_login_at: new Date(),
+                last_seen_at: new Date(),
+            },
             { where: { user_id: fullUser.user_id } },
         );
-
-        // console.log(fullUser, "logged in with Firebase");
 
         return {
             errCode: 0,
@@ -740,8 +770,13 @@ let firebaseLogin = async (idToken) => {
             token,
         };
     } catch (error) {
+        await t.rollback();
         console.error("Firebase login error:", error);
-        return { errCode: -1, errMessage: "Firebase login failed" };
+
+        return {
+            errCode: -1,
+            errMessage: error.message || "Firebase login failed",
+        };
     }
 };
 
@@ -780,7 +815,6 @@ let createUserByAdminOrManager = (permission, data) => {
                 fullname: data.fullname,
                 phone: data.phone || "",
                 address: data.address || "",
-                status: "active",
             });
 
             const role = await db.Role.findOne({
