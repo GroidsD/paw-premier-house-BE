@@ -8,7 +8,7 @@ const verifyBooking = async (req, res) => {
 
         const decoded = verifyToken(token);
 
-        // kiểm tra bookingId trong token
+        // check bookingId
         if (Number(decoded.type) !== Number(bookingId)) {
             return res.status(400).json({
                 errCode: 1,
@@ -27,7 +27,7 @@ const verifyBooking = async (req, res) => {
 
         const booking = bookingResult.data;
 
-        // kiểm tra userId trong token
+        // check user
         if (decoded.userId !== booking.customer_id) {
             return res.status(403).json({
                 errCode: 1,
@@ -35,10 +35,20 @@ const verifyBooking = async (req, res) => {
             });
         }
 
+        //  CHỖ QUAN TRỌNG: update status
+        const updateResult = await BookingService.updateBookingStatus({
+            bookingId,
+            status: "confirmed",
+        });
+
+        if (updateResult.errCode !== 0) {
+            return res.status(400).json(updateResult);
+        }
+
         return res.status(200).json({
             errCode: 0,
-            message: "Booking confirmed",
-            booking,
+            message: "Booking confirmed successfully",
+            booking: updateResult,
         });
     } catch (error) {
         return res.status(400).json({
@@ -90,13 +100,15 @@ const getAllBookings = async (req, res) => {
 const updateBookingStatus = async (req, res) => {
     const { booking_id, status, staff_id } = req.body;
 
-    const result = await BookingService.updateBookingStatus(
-        booking_id,
+    const result = await BookingService.updateBookingStatus({
+        bookingId: booking_id,
         status,
-        staff_id,
-    );
+        staffId: staff_id,
+    });
+
     return res.status(200).json(result);
 };
+
 const customerCancelBooking = async (req, res) => {
     const { bookingId } = req.params;
     const { reason } = req.body;

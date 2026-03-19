@@ -121,6 +121,17 @@ const createBooking = async (user_id, data) => {
                                         "type",
                                     ],
                                 },
+                                {
+                                    model: db.Media,
+                                    as: "media",
+                                    attributes: [
+                                        "media_id",
+                                        "url",
+                                        "is_main",
+                                        "alt_text",
+                                    ],
+                                    required: false,
+                                },
                             ],
                         },
                     ],
@@ -223,23 +234,87 @@ const getAllBookings = async () => {
     return { errCode: 0, bookings };
 };
 
-const updateBookingStatus = async (id, status, staffId) => {
-    const booking = await db.Booking.findByPk(id);
-    if (!booking) {
-        return { errCode: 1, errMessage: "Booking not found" };
+const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
+    const t = await db.sequelize.transaction();
+
+    try {
+        const booking = await db.Booking.findByPk(bookingId, {
+            transaction: t,
+        });
+
+        if (!booking) {
+            throw new Error("Booking không tồn tại");
+        }
+
+        const currentStatus = booking.status;
+
+        const validStatuses = [
+            "pending",
+            "confirmed",
+            "assigned",
+            "cancelled",
+            "completed",
+        ];
+
+        if (!validStatuses.includes(status)) {
+            throw new Error("Trạng thái không hợp lệ");
+        }
+
+        // Rule chuyển trạng thái
+        const allowedTransitions = {
+            pending: ["confirmed", "assigned", "cancelled"],
+            confirmed: ["assigned", "cancelled"],
+            assigned: ["completed", "cancelled"],
+            completed: [],
+            cancelled: [],
+        };
+
+        if (!allowedTransitions[currentStatus].includes(status)) {
+            throw new Error(
+                `Không thể chuyển từ ${currentStatus} sang ${status}`,
+            );
+        }
+
+        const updateData = {
+            status,
+        };
+
+        // Gán staff khi assign
+        if (status === "assigned") {
+            if (!staffId) {
+                throw new Error("Cần staffId để assign booking");
+            }
+            updateData.staff_id = staffId;
+        }
+
+        // Khi completed thì set check_out nếu chưa có
+        if (status === "completed") {
+            updateData.check_out = booking.check_out || new Date();
+        }
+
+        // Khi assigned có thể set check_in nếu muốn
+        if (status === "assigned") {
+            updateData.check_in = booking.check_in || new Date();
+        }
+
+        await booking.update(updateData, { transaction: t });
+
+        await t.commit();
+
+        return {
+            errCode: 0,
+            errMessage: "Cập nhật trạng thái booking thành công",
+            booking,
+        };
+    } catch (error) {
+        await t.rollback();
+
+        return {
+            errCode: 1,
+            errMessage: error.message,
+        };
     }
-
-    await booking.update({
-        status,
-        staff_id: staffId,
-    });
-
-    return {
-        errCode: 0,
-        errMessage: "Booking updated successfully",
-    };
 };
-
 const cancelBooking = async ({
     bookingId,
     cancelledBy,
@@ -273,7 +348,7 @@ const cancelBooking = async ({
 
         await booking.update(
             {
-                status: "rejected",
+                status: "cancelled",
                 cancelled_by: cancelledBy,
                 cancel_reason: cancelReason,
             },
