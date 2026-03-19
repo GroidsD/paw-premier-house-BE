@@ -8,11 +8,11 @@ const verifyBooking = async (req, res) => {
 
         const decoded = verifyToken(token);
 
-        // check bookingId
+        // check bookingId trong token
         if (Number(decoded.type) !== Number(bookingId)) {
             return res.status(400).json({
                 errCode: 1,
-                message: "Invalid booking",
+                errMessage: "Invalid booking",
             });
         }
 
@@ -21,7 +21,7 @@ const verifyBooking = async (req, res) => {
         if (bookingResult.errCode !== 0) {
             return res.status(404).json({
                 errCode: 1,
-                message: bookingResult.errMessage,
+                errMessage: bookingResult.errMessage,
             });
         }
 
@@ -31,29 +31,42 @@ const verifyBooking = async (req, res) => {
         if (decoded.userId !== booking.customer_id) {
             return res.status(403).json({
                 errCode: 1,
-                message: "Unauthorized booking",
+                errMessage: "Unauthorized booking",
             });
         }
 
-        //  CHỖ QUAN TRỌNG: update status
+        // nếu đã confirm rồi thì trả luôn
+        if (booking.status === "confirmed") {
+            return res.status(200).json({
+                errCode: 0,
+                errMessage: "The booking was previously confirmed",
+                alreadyConfirmed: true,
+                booking,
+            });
+        }
+
         const updateResult = await BookingService.updateBookingStatus({
             bookingId,
             status: "confirmed",
         });
 
         if (updateResult.errCode !== 0) {
-            return res.status(400).json(updateResult);
+            return res.status(400).json({
+                errCode: 1,
+                errMessage: updateResult.errMessage,
+            });
         }
 
         return res.status(200).json({
             errCode: 0,
-            message: "Booking confirmed successfully",
-            booking: updateResult,
+            errMessage: "Booking confirmed successfully",
+            alreadyConfirmed: false,
+            booking: updateResult.booking,
         });
     } catch (error) {
         return res.status(400).json({
             errCode: -1,
-            message: "Token expired or invalid",
+            errMessage: "Token expired or invalid",
         });
     }
 };

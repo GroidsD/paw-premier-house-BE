@@ -260,7 +260,6 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
             throw new Error("Trạng thái không hợp lệ");
         }
 
-        // Rule chuyển trạng thái
         const allowedTransitions = {
             pending: ["confirmed", "assigned", "cancelled"],
             confirmed: ["assigned", "cancelled"],
@@ -275,36 +274,98 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
             );
         }
 
-        const updateData = {
-            status,
-        };
+        const updateData = { status };
 
-        // Gán staff khi assign
         if (status === "assigned") {
             if (!staffId) {
                 throw new Error("Cần staffId để assign booking");
             }
             updateData.staff_id = staffId;
+            updateData.check_in = booking.check_in || new Date();
         }
 
-        // Khi completed thì set check_out nếu chưa có
         if (status === "completed") {
             updateData.check_out = booking.check_out || new Date();
         }
 
-        // Khi assigned có thể set check_in nếu muốn
-        if (status === "assigned") {
-            updateData.check_in = booking.check_in || new Date();
-        }
-
         await booking.update(updateData, { transaction: t });
+
+        // query lại full data
+        const fullBooking = await db.Booking.findByPk(bookingId, {
+            transaction: t,
+            include: [
+                {
+                    model: db.User,
+                    as: "customer",
+                    attributes: ["user_id", "fullname", "email", "phone"],
+                },
+                {
+                    model: db.User,
+                    as: "staff",
+                    attributes: ["user_id", "fullname", "email", "phone"],
+                },
+                {
+                    model: db.Pet,
+                    as: "pet",
+                    attributes: ["pet_id", "name", "species", "breed"],
+                },
+                {
+                    model: db.BookingItem,
+                    as: "bookingItems",
+                    include: [
+                        {
+                            model: db.Service,
+                            as: "service",
+                            attributes: [
+                                "service_id",
+                                "name",
+                                "price",
+                                "duration",
+                                "description",
+                            ],
+                            include: [
+                                {
+                                    model: db.ServiceCategory,
+                                    as: "category",
+                                    attributes: [
+                                        "serviceCategories_id",
+                                        "type",
+                                    ],
+                                },
+                                {
+                                    model: db.Media,
+                                    as: "media",
+                                    attributes: [
+                                        "media_id",
+                                        "url",
+                                        "is_main",
+                                        "alt_text",
+                                    ],
+                                    required: false,
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    model: db.Voucher,
+                    as: "voucher",
+                    attributes: [
+                        "voucher_id",
+                        "code",
+                        "discount_type",
+                        "discount",
+                    ],
+                },
+            ],
+        });
 
         await t.commit();
 
         return {
             errCode: 0,
             errMessage: "Cập nhật trạng thái booking thành công",
-            booking,
+            booking: fullBooking,
         };
     } catch (error) {
         await t.rollback();
@@ -432,29 +493,93 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
     }
 };
 
-const getBookingById = async (id) => {
-    const booking = await db.Booking.findByPk(id, {
-        include: [
-            {
-                model: db.User,
-                as: "customer",
-                attributes: ["user_id", "fullname", "email", "phone"],
-            },
-        ],
-    });
+const getBookingById = async (bookingId) => {
+    try {
+        const booking = await db.Booking.findByPk(bookingId, {
+            include: [
+                {
+                    model: db.User,
+                    as: "customer",
+                    attributes: ["user_id", "fullname", "email", "phone"],
+                },
+                {
+                    model: db.User,
+                    as: "staff",
+                    attributes: ["user_id", "fullname", "email", "phone"],
+                },
+                {
+                    model: db.Pet,
+                    as: "pet",
+                    attributes: ["pet_id", "name", "species", "breed"],
+                },
+                {
+                    model: db.BookingItem,
+                    as: "bookingItems",
+                    include: [
+                        {
+                            model: db.Service,
+                            as: "service",
+                            attributes: [
+                                "service_id",
+                                "name",
+                                "price",
+                                "duration",
+                                "description",
+                            ],
+                            include: [
+                                {
+                                    model: db.ServiceCategory,
+                                    as: "category",
+                                    attributes: [
+                                        "serviceCategories_id",
+                                        "type",
+                                    ],
+                                },
+                                {
+                                    model: db.Media,
+                                    as: "media",
+                                    attributes: [
+                                        "media_id",
+                                        "url",
+                                        "is_main",
+                                        "alt_text",
+                                    ],
+                                    required: false,
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    model: db.Voucher,
+                    as: "voucher",
+                    attributes: [
+                        "voucher_id",
+                        "code",
+                        "discount_type",
+                        "discount",
+                    ],
+                },
+            ],
+        });
 
-    if (!booking) {
+        if (!booking) {
+            return {
+                errCode: 1,
+                errMessage: "Booking không tồn tại",
+            };
+        }
+
+        return {
+            errCode: 0,
+            data: booking,
+        };
+    } catch (error) {
         return {
             errCode: 1,
-            errMessage: "Booking not found",
+            errMessage: error.message,
         };
     }
-
-    return {
-        errCode: 0,
-        errMessage: "Get booking successfully",
-        data: booking,
-    };
 };
 
 export default {
