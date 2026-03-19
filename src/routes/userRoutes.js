@@ -33,7 +33,7 @@ let initWebRoutes = (app) => {
         authMiddleware,
         rbacMiddleware,
         permissionMiddleware({
-            all: ["rbac:role:read"],
+            all: ["user:read"],
         }),
         userController.getUsersByRole,
     );
