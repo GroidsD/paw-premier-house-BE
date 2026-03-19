@@ -268,8 +268,10 @@ const seed = async () => {
             permissions.filter((p) =>
                 [
                     "booking:create",
+                    "booking:update",
                     "booking:read",
                     "order:create",
+                    "order:update",
                     "order:read",
                     "pet:create",
                     "pet:read",
