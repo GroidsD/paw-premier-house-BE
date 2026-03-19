@@ -161,7 +161,17 @@ const assignBooking = async (req, res) => {
 
     return res.status(200).json(result);
 };
+const getBookingById = async (req, res) => {
+    const { bookingId } = req.params;
 
+    const result = await BookingService.getBookingById(bookingId);
+
+    if (result.errCode !== 0) {
+        return res.status(404).json(result);
+    }
+
+    return res.status(200).json(result);
+};
 export default {
     verifyBooking,
     createBooking,
@@ -171,4 +181,5 @@ export default {
     customerCancelBooking,
     staffCancelBooking,
     assignBooking,
+    getBookingById,
 };
