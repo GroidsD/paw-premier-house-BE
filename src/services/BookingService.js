@@ -189,10 +189,28 @@ const getMyBookings = async (user_id) => {
                     {
                         model: db.Service,
                         as: "service",
+                        attributes: [
+                            "service_id",
+                            "name",
+                            "price",
+                            "duration",
+                            "description",
+                        ],
                         include: [
                             {
                                 model: db.ServiceCategory,
                                 as: "category",
+                            },
+                            {
+                                model: db.Media,
+                                as: "media",
+                                attributes: [
+                                    "media_id",
+                                    "url",
+                                    "is_main",
+                                    "alt_text",
+                                ],
+                                required: false,
                             },
                         ],
                     },
