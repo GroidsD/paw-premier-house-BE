@@ -5,7 +5,16 @@ import permissionMiddleware from "../middleware/permissionMiddleware.js";
 import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
-
+router.get(
+    "/api/booking/get-all",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["booking:read"],
+        any: ["dashboard:admin", "dashboard:staff", "dashboard:manager"],
+    }),
+    bookingController.getAllBookings,
+);
 router.post("/api/booking/verify", bookingController.verifyBooking);
 
 router.post(
@@ -35,16 +44,6 @@ router.get(
         all: ["booking:read"],
     }),
     bookingController.getBookingById,
-);
-router.get(
-    "/api/booking/get-all",
-    authMiddleware,
-    rbacMiddleware,
-    permissionMiddleware({
-        all: ["booking:read"],
-        any: ["dashboard:admin", "dashboard:staff", "dashboard:manager"],
-    }),
-    bookingController.getAllBookings,
 );
 
 router.put(
