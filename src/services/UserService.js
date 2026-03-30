@@ -643,21 +643,16 @@ let firebaseLogin = async (idToken) => {
         /**
          * 🔥 ASSIGN ROLE (SAFE)
          */
-        const customerRole = await db.Role.findOne({
-            where: { name: "customer" },
-            transaction: t,
-        });
+        const roles = await user.getRoles({ transaction: t });
 
-        if (customerRole) {
-            try {
-                await user.addRole(customerRole, {
-                    transaction: t,
-                    ignoreDuplicates: true, // 🔥 tránh duplicate
-                });
-            } catch (err) {
-                if (err.name !== "SequelizeUniqueConstraintError") {
-                    throw err;
-                }
+        if (!roles || roles.length === 0) {
+            const customerRole = await db.Role.findOne({
+                where: { name: "customer" },
+                transaction: t,
+            });
+
+            if (customerRole) {
+                await user.addRole(customerRole, { transaction: t });
             }
         }
 
