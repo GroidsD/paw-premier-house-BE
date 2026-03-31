@@ -228,7 +228,18 @@ const getAllBookings = async () => {
         include: [
             { model: db.User, as: "customer" },
             { model: db.User, as: "staff" },
-            { model: db.Pet, as: "pet" },
+            {
+                model: db.Pet,
+                as: "pet",
+                include: [
+                    {
+                        model: db.Media,
+                        as: "media",
+                        attributes: ["media_id", "url", "is_main", "alt_text"],
+                        required: false,
+                    },
+                ],
+            },
             {
                 model: db.BookingItem,
                 as: "bookingItems",
@@ -275,6 +286,8 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
         ];
 
         if (!validStatuses.includes(status)) {
+            // console.log(status);
+
             throw new Error("Trạng thái không hợp lệ");
         }
 
@@ -286,7 +299,7 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
             cancelled: [],
         };
 
-        if (!allowedTransitions[currentStatus].includes(status)) {
+        if (!allowedTransitions[currentStatus]?.includes(status)) {
             throw new Error(
                 `Không thể chuyển từ ${currentStatus} sang ${status}`,
             );
@@ -308,7 +321,6 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
 
         await booking.update(updateData, { transaction: t });
 
-        // query lại full data
         const fullBooking = await db.Booking.findByPk(bookingId, {
             transaction: t,
             include: [
