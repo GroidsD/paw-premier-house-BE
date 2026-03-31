@@ -1053,7 +1053,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "1",
-                url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=80",
+                url: "https://iandloveandyou.com/cdn/shop/files/818336012297_-_Naked_Essentials_Puppy_Chicken_Sweet_Potato_4_lb_-_FRONT_1.png?v=1762441431&width=1050",
                 is_main: true,
                 alt_text: "Puppy Care Nutritional Kibble",
                 created_at: now,
@@ -1062,7 +1062,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "2",
-                url: "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=800&q=80",
+                url: "https://www.acana.com/dw/image/v2/BFDW_PRD/on/demandware.static/-/Sites-acana-na-master-catalog/en_CA/dw61aeb34d/ACA%20Premium%20Pate%20Dog%20Food/ACANA%20Premium%20Pate%20Beef%20Recipe%20Wet%20Dog%20Front%2012.8oz%20USA-1.png?sw=450",
                 is_main: true,
                 alt_text: "Premium Beef Dog Pate",
                 created_at: now,
@@ -1071,7 +1071,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "3",
-                url: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=800&q=80",
+                url: "https://a.assecobs.com/_img/happet/63818079-e24f-4c3a-b6b0-b057f3d56e65/fb01-functional-dental-bone-12cm-1-pc-.jpg?w=700&org_if_sml=0",
                 is_main: true,
                 alt_text: "Dental Bone Chew",
                 created_at: now,
@@ -1080,7 +1080,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "4",
-                url: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=80",
+                url: "https://i5.walmartimages.com/seo/GR-16OZ-CHICKEN-JERKY_fbc1c7a5-02dc-4cfb-87d8-6722a5a6a955.e13bd932ec5a1bfc66874a8bc648987c.jpeg?odnHeight=2000&odnWidth=2000&odnBg=FFFFFF",
                 is_main: true,
                 alt_text: "Chicken Dog Treats",
                 created_at: now,
@@ -1089,7 +1089,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "5",
-                url: "https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&w=800&q=80",
+                url: "https://amarpet.com/_next/image?url=https%3A%2F%2Fapn081-amarpet-prod.sgp1.cdn.digitaloceanspaces.com%2F747c1bcceb6109a4ef936bc70cfe67de%2FMaxpet-Adult-Cat-Food-Chicken-1kg.png&w=640&q=75",
                 is_main: true,
                 alt_text: "Adult Tuna Mix Cat Kibble",
                 created_at: now,
@@ -1098,7 +1098,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "6",
-                url: "https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=800&q=80",
+                url: "https://www.bpetcare.com/wp-content/uploads/2024/04/KF-pate-deilight-cat-90g.png",
                 is_main: true,
                 alt_text: "Salmon Delight Cat Pate",
                 created_at: now,
@@ -1107,7 +1107,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "7",
-                url: "https://images.unsplash.com/photo-1511044568932-338cba0ad803?auto=format&fit=crop&w=800&q=80",
+                url: "https://www.whiskas.in/cdn-cgi/image/format=auto,q=90/sites/g/files/fnmzdf7971/files/2025-07/7590398-3-whiskas-nova-with-tuna-in-jelly-adult-dcr-3d-80g-fop.png",
                 is_main: true,
                 alt_text: "Tuna Cat Snack",
                 created_at: now,
@@ -1116,7 +1116,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "8",
-                url: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?auto=format&fit=crop&w=800&q=80",
+                url: "https://kitcat.com.sg/wp-content/uploads/2018/06/KITCAT-MILK-FOR-KITTENS-1536x1536.jpg",
                 is_main: true,
                 alt_text: "Kitten Nutritional Milk",
                 created_at: now,
@@ -1125,7 +1125,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "9",
-                url: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=800&q=80",
+                url: "https://cdn.shopify.com/s/files/1/1088/7528/files/brown-luxury-cat-collar-2025.jpg?v=1758498044||Brown%20Luxury%20Leather%20Cat%20Collar%20by%20Pawsome%20Couture",
                 is_main: true,
                 alt_text: "Premium Leather Pet Collar",
                 created_at: now,
@@ -1134,7 +1134,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "10",
-                url: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=800&q=80",
+                url: "https://ollydog.com/cdn/shop/files/OllyDog_Rubber_Grip_Reflective_Leash_Safety_Adventure_Carabiner_7.jpg?v=1747194162&width=1000",
                 is_main: true,
                 alt_text: "Reflective Leash",
                 created_at: now,
@@ -1143,7 +1143,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "11",
-                url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=800&q=80",
+                url: "https://i.ebayimg.com/images/g/YAwAAOSwaBNjoeTd/s-l1600.webp",
                 is_main: true,
                 alt_text: "Winter Pet Jacket",
                 created_at: now,
@@ -1161,7 +1161,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "13",
-                url: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=80",
+                url: "https://i5.walmartimages.com/seo/Dog-Squeaky-Ball-Durable-Pet-Squeak-Chew-Bouncy-Rubber-Toy-Balls-for-Small-Large-Dogs-Indestructible-Exercise-Training-Playing-3-Balls_37a5f417-6b6f-4518-9c57-9d67ebde159b.432ada1d7f638ffb076c9a824ef45f12.jpeg?odnHeight=2000&odnWidth=2000&odnBg=FFFFFF",
                 is_main: true,
                 alt_text: "Bouncy Rubber Ball",
                 created_at: now,
@@ -1170,7 +1170,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "14",
-                url: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=800&q=80",
+                url: "https://www.centinelafeed.com/on/demandware.static/-/Sites-master-centinela-product-catalog/default/dwd0179633/i/apijjhmeq__92799.jpg",
                 is_main: true,
                 alt_text: "Plush Mouse Toy",
                 created_at: now,
@@ -1179,7 +1179,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "15",
-                url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=80",
+                url: "https://i5.walmartimages.com/asr/a25d1aa3-50a3-49ce-903e-e9968380e6a9.2b79c963511dd8222ea6eac3aff80a16.jpeg?odnHeight=2000&odnWidth=2000&odnBg=FFFFFF",
                 is_main: true,
                 alt_text: "Rope Tug Toy",
                 created_at: now,
@@ -1188,7 +1188,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "16",
-                url: "https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=800&q=80",
+                url: "https://www.jacksongalaxy.com/cdn/shop/articles/20240228-IMG_2158.jpg?v=1711993337&width=2200",
                 is_main: true,
                 alt_text: "Feather Wand Cat Toy",
                 created_at: now,
@@ -1197,7 +1197,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "17",
-                url: "https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?auto=format&fit=crop&w=800&q=80",
+                url: "https://m.media-amazon.com/images/I/91HkNdBl57L._AC_SL1500_.jpg",
                 is_main: true,
                 alt_text: "Bentonite Cat Litter",
                 created_at: now,
@@ -1206,7 +1206,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "18",
-                url: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=80",
+                url: "https://www.centinelafeed.com/on/demandware.static/-/Sites-master-centinela-product-catalog/default/dwc3ba9478/k/apirr9kvn__49447.jpg",
                 is_main: true,
                 alt_text: "Deodorizing Pet Shampoo",
                 created_at: now,
@@ -1215,7 +1215,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "19",
-                url: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=80",
+                url: "https://pureandnaturalpet.com/cdn/shop/files/All_Wipes9.jpg?v=1737475448&width=2200",
                 is_main: true,
                 alt_text: "Pet Cleaning Wipes",
                 created_at: now,
@@ -1235,7 +1235,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "1",
-                url: "https://images.unsplash.com/photo-1581888227599-779811939961?auto=format&fit=crop&w=800&q=80",
+                url: "https://iandloveandyou.com/cdn/shop/files/818336012471_-_Lovingly_Simple_Lamb_Sweet_Potato_3.85_lb_-_FRONT.jpg?v=1762441423&width=1050",
                 is_main: false,
                 alt_text: "Extra image for Puppy Care Nutritional Kibble",
                 created_at: now,
@@ -1244,7 +1244,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "5",
-                url: "https://images.unsplash.com/photo-1511044568932-338cba0ad803?auto=format&fit=crop&w=800&q=80",
+                url: "https://amarpet.com/_next/image?url=https%3A%2F%2Fapn081-amarpet-prod.sgp1.cdn.digitaloceanspaces.com%2F7e3315fe390974fcf25e44a9445bd821%2FMaxPet-Adult-Cat-Food-Tuna-1kg.png&w=828&q=75",
                 is_main: false,
                 alt_text: "Extra image for Adult Tuna Mix Cat Kibble",
                 created_at: now,
@@ -1253,7 +1253,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "9",
-                url: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=80",
+                url: "https://cdn.shopify.com/s/files/1/1088/7528/files/black-luxury-cat-collar-pawsome-couture-fafafa_0542d5d5-300a-4bf4-a4b8-7d81b72267bb.jpg?v=1706011890||Black%20Luxury%20Leather%20Cat%20Collar%20by%20Pawsome%20Couture",
                 is_main: false,
                 alt_text: "Extra image for Premium Leather Pet Collar",
                 created_at: now,
@@ -1262,7 +1262,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "11",
-                url: "https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&w=800&q=80",
+                url: "https://i.ebayimg.com/images/g/YLIAAOSwCo5joeTY/s-l1600.webp",
                 is_main: false,
                 alt_text: "Extra image for Winter Pet Jacket",
                 created_at: now,
@@ -1271,7 +1271,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "17",
-                url: "https://images.unsplash.com/photo-1571566882372-1598d88abd90?auto=format&fit=crop&w=800&q=80",
+                url: "https://m.media-amazon.com/images/I/610yu6rTk+L._AC_SL1500_.jpg",
                 is_main: false,
                 alt_text: "Extra image for Bentonite Cat Litter",
                 created_at: now,
