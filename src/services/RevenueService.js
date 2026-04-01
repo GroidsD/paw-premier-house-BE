@@ -144,18 +144,20 @@ const getRevenueByPeriod = async (groupBy = "day") => {
     let orderExpr;
     const labelAlias = "label";
 
+    // --- FIX LỖI GROUP BY TẠI ĐÂY ---
     if (safeGroupBy === "week") {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%x-W%v");
-        orderExpr = fn("YEARWEEK", col("transaction_date"), 3);
+        // Sử dụng hàm tổng hợp MIN() để tương thích với chế độ only_full_group_by của MySQL
+        orderExpr = fn("YEARWEEK", fn("MIN", col("transaction_date")), 3);
     } else if (safeGroupBy === "month") {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%Y-%m");
-        orderExpr = formatExpr;
+        orderExpr = literal(labelAlias);
     } else if (safeGroupBy === "year") {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%Y");
-        orderExpr = formatExpr;
+        orderExpr = literal(labelAlias);
     } else {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%Y-%m-%d");
-        orderExpr = formatExpr;
+        orderExpr = literal(labelAlias);
     }
 
     const rows = await db.RevenueTransaction.findAll({
@@ -187,8 +189,8 @@ const getRevenueByPeriod = async (groupBy = "day") => {
                 [Op.between]: [startDate, now],
             },
         },
-        group: [literal(labelAlias)],
-        order: [[orderExpr, "ASC"]],
+        group: [literal(labelAlias)], // Group theo alias label
+        order: [[orderExpr, "ASC"]], // Order theo biểu thức đã được sửa
         raw: true,
     });
 
