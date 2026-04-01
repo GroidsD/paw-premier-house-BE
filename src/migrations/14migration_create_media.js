@@ -1,6 +1,5 @@
 "use strict";
 
-
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("media", {
@@ -22,7 +21,7 @@ module.exports = {
                 comment: "ID của đối tượng tương ứng (int hoặc uuid)",
             },
             url: {
-                type: Sequelize.STRING,
+                type: Sequelize.TEXT,
                 allowNull: false,
                 comment: "Đường dẫn ảnh hoặc file (VD: uploads/pet1.png)",
             },

@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
                 comment: "ID của đối tượng tương ứng",
             },
             url: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: false,
                 comment: "Đường dẫn ảnh hoặc file",
             },
