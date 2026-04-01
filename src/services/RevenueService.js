@@ -1,51 +1,117 @@
 import db from "../models/index.js";
-import { Op, fn, col } from "sequelize";
+import { Op, fn, col, literal } from "sequelize";
+
+const ALLOWED_GROUPS = ["day", "week", "month", "year"];
+
+const normalizeGroupBy = (groupBy = "day") =>
+    ALLOWED_GROUPS.includes(groupBy) ? groupBy : "day";
 
 const getStartOfToday = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+};
+
+const getEndOfToday = () => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d;
+};
+
+const getStartOfWeek = () => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return now;
+    const day = now.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const start = new Date(now);
+    start.setDate(now.getDate() + diff);
+    start.setHours(0, 0, 0, 0);
+    return start;
+};
+
+const getEndOfWeek = () => {
+    const start = getStartOfWeek();
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return end;
 };
 
 const getStartOfMonth = () => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    return new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+};
+
+const getEndOfMonth = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 };
 
 const getStartOfYear = () => {
     const now = new Date();
-    return new Date(now.getFullYear(), 0, 1);
+    return new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
 };
 
-const getRevenueSummary = async () => {
-    const today = getStartOfToday();
-    const month = getStartOfMonth();
-    const year = getStartOfYear();
+const getEndOfYear = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+};
 
-    const [totalRevenue, todayRevenue, monthRevenue, yearRevenue] =
-        await Promise.all([
-            db.RevenueTransaction.sum("net_amount", {
-                where: { status: "recorded" },
-            }),
-            db.RevenueTransaction.sum("net_amount", {
-                where: {
-                    status: "recorded",
-                    transaction_date: { [Op.gte]: today },
+const getDateRangeByGroup = (groupBy = "day") => {
+    const safe = normalizeGroupBy(groupBy);
+
+    if (safe === "week") {
+        return { startDate: getStartOfWeek(), endDate: getEndOfWeek() };
+    }
+    if (safe === "month") {
+        return { startDate: getStartOfMonth(), endDate: getEndOfMonth() };
+    }
+    if (safe === "year") {
+        return { startDate: getStartOfYear(), endDate: getEndOfYear() };
+    }
+
+    return { startDate: getStartOfToday(), endDate: getEndOfToday() };
+};
+
+const getChartRangeStartDate = (groupBy = "day") => {
+    const safeGroupBy = normalizeGroupBy(groupBy);
+    const now = new Date();
+
+    if (safeGroupBy === "day") {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 6);
+        start.setHours(0, 0, 0, 0);
+        return start;
+    }
+
+    if (safeGroupBy === "week") {
+        const start = new Date(getStartOfWeek());
+        start.setDate(start.getDate() - 7 * 7);
+        return start;
+    }
+
+    if (safeGroupBy === "month") {
+        return new Date(now.getFullYear(), now.getMonth() - 11, 1, 0, 0, 0, 0);
+    }
+
+    return new Date(now.getFullYear() - 4, 0, 1, 0, 0, 0, 0);
+};
+
+const getRevenueSummary = async (groupBy = "day") => {
+    const { startDate, endDate } = getDateRangeByGroup(groupBy);
+
+    const [totalRevenue, currentRevenue] = await Promise.all([
+        db.RevenueTransaction.sum("net_amount", {
+            where: { status: "recorded" },
+        }),
+        db.RevenueTransaction.sum("net_amount", {
+            where: {
+                status: "recorded",
+                transaction_date: {
+                    [Op.between]: [startDate, endDate],
                 },
-            }),
-            db.RevenueTransaction.sum("net_amount", {
-                where: {
-                    status: "recorded",
-                    transaction_date: { [Op.gte]: month },
-                },
-            }),
-            db.RevenueTransaction.sum("net_amount", {
-                where: {
-                    status: "recorded",
-                    transaction_date: { [Op.gte]: year },
-                },
-            }),
-        ]);
+            },
+        }),
+    ]);
 
     const [
         totalOrdersCompleted,
@@ -61,9 +127,7 @@ const getRevenueSummary = async () => {
 
     return {
         totalRevenue: Number(totalRevenue || 0),
-        todayRevenue: Number(todayRevenue || 0),
-        monthRevenue: Number(monthRevenue || 0),
-        yearRevenue: Number(yearRevenue || 0),
+        currentRevenue: Number(currentRevenue || 0),
         totalOrdersCompleted,
         totalBookingsCompleted,
         cancelledOrders,
@@ -72,45 +136,80 @@ const getRevenueSummary = async () => {
 };
 
 const getRevenueByPeriod = async (groupBy = "day") => {
-    const safeGroupBy = ["day", "month", "year"].includes(groupBy)
-        ? groupBy
-        : "day";
+    const safeGroupBy = normalizeGroupBy(groupBy);
+    const startDate = getChartRangeStartDate(safeGroupBy);
+    const now = new Date();
 
     let formatExpr;
+    let orderExpr;
     const labelAlias = "label";
 
-    if (safeGroupBy === "month") {
+    if (safeGroupBy === "week") {
+        formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%x-W%v");
+        orderExpr = fn("YEARWEEK", col("transaction_date"), 3);
+    } else if (safeGroupBy === "month") {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%Y-%m");
+        orderExpr = formatExpr;
     } else if (safeGroupBy === "year") {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%Y");
+        orderExpr = formatExpr;
     } else {
         formatExpr = fn("DATE_FORMAT", col("transaction_date"), "%Y-%m-%d");
+        orderExpr = formatExpr;
     }
 
     const rows = await db.RevenueTransaction.findAll({
         attributes: [
             [formatExpr, labelAlias],
-            [fn("SUM", col("net_amount")), "revenue"],
+            [
+                fn(
+                    "SUM",
+                    literal(
+                        `CASE WHEN source_type = 'order' THEN net_amount ELSE 0 END`,
+                    ),
+                ),
+                "orderRevenue",
+            ],
+            [
+                fn(
+                    "SUM",
+                    literal(
+                        `CASE WHEN source_type = 'booking' THEN net_amount ELSE 0 END`,
+                    ),
+                ),
+                "bookingRevenue",
+            ],
+            [fn("SUM", col("net_amount")), "totalRevenue"],
         ],
         where: {
             status: "recorded",
+            transaction_date: {
+                [Op.between]: [startDate, now],
+            },
         },
-        group: [formatExpr],
-        order: [[formatExpr, "ASC"]],
+        group: [literal(labelAlias)],
+        order: [[orderExpr, "ASC"]],
         raw: true,
     });
 
     return rows.map((item) => ({
         label: item[labelAlias],
-        revenue: Number(item.revenue || 0),
+        orderRevenue: Number(item.orderRevenue || 0),
+        bookingRevenue: Number(item.bookingRevenue || 0),
+        totalRevenue: Number(item.totalRevenue || 0),
     }));
 };
 
-const getRevenueBySource = async () => {
+const getRevenueBySource = async (groupBy = "day") => {
+    const { startDate, endDate } = getDateRangeByGroup(groupBy);
+
     const rows = await db.RevenueTransaction.findAll({
         attributes: ["source_type", [fn("SUM", col("net_amount")), "revenue"]],
         where: {
             status: "recorded",
+            transaction_date: {
+                [Op.between]: [startDate, endDate],
+            },
         },
         group: ["source_type"],
         raw: true,
@@ -122,12 +221,16 @@ const getRevenueBySource = async () => {
     }));
 };
 
-const getRecentTransactions = async (limit = 10) => {
+const getRecentTransactions = async (limit = 10, groupBy = "day") => {
     const safeLimit = Number(limit) > 0 ? Number(limit) : 10;
+    const { startDate, endDate } = getDateRangeByGroup(groupBy);
 
-    const rows = await db.RevenueTransaction.findAll({
+    return db.RevenueTransaction.findAll({
         where: {
             status: "recorded",
+            transaction_date: {
+                [Op.between]: [startDate, endDate],
+            },
         },
         include: [
             {
@@ -146,16 +249,16 @@ const getRecentTransactions = async (limit = 10) => {
         order: [["transaction_date", "DESC"]],
         limit: safeLimit,
     });
-
-    return rows;
 };
 
 const getDashboardData = async (groupBy = "day") => {
+    const safeGroupBy = normalizeGroupBy(groupBy);
+
     const [cards, lineChart, pieChart, recentTransactions] = await Promise.all([
-        getRevenueSummary(),
-        getRevenueByPeriod(groupBy),
-        getRevenueBySource(),
-        getRecentTransactions(10),
+        getRevenueSummary(safeGroupBy),
+        getRevenueByPeriod(safeGroupBy),
+        getRevenueBySource(safeGroupBy),
+        getRecentTransactions(10, safeGroupBy),
     ]);
 
     return {
