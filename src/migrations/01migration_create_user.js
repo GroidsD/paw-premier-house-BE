@@ -1,6 +1,5 @@
 "use strict";
 
-
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable("users", {
@@ -46,11 +45,6 @@ module.exports = {
 
             phone: {
                 type: Sequelize.STRING,
-            },
-
-            language: {
-                type: Sequelize.ENUM("vi", "en"),
-                defaultValue: "vi",
             },
 
             auth_provider: {
