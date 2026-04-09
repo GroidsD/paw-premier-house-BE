@@ -1,4 +1,4 @@
-import { Service, ServiceCategory } from "../models";
+import { Service, ServiceCategory, Media } from "../models";
 
 const findRelevantServices = async ({ message }) => {
     const services = await Service.findAll({
@@ -11,6 +11,12 @@ const findRelevantServices = async ({ message }) => {
                 model: ServiceCategory,
                 as: "category",
                 attributes: ["serviceCategories_id", "type"],
+            },
+            {
+                model: Media,
+                as: "media",
+                attributes: ["media_id", "url", "is_main", "alt_text"],
+                required: false,
             },
         ],
         limit: 5,
