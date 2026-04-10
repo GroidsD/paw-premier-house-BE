@@ -15,7 +15,6 @@ const VI_STOPWORDS = new Set([
     "xem",
     "hoi",
     "co",
-    "khong",
     "nay",
     "kia",
     "cua",
@@ -199,6 +198,20 @@ const DISCOUNT_KEYWORDS = [
     "promo",
 ];
 
+const NON_DISCOUNT_KEYWORDS = [
+    "khong giam gia",
+    "khong sale",
+    "khong khuyen mai",
+    "khong uu dai",
+    "gia goc",
+    "nguyen gia",
+    "full price",
+    "not discounted",
+    "without discount",
+    "non discount",
+    "non discounted",
+];
+
 const DOMAIN_SYNONYMS = {
     "thuc an": ["food", "kibble", "meal", "nutrition"],
     "thuc an cho meo": [
@@ -270,6 +283,9 @@ const STRONG_PHRASES = [
     "dog toy",
     "giam gia",
     "khuyen mai",
+    "khong giam gia",
+    "khong sale",
+    "gia goc",
 ];
 
 const hasVietnameseDiacritics = (text = "") => /[^\u0000-\u007f]/.test(text);
@@ -346,10 +362,27 @@ const detectPetSize = (text = "") => {
     return null;
 };
 
-const detectDiscountIntent = (text = "") =>
-    DISCOUNT_KEYWORDS.some((keyword) =>
-        normalizeText(text).includes(normalizeText(keyword)),
-    );
+const detectDiscountMode = (text = "") => {
+    const normalized = normalizeText(text);
+
+    if (
+        NON_DISCOUNT_KEYWORDS.some((keyword) =>
+            normalized.includes(normalizeText(keyword)),
+        )
+    ) {
+        return "non_discounted";
+    }
+
+    if (
+        DISCOUNT_KEYWORDS.some((keyword) =>
+            normalized.includes(normalizeText(keyword)),
+        )
+    ) {
+        return "discounted";
+    }
+
+    return null;
+};
 
 const detectProductForm = (text = "") => {
     const normalized = normalizeText(text);
@@ -405,7 +438,7 @@ const extractStrongPhrases = (normalizedText = "") =>
 const inferCategoryHints = ({
     normalized,
     petType,
-    discountOnly,
+    discountMode,
     productForm,
 }) => {
     const hints = [];
@@ -466,10 +499,15 @@ const inferCategoryHints = ({
         hints.push("shampoo");
     }
 
-    if (discountOnly) {
+    if (discountMode === "discounted") {
         hints.push("discount");
         hints.push("sale");
         hints.push("promotion");
+    }
+
+    if (discountMode === "non_discounted") {
+        hints.push("gia goc");
+        hints.push("full price");
     }
 
     return uniqueList(hints);
@@ -496,13 +534,13 @@ const extractDeterministicSignals = (message = "") => {
     const strongPhrases = extractStrongPhrases(normalized);
     const petType = detectPetType(normalized);
     const petSize = detectPetSize(normalized);
-    const discountOnly = detectDiscountIntent(normalized);
+    const discountMode = detectDiscountMode(normalized);
     const productForm = detectProductForm(normalized);
 
     const inferredHints = inferCategoryHints({
         normalized,
         petType,
-        discountOnly,
+        discountMode,
         productForm,
     });
 
@@ -533,18 +571,18 @@ const extractDeterministicSignals = (message = "") => {
         language: inputLanguage === "mixed" ? "vi" : inputLanguage,
         petType,
         petSize,
-        discountOnly,
-        productForm,
+        discountMode,
         rawKeywords: uniqueList(rawKeywords),
         searchTerms,
         categoryHints,
+        productForm,
     };
 };
 
 const shouldUseLLMExpansion = (analysis) =>
     analysis.inputLanguage !== "vi" ||
     analysis.searchTerms.length < 4 ||
-    (!analysis.petType && !analysis.discountOnly && !analysis.productForm);
+    (!analysis.petType && !analysis.discountMode && !analysis.productForm);
 
 const mergeSignals = (base, extra = {}) => ({
     ...base,
@@ -561,10 +599,11 @@ const mergeSignals = (base, extra = {}) => ({
     petType: extra.petType || base.petType,
     petSize: extra.petSize || base.petSize,
     productForm: extra.productForm || base.productForm,
-    discountOnly:
-        typeof extra.discountOnly === "boolean"
-            ? extra.discountOnly
-            : base.discountOnly,
+    discountMode:
+        extra.discountMode === "discounted" ||
+        extra.discountMode === "non_discounted"
+            ? extra.discountMode
+            : base.discountMode,
     rawKeywords: uniqueList(base.rawKeywords),
     searchTerms: uniqueList([
         ...base.searchTerms,

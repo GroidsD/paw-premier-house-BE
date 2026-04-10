@@ -119,12 +119,20 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
     }
 
     if (language === "en") {
-        if (analysis.discountOnly && formLabel) {
+        if (analysis.discountMode === "discounted" && formLabel) {
             return `I found ${count} discounted ${formLabel} product${count > 1 ? "s" : ""}. The best match is ${first?.name || "the first product"} below.`;
         }
 
-        if (analysis.discountOnly) {
+        if (analysis.discountMode === "discounted") {
             return `I found ${count} discounted product${count > 1 ? "s" : ""}. The best match is ${first?.name || "the first product"} below.`;
+        }
+
+        if (analysis.discountMode === "non_discounted" && formLabel) {
+            return `I found ${count} non-discounted ${formLabel} product${count > 1 ? "s" : ""}. The best match is ${first?.name || "the first product"} below.`;
+        }
+
+        if (analysis.discountMode === "non_discounted") {
+            return `I found ${count} non-discounted product${count > 1 ? "s" : ""}. The best match is ${first?.name || "the first product"} below.`;
         }
 
         if (formLabel) {
@@ -134,12 +142,20 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
         return `I found ${count} matching product${count > 1 ? "s" : ""}. The best match is ${first?.name || "the first product"} below.`;
     }
 
-    if (analysis.discountOnly && formLabel) {
+    if (analysis.discountMode === "discounted" && formLabel) {
         return `Mình tìm thấy ${count} sản phẩm ${formLabel} đang giảm giá. Nổi bật nhất là ${first?.name || "sản phẩm đầu tiên"} ở bên dưới.`;
     }
 
-    if (analysis.discountOnly) {
+    if (analysis.discountMode === "discounted") {
         return `Mình tìm thấy ${count} sản phẩm đang giảm giá. Nổi bật nhất là ${first?.name || "sản phẩm đầu tiên"} ở bên dưới.`;
+    }
+
+    if (analysis.discountMode === "non_discounted" && formLabel) {
+        return `Mình tìm thấy ${count} sản phẩm ${formLabel} không giảm giá. Nổi bật nhất là ${first?.name || "sản phẩm đầu tiên"} ở bên dưới.`;
+    }
+
+    if (analysis.discountMode === "non_discounted") {
+        return `Mình tìm thấy ${count} sản phẩm không giảm giá. Nổi bật nhất là ${first?.name || "sản phẩm đầu tiên"} ở bên dưới.`;
     }
 
     if (formLabel) {
@@ -205,7 +221,7 @@ const getSuggestionsByContext = ({
 }) => {
     const analysis = context?.analysis || {};
     const petType = analysis.petType || null;
-    const discountOnly = Boolean(analysis.discountOnly);
+    const discountMode = analysis.discountMode || null;
     const productForm = analysis.productForm || null;
 
     if (contextType === "auth_required") {
@@ -242,12 +258,24 @@ const getSuggestionsByContext = ({
                 return ["Dog toys", "Dog food", "Discounted products"];
             }
 
-            if (discountOnly) {
+            if (discountMode === "discounted") {
                 return petType === "cat"
                     ? ["Cat food on sale", "Cat products", "My orders"]
                     : petType === "dog"
                       ? ["Dog food on sale", "Dog products", "My orders"]
                       : ["Discounted products", "Cat products", "Dog products"];
+            }
+
+            if (discountMode === "non_discounted") {
+                return petType === "cat"
+                    ? ["Cat food", "Full price cat food", "My orders"]
+                    : petType === "dog"
+                      ? ["Dog food", "Full price dog food", "My orders"]
+                      : [
+                            "Non-discounted products",
+                            "Cat products",
+                            "Dog products",
+                        ];
             }
 
             if (petType === "cat") {
@@ -293,13 +321,29 @@ const getSuggestionsByContext = ({
             return ["Đồ chơi cho chó", "Thức ăn cho chó", "Sản phẩm giảm giá"];
         }
 
-        if (discountOnly) {
+        if (discountMode === "discounted") {
             return petType === "cat"
                 ? ["Pate cho mèo", "Hạt cho mèo", "Đơn hàng của tôi"]
                 : petType === "dog"
                   ? ["Thức ăn cho chó", "Sản phẩm cho chó", "Đơn hàng của tôi"]
                   : [
                         "Sản phẩm giảm giá",
+                        "Sản phẩm cho mèo",
+                        "Sản phẩm cho chó",
+                    ];
+        }
+
+        if (discountMode === "non_discounted") {
+            return petType === "cat"
+                ? ["Pate cho mèo giá gốc", "Hạt cho mèo", "Đơn hàng của tôi"]
+                : petType === "dog"
+                  ? [
+                        "Thức ăn cho chó giá gốc",
+                        "Sản phẩm cho chó",
+                        "Đơn hàng của tôi",
+                    ]
+                  : [
+                        "Sản phẩm không giảm giá",
                         "Sản phẩm cho mèo",
                         "Sản phẩm cho chó",
                     ];
@@ -385,11 +429,14 @@ const formatResponse = ({
 
     if (context?.type === "products") {
         cards = (context.items || []).map((item, index) => {
-            const isDiscounted =
-                Number(item.original_price || 0) > Number(item.price || 0);
+            const matchedVariant = item.matched_variant || null;
+            const displayPrice = Number(item.price || 0);
+            const displayOriginalPrice = Number(item.original_price || 0);
+
+            const isDiscounted = displayOriginalPrice > displayPrice;
             const discountPercent = calcDiscountPercent(
-                item.price,
-                item.original_price,
+                displayPrice,
+                displayOriginalPrice,
             );
 
             return {
@@ -400,19 +447,42 @@ const formatResponse = ({
                 short_description: truncateText(item.description || "", 88),
                 category: item.category || null,
                 slug: item.slug || null,
-                price: item.price,
-                original_price: item.original_price,
+                price: displayPrice,
+                original_price: displayOriginalPrice,
                 price_min: item.price_min,
                 price_max: item.price_max,
                 has_variants: item.has_variants,
+                is_single_product: !item.has_variants,
                 quantity: item.quantity,
                 stock_status: getStockStatus(item.quantity),
                 image: item.image || null,
-                variants: item.variants || [],
-                matched_variant: item.matched_variant || null,
+
+                matched_variant: item.has_variants ? matchedVariant : null,
+                variants: item.has_variants ? item.variants || [] : [],
+                matched_variants: item.has_variants
+                    ? item.matched_variants || []
+                    : [],
+                all_variants_count: item.has_variants
+                    ? item.all_variants_count || 0
+                    : 0,
+                matched_variants_count: item.has_variants
+                    ? item.matched_variants_count || 0
+                    : 0,
+
+                has_discounted_variants: item.has_variants
+                    ? Boolean(item.has_discounted_variants)
+                    : false,
+                has_non_discounted_variants: item.has_variants
+                    ? Boolean(item.has_non_discounted_variants)
+                    : false,
+                has_mixed_discount_variants: item.has_variants
+                    ? Boolean(item.has_mixed_discount_variants)
+                    : false,
+
                 is_best_match: index === 0,
                 is_discounted: isDiscounted,
                 discount_percent: discountPercent,
+
                 badge:
                     index === 0
                         ? language === "en"
@@ -423,6 +493,7 @@ const formatResponse = ({
                               ? `-${discountPercent}%`
                               : `Giảm ${discountPercent}%`
                           : null,
+
                 action_url: item.slug
                     ? `/shop/${item.slug}`
                     : `/shop/${item.product_id}`,
@@ -566,6 +637,7 @@ const formatResponse = ({
             applied_filters: context?.applied_filters || [],
             context_type: context?.type || "general",
             product_form: context?.analysis?.productForm || null,
+            discount_mode: context?.analysis?.discountMode || null,
         },
     };
 };

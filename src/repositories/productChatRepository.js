@@ -18,15 +18,44 @@ const includesTerm = (haystack = "", term = "") => {
     return normalizedHaystack.includes(normalizedTerm);
 };
 
-const hasDiscount = (product) => {
-    if (Number(product.original_price || 0) > Number(product.price || 0)) {
-        return true;
+const isVariantDiscounted = (variant = {}) =>
+    Number(variant.original_price || 0) > Number(variant.price || 0);
+
+const isProductBaseDiscounted = (product = {}) =>
+    Number(product.original_price || 0) > Number(product.price || 0);
+
+const hasDiscount = (product = {}) => {
+    if (isProductBaseDiscounted(product)) return true;
+
+    return (product.variants || []).some((variant) =>
+        isVariantDiscounted(variant),
+    );
+};
+
+const getDiscountState = (product = {}) => {
+    const variants = product.variants || [];
+
+    if (!product.has_variants || variants.length === 0) {
+        const discounted = isProductBaseDiscounted(product);
+
+        return {
+            has_discounted: discounted,
+            has_non_discounted: !discounted,
+            mixed: false,
+        };
     }
 
-    return (product.variants || []).some(
-        (variant) =>
-            Number(variant.original_price || 0) > Number(variant.price || 0),
-    );
+    const discountedCount = variants.filter((variant) =>
+        isVariantDiscounted(variant),
+    ).length;
+
+    const nonDiscountedCount = variants.length - discountedCount;
+
+    return {
+        has_discounted: discountedCount > 0,
+        has_non_discounted: nonDiscountedCount > 0,
+        mixed: discountedCount > 0 && nonDiscountedCount > 0,
+    };
 };
 
 const matchVariantByPetSize = (variant, petSize) => {
@@ -67,6 +96,47 @@ const matchVariantByPetSize = (variant, petSize) => {
     }
 
     return true;
+};
+
+const filterVariantsByAnalysis = (variants = [], analysis = {}) => {
+    let filtered = [...variants];
+
+    if (analysis?.petSize) {
+        filtered = filtered.filter((variant) =>
+            matchVariantByPetSize(variant, analysis.petSize),
+        );
+    }
+
+    if (analysis?.discountMode === "discounted") {
+        filtered = filtered.filter((variant) => isVariantDiscounted(variant));
+    }
+
+    if (analysis?.discountMode === "non_discounted") {
+        filtered = filtered.filter((variant) => !isVariantDiscounted(variant));
+    }
+
+    return filtered;
+};
+
+const matchesDiscountMode = (product = {}, discountMode = null) => {
+    if (!discountMode) return true;
+
+    const variants = product.variants || [];
+
+    if (!product.has_variants || variants.length === 0) {
+        const discounted = isProductBaseDiscounted(product);
+
+        if (discountMode === "discounted") return discounted;
+        if (discountMode === "non_discounted") return !discounted;
+        return true;
+    }
+
+    const matchedVariants = filterVariantsByAnalysis(variants, {
+        ...product.analysis,
+        discountMode,
+    });
+
+    return matchedVariants.length > 0;
 };
 
 const categoryBelongsToPetType = (categoryName = "", petType = null) => {
@@ -280,13 +350,23 @@ const scoreProduct = (product, analysis, matchedCategories = []) => {
         }
     }
 
-    if (analysis?.discountOnly) {
-        if (hasDiscount(product)) {
+    if (analysis?.discountMode === "discounted") {
+        if (matchesDiscountMode(product, "discounted")) {
             score += 30;
-            matchedReasons.push("discount_match");
+            matchedReasons.push("discount_mode:discounted");
         } else {
             score -= 40;
-            matchedReasons.push("discount_mismatch");
+            matchedReasons.push("discount_mode_mismatch:discounted");
+        }
+    }
+
+    if (analysis?.discountMode === "non_discounted") {
+        if (matchesDiscountMode(product, "non_discounted")) {
+            score += 22;
+            matchedReasons.push("discount_mode:non_discounted");
+        } else {
+            score -= 40;
+            matchedReasons.push("discount_mode_mismatch:non_discounted");
         }
     }
 
@@ -309,7 +389,7 @@ const calculateConfidence = (items = [], analysis = {}) => {
 
     if (analysis?.productForm) confidence += 0.08;
     if (analysis?.petType) confidence += 0.05;
-    if (analysis?.discountOnly) confidence += 0.04;
+    if (analysis?.discountMode) confidence += 0.04;
 
     return Number(Math.min(1, confidence).toFixed(2));
 };
@@ -318,22 +398,34 @@ const getVariantSummary = (product, analysis) => {
     const variants = product.variants || [];
 
     if (!product.has_variants || variants.length === 0) {
+        const discounted = isProductBaseDiscounted(product);
+
+        if (analysis?.discountMode === "discounted" && !discounted) {
+            return null;
+        }
+
+        if (analysis?.discountMode === "non_discounted" && discounted) {
+            return null;
+        }
+
         return {
             display_price: Number(product.price || 0),
             display_original_price: Number(product.original_price || 0),
             display_quantity: Number(product.quantity || 0),
             matched_variant: null,
+            matched_variants: [],
             price_min: Number(product.price || 0),
             price_max: Number(product.price || 0),
         };
     }
 
-    let matchedVariants = variants;
+    const matchedVariants = filterVariantsByAnalysis(variants, analysis);
 
-    if (analysis?.petSize) {
-        matchedVariants = variants.filter((variant) =>
-            matchVariantByPetSize(variant, analysis.petSize),
-        );
+    if (
+        (analysis?.discountMode || analysis?.petSize) &&
+        matchedVariants.length === 0
+    ) {
+        return null;
     }
 
     const targetVariants = matchedVariants.length ? matchedVariants : variants;
@@ -347,21 +439,21 @@ const getVariantSummary = (product, analysis) => {
 
     const matchedVariant =
         targetVariants.find((variant) => Number(variant.quantity || 0) > 0) ||
-        targetVariants[0];
+        targetVariants[0] ||
+        null;
 
     return {
-        display_price: matchedVariant
-            ? Number(matchedVariant.price || 0)
-            : Math.min(...prices),
+        display_price: matchedVariant ? Number(matchedVariant.price || 0) : 0,
         display_original_price: matchedVariant
             ? Number(matchedVariant.original_price || 0)
-            : Math.min(...originalPrices),
+            : 0,
         display_quantity: matchedVariant
             ? Number(matchedVariant.quantity || 0)
             : quantities.reduce((sum, value) => sum + value, 0),
-        matched_variant: matchedVariant || null,
-        price_min: Math.min(...prices),
-        price_max: Math.max(...prices),
+        matched_variant: matchedVariant,
+        matched_variants: targetVariants,
+        price_min: prices.length ? Math.min(...prices) : 0,
+        price_max: prices.length ? Math.max(...prices) : 0,
     };
 };
 
@@ -429,54 +521,107 @@ const findRelevantProducts = async ({ message, analysis }) => {
         order: [["updated_at", "DESC"]],
     });
 
-    const mapped = products.map((product) => {
-        const mediaList = product.media || [];
-        const mainMedia =
-            mediaList.find((item) => item.is_main) || mediaList[0] || null;
+    const mapped = products
+        .map((product) => {
+            const mediaList = product.media || [];
+            const mainMedia =
+                mediaList.find((item) => item.is_main) || mediaList[0] || null;
 
-        const variantSummary = getVariantSummary(product, analysis);
+            const rawItem = {
+                product_id: product.product_id,
+                productCategories_id: product.productCategories_id,
+                name: product.name,
+                description: product.description,
+                slug: product.slug,
+                category: product.category?.type || null,
+                has_variants: product.has_variants,
 
-        const item = {
-            product_id: product.product_id,
-            productCategories_id: product.productCategories_id,
-            name: product.name,
-            description: product.description,
-            slug: product.slug,
-            category: product.category?.type || null,
-            has_variants: product.has_variants,
-            price: variantSummary.display_price,
-            original_price: variantSummary.display_original_price,
-            quantity: variantSummary.display_quantity,
-            price_min: variantSummary.price_min,
-            price_max: variantSummary.price_max,
-            matched_variant: variantSummary.matched_variant,
-            image: mainMedia?.url || null,
-            media: mediaList.map((item) => ({
-                media_id: item.media_id,
-                url: item.url,
-                is_main: item.is_main,
-                alt_text: item.alt_text,
-            })),
-            variants: (product.variants || []).map((variant) => ({
-                productVariant_id: variant.productVariant_id,
-                variant_label: variant.variant_label,
-                color: variant.color,
-                size: variant.size,
-                pet_weight: variant.pet_weight,
-                price: Number(variant.price || 0),
-                original_price: Number(variant.original_price || 0),
-                quantity: Number(variant.quantity || 0),
-            })),
-        };
+                price: Number(product.price || 0),
+                original_price: Number(product.original_price || 0),
+                quantity: Number(product.quantity || 0),
 
-        const result = scoreProduct(item, analysis, matchedCategories);
+                image: mainMedia?.url || null,
+                media: mediaList.map((item) => ({
+                    media_id: item.media_id,
+                    url: item.url,
+                    is_main: item.is_main,
+                    alt_text: item.alt_text,
+                })),
+                variants: (product.variants || []).map((variant) => ({
+                    productVariant_id: variant.productVariant_id,
+                    variant_label: variant.variant_label,
+                    color: variant.color,
+                    size: variant.size,
+                    pet_weight: variant.pet_weight,
+                    price: Number(variant.price || 0),
+                    original_price: Number(variant.original_price || 0),
+                    quantity: Number(variant.quantity || 0),
+                    is_discounted: isVariantDiscounted(variant),
+                })),
+                analysis,
+            };
 
-        return {
-            ...item,
-            _score: result.score,
-            _matched_reasons: result.matchedReasons,
-        };
-    });
+            const variantSummary = getVariantSummary(rawItem, analysis);
+
+            if (!variantSummary) {
+                return null;
+            }
+
+            const discountState = getDiscountState(rawItem);
+
+            const item = {
+                ...rawItem,
+                is_single_product: !rawItem.has_variants,
+                price: variantSummary.display_price,
+                original_price: variantSummary.display_original_price,
+                quantity: variantSummary.display_quantity,
+                price_min: variantSummary.price_min,
+                price_max: variantSummary.price_max,
+
+                matched_variant: rawItem.has_variants
+                    ? variantSummary.matched_variant
+                    : null,
+
+                matched_variants: rawItem.has_variants
+                    ? variantSummary.matched_variants
+                    : [],
+
+                variants: rawItem.has_variants
+                    ? variantSummary.matched_variants.length
+                        ? variantSummary.matched_variants
+                        : rawItem.variants
+                    : [],
+
+                all_variants: rawItem.has_variants ? rawItem.variants : [],
+                all_variants_count: rawItem.has_variants
+                    ? rawItem.variants.length
+                    : 0,
+                matched_variants_count: rawItem.has_variants
+                    ? variantSummary.matched_variants.length
+                    : 0,
+
+                has_discounted_variants: rawItem.has_variants
+                    ? discountState.has_discounted
+                    : false,
+
+                has_non_discounted_variants: rawItem.has_variants
+                    ? discountState.has_non_discounted
+                    : false,
+
+                has_mixed_discount_variants: rawItem.has_variants
+                    ? discountState.mixed
+                    : false,
+            };
+
+            const result = scoreProduct(item, analysis, matchedCategories);
+
+            return {
+                ...item,
+                _score: result.score,
+                _matched_reasons: result.matchedReasons,
+            };
+        })
+        .filter(Boolean);
 
     const petTypeFiltered = analysis?.petType
         ? mapped.filter((item) => belongsToPetType(item, analysis.petType))
@@ -488,8 +633,10 @@ const findRelevantProducts = async ({ message, analysis }) => {
           )
         : petTypeFiltered;
 
-    const discountFiltered = analysis?.discountOnly
-        ? formFiltered.filter((item) => hasDiscount(item))
+    const discountFiltered = analysis?.discountMode
+        ? formFiltered.filter((item) =>
+              matchesDiscountMode(item, analysis.discountMode),
+          )
         : formFiltered;
 
     const basePool =
@@ -523,7 +670,10 @@ const findRelevantProducts = async ({ message, analysis }) => {
             analysis?.productForm
                 ? `product_form:${analysis.productForm}`
                 : null,
-            analysis?.discountOnly ? "discount_only" : null,
+            analysis?.discountMode
+                ? `discount_mode:${analysis.discountMode}`
+                : null,
+            "variant_level_matching",
             "post_ranked_search",
             analysis?.petType ? `pet_type:${analysis.petType}` : null,
             analysis?.petSize ? `pet_size:${analysis.petSize}` : null,

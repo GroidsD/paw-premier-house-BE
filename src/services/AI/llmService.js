@@ -62,20 +62,42 @@ const sanitizeSignalPayload = (payload = {}) => {
             payload.language === "en" || payload.language === "vi"
                 ? payload.language
                 : null,
+
         inputLanguage:
             payload.input_language === "en" ||
             payload.input_language === "vi" ||
             payload.input_language === "mixed"
                 ? payload.input_language
                 : null,
+
         petType:
             payload.pet_type === "dog" || payload.pet_type === "cat"
                 ? payload.pet_type
                 : null,
+
         petSize: ["small", "medium", "large"].includes(payload.pet_size)
             ? payload.pet_size
             : null,
+
+        discountMode:
+            payload.discount_mode === "discounted" ||
+            payload.discount_mode === "non_discounted"
+                ? payload.discount_mode
+                : null,
+
+        productForm: [
+            "pate",
+            "kibble",
+            "milk",
+            "toy",
+            "snack",
+            "shampoo",
+        ].includes(payload.product_form)
+            ? payload.product_form
+            : null,
+
         searchTerms: normalizeList(payload.search_terms || payload.searchTerms),
+
         categoryHints: normalizeList(
             payload.category_hints || payload.categoryHints,
         ),
@@ -90,18 +112,22 @@ const generateReply = async (prompt, { language = "vi" } = {}) => {
         return fallback;
     }
 
-    const completion = await client.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        messages: [
-            {
-                role: "user",
-                content: prompt,
-            },
-        ],
-        temperature: 0.2,
-    });
+    try {
+        const completion = await client.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+            messages: [
+                {
+                    role: "user",
+                    content: prompt,
+                },
+            ],
+            temperature: 0.2,
+        });
 
-    return completion.choices?.[0]?.message?.content || fallback;
+        return completion.choices?.[0]?.message?.content || fallback;
+    } catch (error) {
+        return fallback;
+    }
 };
 
 const expandSearchSignals = async ({ message, language = "vi" }) => {
@@ -126,7 +152,10 @@ const expandSearchSignals = async ({ message, language = "vi" }) => {
                     content: [
                         "Extract multilingual ecommerce search hints from a user message.",
                         "Return JSON only.",
-                        'Schema: {"language":"vi|en|null","input_language":"vi|en|mixed|null","pet_type":"dog|cat|null","pet_size":"small|medium|large|null","search_terms":["..."],"category_hints":["..."]}.',
+                        'Schema: {"language":"vi|en|null","input_language":"vi|en|mixed|null","pet_type":"dog|cat|null","pet_size":"small|medium|large|null","discount_mode":"discounted|non_discounted|null","product_form":"pate|kibble|milk|toy|snack|shampoo|null","search_terms":["..."],"category_hints":["..."]}.',
+                        "Infer discount_mode as discounted for sale/discount/promotion queries.",
+                        "Infer discount_mode as non_discounted for full-price/no-discount/not-on-sale queries.",
+                        "Infer product_form when the user refers to pate, kibble, milk, toy, snack, or shampoo.",
                         "Prefer concise noun phrases in both the original language and likely translated equivalents when helpful.",
                     ].join(" "),
                 },
