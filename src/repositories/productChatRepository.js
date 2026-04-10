@@ -13,17 +13,26 @@ const includesTerm = (haystack = "", term = "") => {
     const normalizedHaystack = normalizeTerm(haystack);
     const normalizedTerm = normalizeTerm(term);
 
-    if (!normalizedTerm) return false;
+    if (!normalizedTerm || normalizedTerm.length < 2) return false;
 
-    return (
-        normalizedHaystack.includes(normalizedTerm) ||
-        normalizedTerm.includes(normalizedHaystack)
+    return normalizedHaystack.includes(normalizedTerm);
+};
+
+const hasDiscount = (product) => {
+    if (Number(product.original_price || 0) > Number(product.price || 0)) {
+        return true;
+    }
+
+    return (product.variants || []).some(
+        (variant) =>
+            Number(variant.original_price || 0) > Number(variant.price || 0),
     );
 };
 
 const matchVariantByPetSize = (variant, petSize) => {
-    const text =
-        `${variant.variant_label || ""} ${variant.size || ""} ${variant.pet_weight || ""}`.toLowerCase();
+    const text = normalizeTerm(
+        `${variant.variant_label || ""} ${variant.size || ""} ${variant.pet_weight || ""}`,
+    );
 
     if (!petSize) return true;
 
@@ -60,21 +69,95 @@ const matchVariantByPetSize = (variant, petSize) => {
     return true;
 };
 
+const categoryBelongsToPetType = (categoryName = "", petType = null) => {
+    if (!petType) return true;
+
+    const category = normalizeTerm(categoryName);
+
+    if (petType === "cat") {
+        if (category.includes("dog") || category.includes("cho")) return false;
+    }
+
+    if (petType === "dog") {
+        if (category.includes("cat") || category.includes("meo")) return false;
+    }
+
+    return true;
+};
+
 const getMatchedCategories = (analysis, categories = []) => {
     const hints = [
         ...(analysis?.categoryHints || []),
         ...(analysis?.searchTerms || []),
     ];
 
-    return categories.filter((category) => {
+    let matched = categories.filter((category) => {
         const normalizedCategory = normalizeTerm(category.type);
-
-        return hints.some(
-            (hint) =>
-                includesTerm(normalizedCategory, hint) ||
-                includesTerm(hint, normalizedCategory),
-        );
+        return hints.some((hint) => includesTerm(normalizedCategory, hint));
     });
+
+    if (analysis?.petType) {
+        matched = matched.filter((category) =>
+            categoryBelongsToPetType(category.type, analysis.petType),
+        );
+    }
+
+    return matched;
+};
+
+const buildFullHaystack = (product = {}) =>
+    normalizeTerm(
+        [
+            product.name,
+            product.description,
+            product.category,
+            ...(product.variants || []).map(
+                (variant) =>
+                    `${variant.variant_label || ""} ${variant.color || ""} ${variant.size || ""} ${variant.pet_weight || ""}`,
+            ),
+        ]
+            .filter(Boolean)
+            .join(" "),
+    );
+
+const belongsToPetType = (product, petType) => {
+    if (!petType) return true;
+
+    const haystack = buildFullHaystack(product);
+    const hasDogSignal = haystack.includes("dog") || haystack.includes("cho");
+    const hasCatSignal = haystack.includes("cat") || haystack.includes("meo");
+
+    if (petType === "cat") {
+        return hasCatSignal && !hasDogSignal;
+    }
+
+    if (petType === "dog") {
+        return hasDogSignal && !hasCatSignal;
+    }
+
+    return true;
+};
+
+const getProductFormSignals = (product = {}) => {
+    const haystack = buildFullHaystack(product);
+
+    return {
+        pate: haystack.includes("pate") || haystack.includes("wet food"),
+        kibble:
+            haystack.includes("kibble") ||
+            haystack.includes("dry food") ||
+            haystack.includes("hat"),
+        milk: haystack.includes("milk") || haystack.includes("sua"),
+        toy: haystack.includes("toy") || haystack.includes("do choi"),
+        snack: haystack.includes("snack") || haystack.includes("treat"),
+        shampoo: haystack.includes("shampoo") || haystack.includes("sua tam"),
+    };
+};
+
+const matchesProductForm = (product, productForm) => {
+    if (!productForm) return true;
+    const signals = getProductFormSignals(product);
+    return Boolean(signals[productForm]);
 };
 
 const scoreProduct = (product, analysis, matchedCategories = []) => {
@@ -91,7 +174,9 @@ const scoreProduct = (product, analysis, matchedCategories = []) => {
             ),
         )
         .join(" ");
+
     const haystack = `${name} ${description} ${category} ${variantText}`;
+
     const categoryMatched = matchedCategories.some(
         (item) => item.productCategories_id === product.productCategories_id,
     );
@@ -117,7 +202,10 @@ const scoreProduct = (product, analysis, matchedCategories = []) => {
             continue;
         }
 
-        if (includesTerm(description, term) || includesTerm(variantText, term)) {
+        if (
+            includesTerm(description, term) ||
+            includesTerm(variantText, term)
+        ) {
             score += 10;
             matchedReasons.push(`detail:${term}`);
             continue;
@@ -130,13 +218,27 @@ const scoreProduct = (product, analysis, matchedCategories = []) => {
     }
 
     if (analysis?.petType === "dog") {
-        if (haystack.includes("dog") || haystack.includes("cho")) score += 8;
-        if (haystack.includes("cat") || haystack.includes("meo")) score -= 60;
+        if (haystack.includes("dog") || haystack.includes("cho")) {
+            score += 12;
+            matchedReasons.push("pet_type:dog");
+        }
+
+        if (haystack.includes("cat") || haystack.includes("meo")) {
+            score -= 80;
+            matchedReasons.push("pet_type_mismatch:cat");
+        }
     }
 
     if (analysis?.petType === "cat") {
-        if (haystack.includes("cat") || haystack.includes("meo")) score += 8;
-        if (haystack.includes("dog") || haystack.includes("cho")) score -= 60;
+        if (haystack.includes("cat") || haystack.includes("meo")) {
+            score += 12;
+            matchedReasons.push("pet_type:cat");
+        }
+
+        if (haystack.includes("dog") || haystack.includes("cho")) {
+            score -= 80;
+            matchedReasons.push("pet_type_mismatch:dog");
+        }
     }
 
     if (analysis?.petSize === "small") {
@@ -166,8 +268,31 @@ const scoreProduct = (product, analysis, matchedCategories = []) => {
         }
     }
 
+    if (analysis?.productForm) {
+        if (matchesProductForm(product, analysis.productForm)) {
+            score += 35;
+            matchedReasons.push(`product_form:${analysis.productForm}`);
+        } else {
+            score -= 50;
+            matchedReasons.push(
+                `product_form_mismatch:${analysis.productForm}`,
+            );
+        }
+    }
+
+    if (analysis?.discountOnly) {
+        if (hasDiscount(product)) {
+            score += 30;
+            matchedReasons.push("discount_match");
+        } else {
+            score -= 40;
+            matchedReasons.push("discount_mismatch");
+        }
+    }
+
     if (Number(product.quantity || 0) > 0) {
         score += 3;
+        matchedReasons.push("in_stock");
     }
 
     return {
@@ -176,12 +301,17 @@ const scoreProduct = (product, analysis, matchedCategories = []) => {
     };
 };
 
-const calculateConfidence = (items = []) => {
+const calculateConfidence = (items = [], analysis = {}) => {
     const topScore = items[0]?._score || 0;
-
     if (topScore <= 0) return 0;
 
-    return Number(Math.min(1, topScore / 80).toFixed(2));
+    let confidence = Math.min(1, topScore / 90);
+
+    if (analysis?.productForm) confidence += 0.08;
+    if (analysis?.petType) confidence += 0.05;
+    if (analysis?.discountOnly) confidence += 0.04;
+
+    return Number(Math.min(1, confidence).toFixed(2));
 };
 
 const getVariantSummary = (product, analysis) => {
@@ -214,6 +344,7 @@ const getVariantSummary = (product, analysis) => {
     const quantities = targetVariants.map((variant) =>
         Number(variant.quantity || 0),
     );
+
     const matchedVariant =
         targetVariants.find((variant) => Number(variant.quantity || 0) > 0) ||
         targetVariants[0];
@@ -243,6 +374,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
         attributes: ["productCategories_id", "type"],
         order: [["type", "ASC"]],
     });
+
     const matchedCategories = getMatchedCategories(analysis, categories);
     const categoryIds = matchedCategories.map(
         (category) => category.productCategories_id,
@@ -301,7 +433,9 @@ const findRelevantProducts = async ({ message, analysis }) => {
         const mediaList = product.media || [];
         const mainMedia =
             mediaList.find((item) => item.is_main) || mediaList[0] || null;
+
         const variantSummary = getVariantSummary(product, analysis);
+
         const item = {
             product_id: product.product_id,
             productCategories_id: product.productCategories_id,
@@ -334,6 +468,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
                 quantity: Number(variant.quantity || 0),
             })),
         };
+
         const result = scoreProduct(item, analysis, matchedCategories);
 
         return {
@@ -343,12 +478,35 @@ const findRelevantProducts = async ({ message, analysis }) => {
         };
     });
 
-    const ranked = mapped
+    const petTypeFiltered = analysis?.petType
+        ? mapped.filter((item) => belongsToPetType(item, analysis.petType))
+        : mapped;
+
+    const formFiltered = analysis?.productForm
+        ? petTypeFiltered.filter((item) =>
+              matchesProductForm(item, analysis.productForm),
+          )
+        : petTypeFiltered;
+
+    const discountFiltered = analysis?.discountOnly
+        ? formFiltered.filter((item) => hasDiscount(item))
+        : formFiltered;
+
+    const basePool =
+        discountFiltered.length > 0
+            ? discountFiltered
+            : formFiltered.length > 0
+              ? formFiltered
+              : petTypeFiltered.length > 0
+                ? petTypeFiltered
+                : mapped;
+
+    const ranked = basePool
         .sort((a, b) => b._score - a._score || b.quantity - a.quantity)
         .filter((item) => item._score > 0);
 
     const finalItems =
-        ranked.length > 0 ? ranked.slice(0, 4) : mapped.slice(0, 4);
+        ranked.length > 0 ? ranked.slice(0, 4) : basePool.slice(0, 4);
 
     return {
         type: "products",
@@ -358,12 +516,19 @@ const findRelevantProducts = async ({ message, analysis }) => {
         matched_categories: matchedCategories.map((category) => category.type),
         applied_filters: [
             "active_products_only",
-            categoryIds.length ? "matched_category_prefilter" : "full_catalog_scan",
+            categoryIds.length
+                ? "matched_category_prefilter"
+                : "full_catalog_scan",
+            analysis?.petType ? "pet_type_hard_filter" : null,
+            analysis?.productForm
+                ? `product_form:${analysis.productForm}`
+                : null,
+            analysis?.discountOnly ? "discount_only" : null,
             "post_ranked_search",
             analysis?.petType ? `pet_type:${analysis.petType}` : null,
             analysis?.petSize ? `pet_size:${analysis.petSize}` : null,
         ].filter(Boolean),
-        confidence: calculateConfidence(finalItems),
+        confidence: calculateConfidence(finalItems, analysis),
     };
 };
 

@@ -5,6 +5,9 @@ const chat = async (req, res) => {
         const { message } = req.body;
         const currentUser = req.user;
 
+        console.log("Received chat message:", message);
+        console.log("Current user:", req.user);
+
         if (!message || !String(message).trim()) {
             return res.status(400).json({
                 success: false,
