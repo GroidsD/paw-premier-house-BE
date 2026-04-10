@@ -62,7 +62,7 @@ module.exports = {
             },
 
             product_image: {
-                type: Sequelize.STRING,
+                type: Sequelize.TEXT,
                 allowNull: true,
                 comment: "Ảnh sản phẩm tại thời điểm đặt hàng",
             },
