@@ -1,23 +1,9 @@
 import express from "express";
-import { handleUserQuery } from "../AI/handleUserQuery.js";
+import chatController from "../controllers/chatController.js";
+import optionalAuth from "../middleware/optionalAuthMiddleware.js";
 
 const router = express.Router();
 
-router.post("/api/chatCompletion", async (req, res) => {
-    try {
-        const { message, userId } = req.body;
-
-        if (!message || message.trim() === "") {
-            return res.status(400).json({ error: "Missing message" });
-        }
-
-        const reply = await handleUserQuery({ text: message, userId });
-
-        return res.json({ success: true, reply });
-    } catch (error) {
-        console.error("❌ Chat route error:", error);
-        res.status(500).json({ error: "Lỗi khi xử lý chat" });
-    }
-});
+router.post("/api/chat", optionalAuth, chatController.chat);
 
 export default router;
