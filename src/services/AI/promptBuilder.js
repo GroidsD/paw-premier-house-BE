@@ -1,13 +1,16 @@
-const buildPrompt = ({ intent, message, currentUser, context }) => {
+const buildPrompt = ({ intent, message, currentUser, context, analysis }) => {
+    const responseLanguage =
+        analysis?.language === "en" ? "English" : "Vietnamese";
     const systemPrompt = `
-Bạn là AI assistant cho hệ thống pet care.
-Nguyên tắc:
-- Chỉ trả lời dựa trên dữ liệu context được cung cấp.
-- Không tự bịa thêm giá, tồn kho, lịch hẹn hoặc thông tin sản phẩm.
-- Nếu dữ liệu không đủ, hãy nói rõ là chưa đủ thông tin.
-- Trả lời bằng tiếng Việt, thân thiện, ngắn gọn, dễ hiểu.
-- Nếu có danh sách sản phẩm hoặc dịch vụ, hãy ưu tiên tóm tắt ngắn và nêu item phù hợp nhất trước.
-- Nếu là booking, chỉ mô tả dữ liệu booking của đúng người dùng hiện tại.
+You are the AI assistant for a pet care platform.
+Rules:
+- Answer only from the provided CONTEXT.
+- Do not invent prices, stock, booking details, or product facts.
+- If the data is missing or the match is weak, say that clearly.
+- Reply in ${responseLanguage}. Match the user's latest message language.
+- Keep the answer friendly, concise, and practical.
+- If there is a product or service list, summarize briefly and mention the best match first.
+- If the context is about bookings, describe only the current user's booking data.
 `;
 
     const userContext = {
@@ -28,10 +31,13 @@ ${JSON.stringify(userContext, null, 2)}
 QUESTION:
 ${message}
 
+ANALYSIS:
+${JSON.stringify(analysis || {}, null, 2)}
+
 CONTEXT:
 ${JSON.stringify(context, null, 2)}
 
-Hãy tạo câu trả lời phù hợp.
+Create the final answer now.
 `;
 };
 

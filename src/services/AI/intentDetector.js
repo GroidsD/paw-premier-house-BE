@@ -8,43 +8,89 @@ const CHAT_INTENTS = {
     GENERAL_SUPPORT: "general_support",
 };
 
-const detectIntent = (message = "") => {
+const normalizeTerms = (terms = []) =>
+    terms.map((term) => normalizeText(term)).filter(Boolean);
+
+const textContains = (text, keyword) => {
+    const normalizedKeyword = normalizeText(keyword);
+    return text.includes(normalizedKeyword);
+};
+
+const termMatches = (terms, keyword) => {
+    const normalizedKeyword = normalizeText(keyword);
+
+    return terms.some(
+        (term) =>
+            term === normalizedKeyword ||
+            term.includes(normalizedKeyword) ||
+            normalizedKeyword.includes(term),
+    );
+};
+
+const detectIntent = ({ message = "", analysis = {} } = {}) => {
     const text = normalizeText(message);
+    const terms = normalizeTerms([
+        ...(analysis.searchTerms || []),
+        ...(analysis.categoryHints || []),
+        ...(analysis.rawKeywords || []),
+    ]);
+
+    const hasTextOrTerm = (keywords = []) =>
+        keywords.some(
+            (keyword) => textContains(text, keyword) || termMatches(terms, keyword),
+        );
 
     if (
-        text.includes("booking") ||
-        text.includes("dat lich") ||
-        text.includes("lich hen") ||
-        text.includes("check in") ||
-        text.includes("check out")
+        hasTextOrTerm([
+            "booking",
+            "dat lich",
+            "lich hen",
+            "check in",
+            "check out",
+            "reservation",
+            "schedule",
+        ])
     ) {
         return CHAT_INTENTS.BOOKING_LOOKUP;
     }
 
-    if (
-        text.includes("goi y") ||
-        text.includes("de xuat") ||
-        text.includes("recommend")
-    ) {
+    if (hasTextOrTerm(["goi y", "de xuat", "recommend", "suggest"])) {
         return CHAT_INTENTS.RECOMMENDATION_LOOKUP;
     }
 
     if (
-        text.includes("dich vu") ||
-        text.includes("grooming") ||
-        text.includes("spa") ||
-        text.includes("hotel") ||
-        text.includes("training")
+        hasTextOrTerm([
+            "dich vu",
+            "service",
+            "grooming",
+            "spa",
+            "hotel",
+            "training",
+            "boarding",
+        ])
     ) {
         return CHAT_INTENTS.SERVICE_SEARCH;
     }
 
     if (
-        text.includes("san pham") ||
-        text.includes("sua tam") ||
-        text.includes("thuc an") ||
-        text.includes("do choi") ||
-        text.includes("phu kien")
+        analysis.petType ||
+        analysis.petSize ||
+        hasTextOrTerm([
+            "san pham",
+            "product",
+            "products",
+            "shop",
+            "mua",
+            "buy",
+            "food",
+            "snack",
+            "toy",
+            "shampoo",
+            "accessory",
+            "clothes",
+            "pate",
+            "kibble",
+        ])
     ) {
         return CHAT_INTENTS.PRODUCT_SEARCH;
     }

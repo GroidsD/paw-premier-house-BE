@@ -1,17 +1,95 @@
-const formatProductReply = (items = [], userQuestion = "") => {
-    if (!items.length) {
-        return "Hiện tại mình chưa tìm thấy sản phẩm phù hợp. Bạn thử nói rõ hơn như thức ăn cho chó nhỏ, pate cho chó, hoặc hạt cho chó con nhé.";
-    }
-
-    const first = items[0];
-    const count = items.length;
-
-    return `Mình tìm thấy ${count} sản phẩm phù hợp. Nổi bật nhất là ${first.name}. Bạn có thể xem nhanh các sản phẩm bên dưới.`;
+const FALLBACK_REPLY = {
+    vi: {
+        default: "Xin loi, hien tai minh chua co du thong tin de tra loi chinh xac.",
+        products:
+            "Hien tai minh chua tim thay san pham phu hop. Ban co the mo ta ro hon nhu muc dich, loai thu cung, hoac kich co.",
+        services:
+            "Hien tai minh chua tim thay dich vu phu hop. Ban co the mo ta ro hon nhu grooming, spa, hotel hay training.",
+        bookings: "Minh chua tim thay booking phu hop trong du lieu hien co.",
+    },
+    en: {
+        default: "Sorry, I do not have enough information to answer accurately right now.",
+        products:
+            "I could not find a suitable product yet. Please describe the goal, pet type, or size more clearly.",
+        services:
+            "I could not find a suitable service yet. Please specify grooming, spa, hotel, or training.",
+        bookings: "I could not find a matching booking in the current data.",
+    },
 };
-const formatResponse = ({ intent, rawReply, context }) => {
+
+const SUGGESTIONS = {
+    vi: {
+        products: [
+            "San pham dang giam gia",
+            "San pham cho cho nho",
+            "San pham con hang",
+        ],
+        services: [
+            "Xem dich vu grooming",
+            "Xem dich vu spa",
+            "Dat lich ngay",
+        ],
+        bookings: [
+            "Booking gan nhat cua toi",
+            "Lich check-in cua toi",
+            "Dich vu da dat",
+        ],
+        default: ["Tim san pham cho cho", "Xem dich vu spa", "Kiem tra booking"],
+    },
+    en: {
+        products: [
+            "Show discounted products",
+            "Products for small dogs",
+            "Products in stock",
+        ],
+        services: [
+            "Show grooming services",
+            "Show spa services",
+            "Book a service",
+        ],
+        bookings: [
+            "My latest booking",
+            "My check-in schedule",
+            "My booked services",
+        ],
+        default: ["Find dog products", "Show spa services", "Check my booking"],
+    },
+};
+
+const ACTION_LABELS = {
+    vi: {
+        product: "Xem chi tiet",
+        service: "Xem dich vu",
+        booking: "Xem booking",
+    },
+    en: {
+        product: "View details",
+        service: "View service",
+        booking: "View booking",
+    },
+};
+
+const pickLanguage = (analysis, context) =>
+    analysis?.language || context?.analysis?.language || "vi";
+
+const getFallbackReply = (language, contextType) =>
+    FALLBACK_REPLY[language]?.[contextType] ||
+    FALLBACK_REPLY[language]?.default ||
+    FALLBACK_REPLY.vi.default;
+
+const getSuggestions = (language, contextType) =>
+    SUGGESTIONS[language]?.[contextType] ||
+    SUGGESTIONS[language]?.default ||
+    SUGGESTIONS.vi.default;
+
+const getActionLabel = (language, type) =>
+    ACTION_LABELS[language]?.[type] || ACTION_LABELS.vi[type];
+
+const formatResponse = ({ intent, rawReply, context, analysis }) => {
     let cards = [];
-    let suggestions = [];
-    let reply = rawReply;
+    const language = pickLanguage(analysis, context);
+    let suggestions = getSuggestions(language, context?.type);
+    let reply = rawReply || getFallbackReply(language, context?.type);
 
     if (context?.type === "products") {
         cards = (context.items || []).map((item) => ({
@@ -30,14 +108,8 @@ const formatResponse = ({ intent, rawReply, context }) => {
             action_url: item.slug
                 ? `/shop/${item.slug}`
                 : `/shop/${item.product_id}`,
-            action_label: "Xem chi tiết",
+            action_label: getActionLabel(language, "product"),
         }));
-        reply = formatProductReply(context.items, context.user_question);
-        suggestions = [
-            "Xem sản phẩm đang giảm giá",
-            "Sản phẩm cho chó nhỏ",
-            "Sản phẩm còn hàng",
-        ];
     }
 
     if (context?.type === "services") {
@@ -51,14 +123,8 @@ const formatResponse = ({ intent, rawReply, context }) => {
             duration: item.duration,
             image: item.image || null,
             action_url: `/service/${item.service_id}`,
-            action_label: "Xem dịch vụ",
+            action_label: getActionLabel(language, "service"),
         }));
-        reply = formatProductReply(context.items, context.user_question);
-        suggestions = [
-            "Xem dịch vụ grooming",
-            "Xem dịch vụ spa",
-            "Đặt lịch ngay",
-        ];
     }
 
     if (context?.type === "bookings") {
@@ -72,14 +138,12 @@ const formatResponse = ({ intent, rawReply, context }) => {
             check_out: item.check_out,
             total_price: item.total_price,
             action_url: `/profile/bookings/${item.booking_id}`,
-            action_label: "Xem booking",
+            action_label: getActionLabel(language, "booking"),
         }));
-        reply = formatProductReply(context.items, context.user_question);
-        suggestions = [
-            "Booking gần nhất của tôi",
-            "Lịch check-in của tôi",
-            "Dịch vụ đã đặt",
-        ];
+    }
+
+    if (!rawReply && !(context?.items || []).length) {
+        reply = getFallbackReply(language, context?.type);
     }
 
     return {
@@ -87,6 +151,12 @@ const formatResponse = ({ intent, rawReply, context }) => {
         reply,
         cards,
         suggestions,
+        meta: {
+            language,
+            confidence: context?.confidence ?? 0,
+            matched_categories: context?.matched_categories || [],
+            applied_filters: context?.applied_filters || [],
+        },
     };
 };
 
