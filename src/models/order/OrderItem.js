@@ -88,7 +88,7 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             product_image: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: true,
                 comment: "Ảnh sản phẩm tại thời điểm đặt hàng",
             },

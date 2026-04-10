@@ -304,7 +304,7 @@ const sendOrderEmail = async ({ user, order, token }) => {
                                                     padding:14px 30px;
                                                     border-radius:14px;
                                                 ">
-                                                Confirm your order
+                                                Confirm order
                                             </a>
                                         </div>
 
