@@ -990,7 +990,7 @@ let hardDeleteOrder = async (order_id) => {
     }
 };
 
-let getAllOrdersByUserId = async (customer_id) => {
+let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status = "all") => {
     try {
         if (!customer_id) {
             return {
@@ -999,31 +999,51 @@ let getAllOrdersByUserId = async (customer_id) => {
             };
         }
 
-        let orders = [];
-
-        try {
-            orders = await db.Order.findAll({
-                where: { customer_id },
-                include: ORDER_INCLUDE_FULL,
-                order: [["order_id", "DESC"]],
-            });
-        } catch (fullIncludeError) {
-            console.error(
-                "getAllOrdersByUserId FULL include failed, fallback SAFE:",
-                fullIncludeError,
-            );
-
-            orders = await db.Order.findAll({
-                where: { customer_id },
-                include: ORDER_INCLUDE_SAFE,
-                order: [["order_id", "DESC"]],
-            });
+        const pageSize = parseInt(limit) || 10;
+        const whereClause = { customer_id };
+        
+        if (status && status !== "all") {
+            whereClause.status = status;
         }
+
+        if (cursor) {
+            // Cursor-based: fetch items older than the cursor
+            // We use [Op.lt] because we sort DESC (newest first)
+            whereClause.created_at = {
+                [db.Sequelize.Op.lt]: cursor
+            };
+        }
+
+        const fetchOrders = async (includeType) => {
+            return db.Order.findAll({
+                where: whereClause,
+                include: includeType,
+                order: [["created_at", "DESC"], ["order_id", "DESC"]],
+                limit: pageSize + 1, // Fetch one extra to check if there's more
+            });
+        };
+
+        let orders = [];
+        try {
+            orders = await fetchOrders(ORDER_INCLUDE_FULL);
+        } catch (fullIncludeError) {
+            console.error("getAllOrdersByUserId FULL include failed, fallback SAFE:", fullIncludeError);
+            orders = await fetchOrders(ORDER_INCLUDE_SAFE);
+        }
+
+        const hasMore = orders.length > pageSize;
+        if (hasMore) {
+            orders.pop(); // Remove the extra item
+        }
+
+        const nextCursor = orders.length > 0 ? orders[orders.length - 1].created_at : null;
 
         return {
             errCode: 0,
             errMessage: "Fetched orders successfully",
             orders,
+            nextCursor,
+            hasMore,
         };
     } catch (e) {
         throw e;
