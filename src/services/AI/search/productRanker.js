@@ -11,6 +11,18 @@ const includesTerm = (haystack = "", term = "") => {
     return normalizedHaystack.includes(normalizedTerm);
 };
 
+const hasWholeTerm = (text = "", term = "") => {
+    const normalizedText = normalizeTerm(text);
+    const normalizedTerm = normalizeTerm(term);
+
+    if (!normalizedTerm) return false;
+
+    const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, "i");
+
+    return pattern.test(normalizedText);
+};
+
 const isVariantDiscounted = (variant = {}) =>
     Number(variant.original_price || 0) > Number(variant.price || 0);
 
@@ -129,12 +141,23 @@ const categoryBelongsToPetType = (categoryName = "", petType = null) => {
 
     const category = normalizeTerm(categoryName);
 
+    const hasDogSignal =
+        hasWholeTerm(category, "dog") ||
+        category.includes("cho cho") ||
+        category.includes("dog ");
+    const hasCatSignal =
+        hasWholeTerm(category, "cat") ||
+        category.includes("cho meo") ||
+        category.includes("cat ");
+
     if (petType === "cat") {
-        if (category.includes("dog") || category.includes("cho")) return false;
+        if (hasDogSignal && !hasCatSignal) return false;
+        return true;
     }
 
     if (petType === "dog") {
-        if (category.includes("cat") || category.includes("meo")) return false;
+        if (hasCatSignal && !hasDogSignal) return false;
+        return true;
     }
 
     return true;
@@ -175,12 +198,31 @@ const buildFullHaystack = (product = {}) =>
             .join(" "),
     );
 
+const hasDogSemanticSignal = (haystack = "") =>
+    hasWholeTerm(haystack, "dog") ||
+    hasWholeTerm(haystack, "dogs") ||
+    hasWholeTerm(haystack, "puppy") ||
+    haystack.includes("thuc an cho cho") ||
+    haystack.includes("pate cho cho") ||
+    haystack.includes("do choi cho cho") ||
+    haystack.includes("cho dang moc rang") ||
+    haystack.includes("cho moc rang");
+
+const hasCatSemanticSignal = (haystack = "") =>
+    hasWholeTerm(haystack, "cat") ||
+    hasWholeTerm(haystack, "cats") ||
+    hasWholeTerm(haystack, "kitten") ||
+    haystack.includes("thuc an cho meo") ||
+    haystack.includes("pate cho meo") ||
+    haystack.includes("do choi cho meo") ||
+    haystack.includes("meo ken an");
+
 const belongsToPetType = (product = {}, petType = null) => {
     if (!petType) return true;
 
     const haystack = buildFullHaystack(product);
-    const hasDogSignal = haystack.includes("dog") || haystack.includes("cho");
-    const hasCatSignal = haystack.includes("cat") || haystack.includes("meo");
+    const hasDogSignal = hasDogSemanticSignal(haystack);
+    const hasCatSignal = hasCatSemanticSignal(haystack);
 
     if (petType === "cat") {
         return hasCatSignal && !hasDogSignal;
@@ -198,14 +240,29 @@ const getProductFormSignals = (product = {}) => {
 
     return {
         pate: haystack.includes("pate") || haystack.includes("wet food"),
+
         kibble:
             haystack.includes("kibble") ||
             haystack.includes("dry food") ||
-            haystack.includes("hat"),
-        milk: haystack.includes("milk") || haystack.includes("sua"),
-        toy: haystack.includes("toy") || haystack.includes("do choi"),
+            hasWholeTerm(haystack, "hat"),
+
+        milk: haystack.includes("milk") || hasWholeTerm(haystack, "sua"),
+
+        toy:
+            haystack.includes("toy") ||
+            haystack.includes("do choi") ||
+            haystack.includes("ball") ||
+            haystack.includes("chew"),
+
         snack: haystack.includes("snack") || haystack.includes("treat"),
-        shampoo: haystack.includes("shampoo") || haystack.includes("sua tam"),
+
+        shampoo:
+            haystack.includes("shampoo") ||
+            haystack.includes("sua tam") ||
+            haystack.includes("cleaning") ||
+            haystack.includes("lam sach") ||
+            haystack.includes("ve sinh") ||
+            haystack.includes("wipes"),
     };
 };
 
@@ -231,6 +288,8 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
         .join(" ");
 
     const haystack = `${name} ${description} ${category} ${variantText}`;
+    const hasDogSignal = hasDogSemanticSignal(haystack);
+    const hasCatSignal = hasCatSemanticSignal(haystack);
 
     const categoryMatched = matchedCategories.some(
         (item) => item.productCategories_id === product.productCategories_id,
@@ -273,25 +332,25 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
     }
 
     if (analysis?.petType === "dog") {
-        if (haystack.includes("dog") || haystack.includes("cho")) {
-            score += 12;
+        if (hasDogSignal) {
+            score += 18;
             matchedReasons.push("pet_type:dog");
         }
 
-        if (haystack.includes("cat") || haystack.includes("meo")) {
-            score -= 80;
+        if (hasCatSignal && !hasDogSignal) {
+            score -= 120;
             matchedReasons.push("pet_type_mismatch:cat");
         }
     }
 
     if (analysis?.petType === "cat") {
-        if (haystack.includes("cat") || haystack.includes("meo")) {
-            score += 12;
+        if (hasCatSignal) {
+            score += 18;
             matchedReasons.push("pet_type:cat");
         }
 
-        if (haystack.includes("dog") || haystack.includes("cho")) {
-            score -= 80;
+        if (hasDogSignal && !hasCatSignal) {
+            score -= 120;
             matchedReasons.push("pet_type_mismatch:dog");
         }
     }
@@ -328,7 +387,7 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
             score += 35;
             matchedReasons.push(`product_form:${analysis.productForm}`);
         } else {
-            score -= 50;
+            score -= 80;
             matchedReasons.push(
                 `product_form_mismatch:${analysis.productForm}`,
             );
@@ -367,16 +426,26 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
 };
 
 const calculateConfidence = (items = [], analysis = {}) => {
-    const topScore = items[0]?._score || 0;
+    const topItem = items[0];
+    const topScore = topItem?._final_score || topItem?._score || 0;
+
     if (topScore <= 0) return 0;
 
-    let confidence = Math.min(1, topScore / 90);
+    let confidence = Math.min(1, topScore / 110);
 
-    if (analysis?.productForm) confidence += 0.08;
+    if (analysis?.productForm) confidence += 0.06;
     if (analysis?.petType) confidence += 0.05;
     if (analysis?.discountMode) confidence += 0.04;
 
-    return Number(Math.min(1, confidence).toFixed(2));
+    if (
+        analysis?.petType &&
+        topItem?._semantic_metadata?.pet_type &&
+        topItem._semantic_metadata.pet_type !== analysis.petType
+    ) {
+        confidence -= 0.2;
+    }
+
+    return Number(Math.max(0, Math.min(1, confidence)).toFixed(2));
 };
 
 module.exports = {

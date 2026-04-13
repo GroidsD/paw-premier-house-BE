@@ -80,6 +80,10 @@ const VI_DOMAIN_KEYWORDS = new Set([
     "khuyen",
     "mai",
     "sale",
+    "ve sinh",
+    "lau",
+    "khu mui",
+    "cham soc",
 ]);
 
 const EN_DOMAIN_KEYWORDS = new Set([
@@ -137,6 +141,10 @@ const PET_TYPE_PATTERNS = {
         "sua cho cho",
         "do choi cho cho",
         "toy cho cho",
+        "cho moc rang",
+        "cho dang moc rang",
+        "do choi phu hop cho cho",
+        "do choi cho cho nho",
     ],
     cat: [
         "meo",
@@ -157,6 +165,7 @@ const PET_TYPE_PATTERNS = {
         "sua cho meo",
         "do choi cho meo",
         "toy cho meo",
+        "meo ken an",
     ],
 };
 
@@ -186,7 +195,18 @@ const PRODUCT_FORM_KEYWORDS = {
     ],
     toy: ["do choi", "toy", "toys", "cat toy", "dog toy"],
     snack: ["snack", "treat", "treats", "banh thuong", "thuong"],
-    shampoo: ["sua tam", "shampoo", "bath", "cleaning"],
+    shampoo: [
+        "sua tam",
+        "shampoo",
+        "bath",
+        "cleaning",
+        "lam sach",
+        "ve sinh",
+        "khu mui",
+        "lau",
+        "wipes",
+        "cleaning wipes",
+    ],
 };
 
 const DISCOUNT_KEYWORDS = [
@@ -271,6 +291,14 @@ const DOMAIN_SYNONYMS = {
     "khuyen mai": ["sale", "discount", "promotion"],
     sale: ["giam gia", "khuyen mai", "discount", "deal"],
     discount: ["giam gia", "khuyen mai", "sale"],
+
+    "meo ken an": ["cat picky eater", "cat food", "wet food"],
+    "cho moc rang": ["dog teething", "chew toy", "dental treat"],
+    "cho dang moc rang": ["dog teething", "chew toy", "dental treat"],
+    "do choi phu hop cho cho": ["dog toy", "do choi cho cho", "dog toys"],
+    "do choi cho cho nho": ["small dog toy", "dog toy", "toy for small dog"],
+    "lam sach cho thu cung": ["cleaning", "shampoo", "wipes", "ve sinh"],
+    "ve sinh cho thu cung": ["cleaning", "shampoo", "wipes", "lam sach"],
 };
 
 const KEEP_IN_PHRASES = new Set(["meo", "dog", "cat", "cun"]);
@@ -303,6 +331,32 @@ const STRONG_PHRASES = [
     "khong giam gia",
     "khong sale",
     "gia goc",
+    "meo ken an",
+    "cho moc rang",
+    "cho dang moc rang",
+    "do choi phu hop cho cho",
+    "do choi cho cho nho",
+    "lam sach cho thu cung",
+    "ve sinh cho thu cung",
+];
+const SEMANTIC_INTENT_HINTS = [
+    "phu hop",
+    "nen chon",
+    "goi y",
+    "tot cho",
+    "ken an",
+    "nang dong",
+    "lam sach",
+    "moc rang",
+    "de nhai",
+    "de tieu",
+];
+const BROAD_BROWSE_HINTS = [
+    "san pham",
+    "shop co gi",
+    "co gi",
+    "mat hang",
+    "do cho",
 ];
 module.exports = {
     VI_STOPWORDS,
@@ -317,4 +371,6 @@ module.exports = {
     DOMAIN_SYNONYMS,
     KEEP_IN_PHRASES,
     STRONG_PHRASES,
+    SEMANTIC_INTENT_HINTS,
+    BROAD_BROWSE_HINTS,
 };

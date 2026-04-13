@@ -28,15 +28,37 @@ const detectInputLanguage = ({ message, tokens }) => {
     return "mixed";
 };
 
+const escapeRegExp = (value = "") =>
+    String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const hasWholePhrase = (text = "", phrase = "") => {
+    const normalizedText = normalizeText(text);
+    const normalizedPhrase = normalizeText(phrase);
+
+    if (!normalizedPhrase) return false;
+
+    const pattern = new RegExp(
+        `(^|\\s)${escapeRegExp(normalizedPhrase)}(?=\\s|$)`,
+        "i",
+    );
+
+    return pattern.test(normalizedText);
+};
+
 const detectPetType = (text = "") => {
-    const normalized = normalizeText(text);
+    const raw = String(text || "");
+
+    // ưu tiên bắt từ có dấu trước
+    if (/\bmèo\b/i.test(raw)) return "cat";
+    if (/\bchó\b/i.test(raw)) return "dog";
+    if (/\bcún\b/i.test(raw)) return "dog";
 
     const catMatches = PET_TYPE_PATTERNS.cat.filter((keyword) =>
-        normalized.includes(normalizeText(keyword)),
+        hasWholePhrase(raw, keyword),
     );
 
     const dogMatches = PET_TYPE_PATTERNS.dog.filter((keyword) =>
-        normalized.includes(normalizeText(keyword)),
+        hasWholePhrase(raw, keyword),
     );
 
     if (catMatches.length > 0 && dogMatches.length === 0) return "cat";
@@ -45,8 +67,8 @@ const detectPetType = (text = "") => {
     const longestCat = Math.max(0, ...catMatches.map((item) => item.length));
     const longestDog = Math.max(0, ...dogMatches.map((item) => item.length));
 
-    if (longestCat > longestDog) return "cat";
-    if (longestDog > longestCat) return "dog";
+    if (longestCat > longestDog && longestCat >= 6) return "cat";
+    if (longestDog > longestCat && longestDog >= 6) return "dog";
 
     return null;
 };

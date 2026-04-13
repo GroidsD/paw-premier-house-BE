@@ -1,9 +1,159 @@
 const productRepo = require("../repositories/productChatRepository");
 const { mapProductRecord } = require("./productMapper");
 const ranker = require("./productRanker");
+const { searchProductsBySemantic } = require("./semanticSearchService");
+const { mergeSemanticIntoItems } = require("./semanticMergeService");
+const normalizeText = require("../../../utils/normalizeText");
+const {
+    SEMANTIC_INTENT_HINTS,
+    BROAD_BROWSE_HINTS,
+} = require("../analyzer/constants");
 
 const searchCache = new Map();
 const SEARCH_CACHE_TTL_MS = 60 * 1000;
+const MAX_SEARCH_CACHE_SIZE = 200;
+
+const isBroadBrowseQuery = ({ analysis, result, message = "" }) => {
+    const normalizedMessage = normalizeText(message);
+
+    const hasBroadTerm = BROAD_BROWSE_HINTS.some((term) =>
+        normalizedMessage.includes(term),
+    );
+
+    const isSpecific =
+        Boolean(analysis?.productForm) ||
+        Boolean(analysis?.discountMode) ||
+        Boolean(analysis?.petSize) ||
+        (result?.matched_categories?.length || 0) > 0;
+
+    return hasBroadTerm && !isSpecific;
+};
+
+const getBrowseGroupKey = (item = {}, ranker) => {
+    const signals = ranker.getProductFormSignals(item);
+
+    if (signals.pate || signals.kibble || signals.milk || signals.snack) {
+        return "food";
+    }
+
+    if (signals.toy) {
+        return "toy";
+    }
+
+    if (signals.shampoo) {
+        return "care";
+    }
+
+    const category = normalizeText(item.category || "");
+
+    if (
+        category.includes("accessory") ||
+        category.includes("accessories") ||
+        category.includes("phu kien") ||
+        category.includes("clothes") ||
+        category.includes("quan ao") ||
+        category.includes("apparel")
+    ) {
+        return "accessory";
+    }
+
+    return "other";
+};
+
+const diversifyItemsForBrowse = ({ items = [], limit = 4, ranker }) => {
+    const grouped = new Map();
+
+    for (const item of items) {
+        const groupKey = getBrowseGroupKey(item, ranker);
+
+        if (!grouped.has(groupKey)) {
+            grouped.set(groupKey, []);
+        }
+
+        grouped.get(groupKey).push(item);
+    }
+
+    const preferredOrder = ["food", "toy", "care", "accessory", "other"];
+    const diversified = [];
+
+    // Vòng 1: mỗi group lấy 1 item tốt nhất
+    for (const groupKey of preferredOrder) {
+        const groupItems = grouped.get(groupKey) || [];
+        if (groupItems.length > 0) {
+            diversified.push(groupItems[0]);
+        }
+    }
+
+    // Vòng 2: fill thêm item còn lại nếu chưa đủ
+    if (diversified.length < limit) {
+        const pickedIds = new Set(diversified.map((item) => item.product_id));
+        const leftovers = items.filter(
+            (item) => !pickedIds.has(item.product_id),
+        );
+        diversified.push(...leftovers.slice(0, limit - diversified.length));
+    }
+
+    return diversified.slice(0, limit);
+};
+
+const finalizeItems = ({
+    items = [],
+    analysis = {},
+    matchedCategories = [],
+    message = "",
+    limit = 4,
+    ranker,
+}) => {
+    let cleanedItems = [...items];
+
+    // Hard guard cuối cùng theo product form
+    if (analysis?.productForm) {
+        cleanedItems = cleanedItems.filter((item) =>
+            ranker.matchesProductForm(item, analysis.productForm),
+        );
+    }
+
+    // Hard guard cuối cùng theo pet type
+    if (analysis?.petType) {
+        cleanedItems = cleanedItems.filter((item) =>
+            ranker.belongsToPetType(item, analysis.petType),
+        );
+    }
+
+    const broadBrowse = isBroadBrowseQuery({
+        analysis,
+        result: { matched_categories: matchedCategories },
+        message,
+    });
+
+    if (broadBrowse) {
+        return diversifyItemsForBrowse({
+            items: cleanedItems,
+            limit,
+            ranker,
+        });
+    }
+
+    return cleanedItems.slice(0, limit);
+};
+
+const shouldUseSemanticFallback = ({ analysis, result, message = "" }) => {
+    if (!result?.items?.length) return true;
+    if ((result?.confidence || 0) < 0.35) return true;
+
+    const normalizedMessage = normalizeText(message);
+
+    const hasSemanticHint = SEMANTIC_INTENT_HINTS.some((hint) =>
+        normalizedMessage.includes(hint),
+    );
+
+    const weakStructuredSignals =
+        !analysis?.productForm &&
+        !analysis?.discountMode &&
+        !result?.matched_categories?.length;
+
+    return weakStructuredSignals || hasSemanticHint;
+};
 
 const buildSearchCacheKey = (analysis = {}) =>
     JSON.stringify({
@@ -29,8 +179,6 @@ const getCachedSearchResult = (cacheKey) => {
 
     return cached.value;
 };
-
-const MAX_SEARCH_CACHE_SIZE = 200;
 
 const setCachedSearchResult = (cacheKey, value) => {
     if (searchCache.size >= MAX_SEARCH_CACHE_SIZE) {
@@ -89,6 +237,17 @@ const pickBasePool = ({ mapped, analysis, ranker }) => {
               ranker.matchesDiscountMode(item, analysis.discountMode),
           )
         : formFiltered;
+
+    // Nếu user đã nói rõ productForm thì không fallback broad nữa
+    if (analysis?.productForm) {
+        return {
+            petTypeFiltered,
+            formFiltered,
+            discountFiltered,
+            basePool:
+                discountFiltered.length > 0 ? discountFiltered : formFiltered,
+        };
+    }
 
     return {
         petTypeFiltered,
@@ -177,8 +336,23 @@ const findRelevantProducts = async ({ message, analysis }) => {
 
     const rankingTime = Date.now() - t4;
 
-    const finalItems =
-        ranked.length > 0 ? ranked.slice(0, 4) : basePool.slice(0, 4);
+    const candidateItems =
+        ranked.length > 0 ? ranked.slice(0, 8) : basePool.slice(0, 8);
+
+    const finalItems = finalizeItems({
+        items: candidateItems,
+        analysis,
+        matchedCategories: matchedCategories.map((c) => c.type),
+        message,
+        limit: 4,
+        ranker,
+    });
+
+    const isBroad = isBroadBrowseQuery({
+        analysis,
+        result: { matched_categories: matchedCategories.map((c) => c.type) },
+        message,
+    });
 
     const result = {
         type: "products",
@@ -202,11 +376,86 @@ const findRelevantProducts = async ({ message, analysis }) => {
             "post_ranked_search",
             analysis?.petType ? `pet_type:${analysis.petType}` : null,
             analysis?.petSize ? `pet_size:${analysis.petSize}` : null,
+            isBroad ? "browse_group_diversified" : null,
         ].filter(Boolean),
         confidence: ranker.calculateConfidence(finalItems, analysis),
     };
 
-    setCachedSearchResult(cacheKey, result);
+    let finalResult = result;
+
+    if (shouldUseSemanticFallback({ analysis, result, message })) {
+        try {
+            const semanticResults = await searchProductsBySemantic({
+                message,
+                limit: 6,
+            });
+
+            if (semanticResults.length > 0) {
+                const semanticProductIds = semanticResults
+                    .map((item) => Number(item.product_id))
+                    .filter(Boolean);
+
+                const semanticProducts = await productRepo.findProductsByIds({
+                    productIds: semanticProductIds,
+                });
+
+                const semanticMappedItems = semanticProducts
+                    .map((product) =>
+                        mapProductRecord(product, analysis, ranker),
+                    )
+                    .filter(Boolean)
+                    .filter((item) =>
+                        analysis?.petType
+                            ? ranker.belongsToPetType(item, analysis.petType)
+                            : true,
+                    )
+                    .filter((item) =>
+                        analysis?.productForm
+                            ? ranker.matchesProductForm(
+                                  item,
+                                  analysis.productForm,
+                              )
+                            : true,
+                    )
+                    .map((item) => ({
+                        ...item,
+                        _score: Number(item._score || 5),
+                    }));
+
+                const mergedItems = mergeSemanticIntoItems({
+                    localItems: finalResult.items,
+                    semanticMappedItems,
+                    semanticResults,
+                    analysis,
+                });
+
+                const finalMergedItems = finalizeItems({
+                    items: mergedItems,
+                    analysis,
+                    matchedCategories: finalResult.matched_categories || [],
+                    message,
+                    limit: 4,
+                    ranker,
+                });
+
+                finalResult = {
+                    ...finalResult,
+                    items: finalMergedItems,
+                    applied_filters: [
+                        ...finalResult.applied_filters,
+                        "semantic_rerank",
+                        "semantic_candidate_expansion",
+                        analysis?.productForm ? "post_merge_form_guard" : null,
+                        isBroad ? "browse_group_diversified" : null,
+                    ].filter(Boolean),
+                };
+            }
+        } catch (error) {
+            console.error("semantic fallback error:", error.message);
+        }
+    }
+
+    setCachedSearchResult(cacheKey, finalResult);
 
     console.log("product search timing:", {
         total: Date.now() - startedAt,
@@ -220,12 +469,14 @@ const findRelevantProducts = async ({ message, analysis }) => {
         petTypeFilteredCount: petTypeFiltered.length,
         formFilteredCount: formFiltered.length,
         discountFilteredCount: discountFiltered.length,
-        finalCount: finalItems.length,
+        finalCount: finalResult.items.length,
         categoryIdsCount: categoryIds.length,
         queryLimit,
+        usedSemanticFallback:
+            finalResult.applied_filters.includes("semantic_rerank"),
     });
 
-    return result;
+    return finalResult;
 };
 
 module.exports = {
