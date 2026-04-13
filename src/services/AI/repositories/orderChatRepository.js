@@ -1,18 +1,39 @@
 const { Op } = require("sequelize");
-const { Order, OrderItem } = require("../models");
-const normalizeText = require("../utils/normalizeText");
+const { Order, OrderItem } = require("../../../models");
+const normalizeText = require("../../../utils/normalizeText");
 
 const STATUS_KEYWORDS = {
-    pending: ["pending", "cho xac nhan", "đang chờ", "dang cho", "chờ xác nhận"],
+    pending: [
+        "pending",
+        "cho xac nhan",
+        "đang chờ",
+        "dang cho",
+        "chờ xác nhận",
+    ],
     confirmed: ["confirmed", "da xac nhan", "đã xác nhận"],
-    shipping: ["shipping", "dang giao", "đang giao", "van chuyen", "vận chuyển"],
+    shipping: [
+        "shipping",
+        "dang giao",
+        "đang giao",
+        "van chuyen",
+        "vận chuyển",
+    ],
     completed: ["completed", "hoan thanh", "hoàn thành", "da nhan", "đã nhận"],
-    cancelled: ["cancelled", "canceled", "da huy", "đã huỷ", "huy don", "huỷ đơn"],
+    cancelled: [
+        "cancelled",
+        "canceled",
+        "da huy",
+        "đã huỷ",
+        "huy don",
+        "huỷ đơn",
+    ],
 };
 
 const includesKeyword = (text = "", keywords = []) => {
     const normalized = normalizeText(text);
-    return keywords.some((keyword) => normalized.includes(normalizeText(keyword)));
+    return keywords.some((keyword) =>
+        normalized.includes(normalizeText(keyword)),
+    );
 };
 
 const detectOrderStatusFilter = (message = "") => {
@@ -145,8 +166,8 @@ const findUserOrders = async ({ currentUser, message = "" }) => {
             0,
         ),
         preview_image:
-            (order.orderItems || []).find((item) => item.product_image)?.product_image ||
-            null,
+            (order.orderItems || []).find((item) => item.product_image)
+                ?.product_image || null,
     }));
 
     return {

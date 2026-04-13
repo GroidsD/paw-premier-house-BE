@@ -1,5 +1,5 @@
-import { Service, ServiceCategory, Media } from "../models";
-import normalizeText from "../utils/normalizeText";
+import { Service, ServiceCategory, Media } from "../../../models";
+import normalizeText from "../../../utils/normalizeText";
 
 const includesTerm = (haystack = "", term = "") => {
     const normalizedHaystack = normalizeText(haystack);

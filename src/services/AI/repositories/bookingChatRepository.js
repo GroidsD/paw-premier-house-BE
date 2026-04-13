@@ -1,4 +1,4 @@
-import  { Booking, BookingItem, Service } from "../models";
+import { Booking, BookingItem, Service } from "../../../models";
 
 const findUserBookings = async ({ currentUser, message }) => {
     const bookings = await Booking.findAll({

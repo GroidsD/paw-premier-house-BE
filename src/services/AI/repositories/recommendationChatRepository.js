@@ -1,4 +1,4 @@
-import { UserRecommendation, Product, Service } from "../models";
+import { UserRecommendation, Product, Service } from "../../../models";
 
 const findUserRecommendations = async ({ currentUser }) => {
     const recommendations = await UserRecommendation.findAll({

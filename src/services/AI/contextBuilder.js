@@ -1,8 +1,8 @@
-const productRepo = require("../../repositories/productChatRepository");
-const serviceRepo = require("../../repositories/serviceChatRepository");
-const bookingRepo = require("../../repositories/bookingChatRepository");
-const recommendationRepo = require("../../repositories/recommendationChatRepository");
-const orderRepo = require("../../repositories/orderChatRepository");
+const productSearchService = require("./search/productSearchService");
+const serviceRepo = require("./repositories/serviceChatRepository");
+const bookingRepo = require("./repositories/bookingChatRepository");
+const recommendationRepo = require("./repositories/recommendationChatRepository");
+const orderRepo = require("./repositories/orderChatRepository");
 
 const attachAnalysis = (context, analysis, message, currentUser) => ({
     ...(context || {}),
@@ -37,7 +37,7 @@ const buildContext = async ({ intent, message, currentUser, analysis }) => {
 
     switch (intent) {
         case "product_search":
-            context = await productRepo.findRelevantProducts({
+            context = await productSearchService.findRelevantProducts({
                 message,
                 currentUser,
                 analysis,
@@ -46,7 +46,7 @@ const buildContext = async ({ intent, message, currentUser, analysis }) => {
 
         case "product_recommend":
             if (!currentUser?.user_id) {
-                context = await productRepo.findRelevantProducts({
+                context = await productSearchService.findRelevantProducts({
                     message,
                     currentUser,
                     analysis,

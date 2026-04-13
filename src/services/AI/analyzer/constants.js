@@ -133,6 +133,8 @@ const PET_TYPE_PATTERNS = {
         "do an cho cho",
         "pate cho cho",
         "sua cho cho",
+        "do choi cho cho",
+        "toy cho cho",
     ],
     cat: [
         "meo",
@@ -149,6 +151,8 @@ const PET_TYPE_PATTERNS = {
         "do an cho meo",
         "pate cho meo",
         "sua cho meo",
+        "do choi cho meo",
+        "toy cho meo",
     ],
 };
 
@@ -236,8 +240,10 @@ const DOMAIN_SYNONYMS = {
     "cat food": ["thuc an cho meo", "hat cho meo", "pate cho meo"],
     "dog food": ["thuc an cho cho", "hat cho cho", "pate cho cho"],
 
+    "do choi cho cho": ["dog toy", "toy", "do choi"],
+    "do choi cho meo": ["cat toy", "toy", "do choi"],
     "do choi": ["toy", "toys", "ball", "chew"],
-    toy: ["do choi", "bong", "xuong nhai"],
+    toy: ["do choi", "bong", "xuong nhai", "ball", "chew"],
     "cat toy": ["do choi cho meo"],
     "dog toy": ["do choi cho cho"],
 
@@ -272,6 +278,8 @@ const STRONG_PHRASES = [
     "pate cho cho",
     "sua cho meo",
     "sua cho cho",
+    "do choi cho meo",
+    "do choi cho cho",
     "cat food",
     "dog food",
     "kitten milk",
@@ -284,7 +292,6 @@ const STRONG_PHRASES = [
     "khong sale",
     "gia goc",
 ];
-
 module.exports = {
     VI_STOPWORDS,
     EN_STOPWORDS,
