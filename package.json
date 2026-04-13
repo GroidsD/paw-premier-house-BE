@@ -13,7 +13,7 @@
     "license": "ISC",
     "description": " It is built with Node.js, Express, and Sequelize ORM, providing RESTful APIs and real-time socket communication for the IAMS frontend.",
     "dependencies": {
-        "@supabase/supabase-js": "^2.76.1",
+        "@supabase/supabase-js": "^2.103.0",
         "axios": "^1.9.0",
         "bcrypt": "^5.1.1",
         "body-parser": "^1.20.3",

@@ -131,6 +131,8 @@ const PET_TYPE_PATTERNS = {
         "dog toy",
         "thuc an cho cho",
         "do an cho cho",
+        "san pham cho cho",
+        "phu kien cho cho",
         "pate cho cho",
         "sua cho cho",
         "do choi cho cho",
@@ -149,6 +151,8 @@ const PET_TYPE_PATTERNS = {
         "cat toy",
         "thuc an cho meo",
         "do an cho meo",
+        "san pham cho meo",
+        "phu kien cho meo",
         "pate cho meo",
         "sua cho meo",
         "do choi cho meo",
@@ -214,6 +218,10 @@ const NON_DISCOUNT_KEYWORDS = [
 ];
 
 const DOMAIN_SYNONYMS = {
+    "san pham cho cho": ["dog products", "dog accessories", "phu kien cho cho"],
+    "san pham cho meo": ["cat products", "cat accessories", "phu kien cho meo"],
+    "phu kien cho cho": ["dog accessories", "dog products"],
+    "phu kien cho meo": ["cat accessories", "cat products"],
     "thuc an": ["food", "kibble", "meal", "nutrition"],
     "thuc an cho meo": [
         "cat food",
@@ -270,6 +278,10 @@ const KEEP_IN_PHRASES = new Set(["meo", "dog", "cat", "cun"]);
 const STRONG_PHRASES = [
     "thuc an cho meo",
     "thuc an cho cho",
+    "san pham cho cho",
+    "san pham cho meo",
+    "phu kien cho cho",
+    "phu kien cho meo",
     "do an cho meo",
     "do an cho cho",
     "hat cho meo",

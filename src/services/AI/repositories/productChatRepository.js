@@ -43,6 +43,20 @@ const clearCategoryCache = () => {
 
 const findProductCandidates = async ({ categoryIds = [], limit = 30 }) => {
     return Product.findAll({
+        attributes: [
+            "product_id",
+            "productCategories_id",
+            "name",
+            "description",
+            "slug",
+            "has_variants",
+            "original_price",
+            "discount",
+            "discount_type",
+            "price",
+            "quantity",
+            "updated_at",
+        ],
         where: {
             isActive: true,
             isDelete: false,
@@ -69,6 +83,7 @@ const findProductCandidates = async ({ categoryIds = [], limit = 30 }) => {
                 },
                 attributes: [
                     "productVariant_id",
+                    "product_id",
                     "variant_label",
                     "color",
                     "size",
@@ -83,8 +98,14 @@ const findProductCandidates = async ({ categoryIds = [], limit = 30 }) => {
             {
                 model: Media,
                 as: "media",
-                attributes: ["media_id", "url", "is_main", "alt_text"],
                 required: false,
+                attributes: [
+                    "media_id",
+                    "entity_id",
+                    "url",
+                    "is_main",
+                    "alt_text",
+                ],
             },
         ],
         limit,
