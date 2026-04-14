@@ -57,11 +57,11 @@ router.delete(
 
 router.put(
     "/api/service/restore",
-    // authMiddleware,
-    // rbacMiddleware,
-    // permissionMiddleware({
-    //     all: ["dashboard:admin", "service:delete"],
-    // }),
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["dashboard:admin", "service:delete"],
+    }),
     serviceController.restoreService,
 );
 

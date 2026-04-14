@@ -68,6 +68,14 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            summary: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            thumbnail_url: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
 
             slug: {
                 type: DataTypes.STRING,

@@ -47,6 +47,10 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: true,
             },
+            thumbnail_url: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
 
             original_price: {
                 type: Sequelize.DECIMAL(10, 2),

@@ -67,6 +67,11 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
 
+            thumbnail_url: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+
             original_price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,

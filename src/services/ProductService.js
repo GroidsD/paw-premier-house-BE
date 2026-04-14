@@ -119,6 +119,8 @@ let createProduct = async (data) => {
             productCategories_id,
             name,
             description,
+            summary,
+            thumbnail_url,
             original_price,
             discount = 0,
             discount_type = "percent",
@@ -202,6 +204,8 @@ let createProduct = async (data) => {
                 name,
                 slug,
                 description,
+                summary,
+                thumbnail_url: Array.isArray(media) ? (media.find(m => m.is_main)?.url || (media[0]?.url || null)) : null,
                 has_variants,
                 original_price: has_variants ? 0 : basePrice,
                 discount: has_variants ? 0 : newDiscount,
@@ -249,6 +253,7 @@ let createProduct = async (data) => {
                                 Number(variant.discount || 0),
                                 variant.discount_type || "fixed",
                             ),
+                            thumbnail_url: null, // Skipping per user request
                             isActive:
                                 variant.isActive !== undefined
                                     ? !!variant.isActive
@@ -312,6 +317,8 @@ let getAllProducts = () => {
                     "name",
                     "slug",
                     "description",
+                    "summary",
+                    "thumbnail_url",
                     "price",
                     "original_price",
                     "discount",
@@ -363,6 +370,8 @@ let getProductById = (product_id) => {
                     "isActive",
                     "has_variants",
                     "description",
+                    "summary",
+                    "thumbnail_url",
                     "created_at",
                 ],
                 include: [
@@ -413,6 +422,8 @@ let updateProduct = async (product_id, data, files) => {
             productCategories_id,
             name,
             description,
+            summary,
+            thumbnail_url,
             original_price,
             discount,
             discount_type,
@@ -452,6 +463,7 @@ let updateProduct = async (product_id, data, files) => {
                     productCategories_id ?? product.productCategories_id,
                 name: name ?? product.name,
                 description: description ?? product.description,
+                summary: summary ?? product.summary,
                 isActive: isActive ?? product.isActive,
                 isDelete: isDelete ?? product.isDelete,
                 has_variants: nextHasVariants,
@@ -504,6 +516,7 @@ let updateProduct = async (product_id, data, files) => {
                         Number(variant.discount || 0),
                         variant.discount_type || "fixed",
                     ),
+                    thumbnail_url: null, // Skipping per user request
                     quantity: Number(variant.quantity || 0),
                     reserved_quantity: Number(variant.reserved_quantity || 0),
                     isActive:
@@ -779,6 +792,20 @@ let updateProduct = async (product_id, data, files) => {
                 }
             }
         }
+
+        // Sync thumbnail_url with the main image
+        const finalMainMedia = await db.Media.findOne({
+            where: {
+                entity_type: "product",
+                entity_id: String(product_id),
+                is_main: true
+            },
+            transaction: t
+        });
+
+        await product.update({
+            thumbnail_url: finalMainMedia ? finalMainMedia.url : null
+        }, { transaction: t });
 
         await t.commit();
 
