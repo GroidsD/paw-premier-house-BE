@@ -114,6 +114,12 @@ const detectAnswerMode = ({
             "co nhung gi",
             "grooming gom nhung gi",
             "dich vu gom nhung gi",
+            "how to use",
+            "how to use this",
+            "how should i use",
+            "how do i use",
+            "what does it include",
+            "what is included",
         ]) ||
         hasTerm([
             "benefit",
@@ -122,6 +128,9 @@ const detectAnswerMode = ({
             "ingredient",
             "warning",
             "suitable",
+            "use",
+            "include",
+            "included",
             "cong dung",
             "cach dung",
             "thanh phan",

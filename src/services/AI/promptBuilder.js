@@ -19,7 +19,10 @@ const buildPrompt = ({
             : mode === "internal_knowledge"
               ? `
 - Answer only from the provided CONTEXT.
-- Prioritize knowledge_items and matched shop items.
+- Prioritize knowledge_items first, then matched shop items.
+- Summarize the knowledge clearly and naturally.
+- If multiple knowledge_items exist, combine them into one concise answer without repeating.
+- The language of knowledge_items may differ from the user's language. Still answer in the user's language.
 - Do not invent benefits, ingredients, warnings, or usage instructions beyond the provided context.
 - Do not infer missing usage instructions from product names alone.
 - If internal knowledge is missing, say that clearly.

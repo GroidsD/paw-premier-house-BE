@@ -4,6 +4,7 @@ const serviceRepo = require("./repositories/serviceChatRepository");
 const bookingRepo = require("./repositories/bookingChatRepository");
 const recommendationRepo = require("./repositories/recommendationChatRepository");
 const orderRepo = require("./repositories/orderChatRepository");
+const productKnowledgeRepo = require("./repositories/productKnowledgeRepository");
 
 const MIN_RELATED_ITEM_CONFIDENCE = 0.6;
 
@@ -208,8 +209,6 @@ const buildInternalKnowledgeContext = async ({
     currentUser,
     analysis,
 }) => {
-    let baseContext = null;
-
     const canUseProductEntity =
         (intent === "product_search" || intent === "product_recommend") &&
         hasConcreteProductEntity(analysis);
@@ -229,9 +228,39 @@ const buildInternalKnowledgeContext = async ({
             (productContext?.confidence ?? 0) >= MIN_RELATED_ITEM_CONFIDENCE &&
             (productContext?.items || []).length > 0
         ) {
-            baseContext = productContext;
+            const bestMatch = productContext.items[0];
+
+            const knowledgeItems =
+                await productKnowledgeRepo.findKnowledgeByProductId({
+                    productId: bestMatch.product_id,
+                    language: analysis?.language || null,
+                });
+
+            if (knowledgeItems.length > 0) {
+                return {
+                    ...productContext,
+                    type: "knowledge",
+                    items: [bestMatch],
+                    knowledge_items: knowledgeItems,
+                    note: "Internal product knowledge loaded successfully.",
+                    reply: "",
+                    confidence: Math.max(productContext?.confidence ?? 0, 0.75),
+                };
+            }
+
+            return {
+                ...productContext,
+                type: "knowledge",
+                items: [bestMatch],
+                knowledge_items: [],
+                note: "Matched product found, but no product knowledge records yet.",
+                reply: "Mình đã xác định được sản phẩm liên quan trong shop, nhưng hiện chưa có kho kiến thức nội bộ để trả lời chính xác phần công dụng hoặc cách dùng.",
+                confidence: Math.min(productContext?.confidence ?? 0, 0.45),
+            };
         }
-    } else if (canUseServiceEntity) {
+    }
+
+    if (canUseServiceEntity) {
         const serviceContext = await serviceRepo.findRelevantServices({
             message,
             currentUser,
@@ -242,28 +271,24 @@ const buildInternalKnowledgeContext = async ({
             (serviceContext?.confidence ?? 0) >= MIN_RELATED_ITEM_CONFIDENCE &&
             (serviceContext?.items || []).length > 0
         ) {
-            baseContext = serviceContext;
+            return {
+                ...serviceContext,
+                type: "knowledge",
+                knowledge_items: [],
+                note: "Service matched, but service knowledge repository is not connected yet.",
+                reply: "Mình đã xác định được dịch vụ liên quan, nhưng hiện chưa có kho kiến thức nội bộ cho dịch vụ để trả lời chi tiết.",
+                confidence: Math.min(serviceContext?.confidence ?? 0, 0.45),
+            };
         }
     }
 
-    if (!baseContext) {
-        return {
-            type: "knowledge",
-            items: [],
-            knowledge_items: [],
-            note: "No strong concrete shop entity matched for internal knowledge mode.",
-            reply: "Mình chưa xác định được chính xác sản phẩm hoặc dịch vụ cụ thể trong shop để trả lời phần công dụng hoặc cách dùng.",
-            confidence: 0.2,
-        };
-    }
-
     return {
-        ...baseContext,
         type: "knowledge",
+        items: [],
         knowledge_items: [],
-        note: "Internal knowledge mode is active, but no internal knowledge repository is connected yet.",
-        reply: "Mình đã xác định được sản phẩm hoặc dịch vụ liên quan trong shop, nhưng hiện chưa có kho kiến thức nội bộ để trả lời chính xác phần công dụng hoặc cách dùng.",
-        confidence: Math.min(baseContext?.confidence ?? 0, 0.45),
+        note: "No strong concrete shop entity matched for internal knowledge mode.",
+        reply: "Mình chưa xác định được chính xác sản phẩm hoặc dịch vụ cụ thể trong shop để trả lời phần công dụng hoặc cách dùng.",
+        confidence: 0.2,
     };
 };
 

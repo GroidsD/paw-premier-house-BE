@@ -1278,9 +1278,147 @@ module.exports = {
                 updated_at: now,
             },
         ]);
+        // PRODUCT KNOWLEDGE
+        // =====================================================
+        await queryInterface.bulkInsert("productKnowledge", [
+            {
+                knowledge_id: 1,
+                product_id: 6,
+                knowledge_type: "usage",
+                title: "Cách sử dụng",
+                content:
+                    "Cho mèo ăn trực tiếp. Điều chỉnh khẩu phần theo độ tuổi, cân nặng và mức độ vận động của mèo. Sau khi mở nên bảo quản lạnh và dùng sớm.",
+                language: "vi",
+                sort_order: 1,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+            {
+                knowledge_id: 2,
+                product_id: 6,
+                knowledge_type: "benefit",
+                title: "Công dụng",
+                content:
+                    "Bổ sung dinh dưỡng cho mèo, giúp bữa ăn mềm và dễ ăn hơn, phù hợp với mèo thích thức ăn ẩm.",
+                language: "vi",
+                sort_order: 2,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+            {
+                knowledge_id: 3,
+                product_id: 6,
+                knowledge_type: "suitable_for",
+                title: "Đối tượng phù hợp",
+                content:
+                    "Phù hợp cho mèo trưởng thành và mèo cần thức ăn mềm, dễ ăn.",
+                language: "vi",
+                sort_order: 3,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+            {
+                knowledge_id: 4,
+                product_id: 6,
+                knowledge_type: "warning",
+                title: "Lưu ý",
+                content:
+                    "Luôn chuẩn bị nước sạch cho mèo. Không sử dụng sản phẩm đã quá hạn hoặc có dấu hiệu hư hỏng.",
+                language: "vi",
+                sort_order: 4,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+
+            {
+                knowledge_id: 5,
+                product_id: 2,
+                knowledge_type: "usage",
+                title: "Cách sử dụng",
+                content:
+                    "Cho chó ăn trực tiếp theo khẩu phần phù hợp với cân nặng và độ tuổi. Có thể kết hợp cùng hạt để tăng độ ngon miệng.",
+                language: "vi",
+                sort_order: 1,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+            {
+                knowledge_id: 6,
+                product_id: 2,
+                knowledge_type: "benefit",
+                title: "Công dụng",
+                content:
+                    "Cung cấp bữa ăn mềm, dễ ăn và bổ sung dinh dưỡng cho chó ở nhiều độ tuổi.",
+                language: "vi",
+                sort_order: 2,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+
+            {
+                knowledge_id: 7,
+                product_id: 8,
+                knowledge_type: "usage",
+                title: "Cách sử dụng",
+                content:
+                    "Pha sữa theo hướng dẫn khẩu phần phù hợp với độ tuổi của mèo con. Sử dụng nước ấm và cho uống ngay sau khi pha.",
+                language: "vi",
+                sort_order: 1,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+            {
+                knowledge_id: 8,
+                product_id: 8,
+                knowledge_type: "suitable_for",
+                title: "Đối tượng phù hợp",
+                content:
+                    "Phù hợp cho mèo con cần bổ sung sữa trong giai đoạn phát triển.",
+                language: "vi",
+                sort_order: 2,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+
+            {
+                knowledge_id: 9,
+                product_id: 18,
+                knowledge_type: "usage",
+                title: "Cách sử dụng",
+                content:
+                    "Làm ướt lông thú cưng, lấy lượng sữa tắm vừa đủ, massage nhẹ rồi xả sạch bằng nước.",
+                language: "vi",
+                sort_order: 1,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+            {
+                knowledge_id: 10,
+                product_id: 18,
+                knowledge_type: "benefit",
+                title: "Công dụng",
+                content:
+                    "Giúp làm sạch mùi hôi, làm mềm lông và hỗ trợ giữ bộ lông sạch sẽ hơn sau khi tắm.",
+                language: "vi",
+                sort_order: 2,
+                isActive: true,
+                created_at: now,
+                updated_at: now,
+            },
+        ]);
     },
 
     async down(queryInterface, Sequelize) {
+        await queryInterface.bulkDelete("productKnowledge", null, {});
         await queryInterface.bulkDelete("media", null, {});
         await queryInterface.bulkDelete("productVariants", null, {});
         await queryInterface.bulkDelete("products", null, {});

@@ -31,6 +31,12 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             });
+            Product.hasMany(models.ProductKnowledge, {
+                foreignKey: "product_id",
+                as: "knowledgeItems",
+                onUpdate: "CASCADE",
+                onDelete: "CASCADE",
+            });
         }
     }
 
