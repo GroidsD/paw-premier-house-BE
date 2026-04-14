@@ -1,5 +1,5 @@
 const normalizeText = require("../../../utils/normalizeText");
-const { hasVietnameseDiacritics, includesPhrase } = require("./utils");
+const { hasVietnameseDiacritics } = require("./utils");
 const {
     VI_STOPWORDS,
     VI_DOMAIN_KEYWORDS,
@@ -28,15 +28,36 @@ const detectInputLanguage = ({ message, tokens }) => {
     return "mixed";
 };
 
+const escapeRegExp = (value = "") =>
+    String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const hasWholePhrase = (text = "", phrase = "") => {
+    const normalizedText = normalizeText(text);
+    const normalizedPhrase = normalizeText(phrase);
+
+    if (!normalizedPhrase) return false;
+
+    const pattern = new RegExp(
+        `(^|\\s)${escapeRegExp(normalizedPhrase)}(?=\\s|$)`,
+        "i",
+    );
+
+    return pattern.test(normalizedText);
+};
+
 const detectPetType = (text = "") => {
-    const normalized = normalizeText(text);
+    const raw = String(text || "");
+
+    if (/\bmèo\b/i.test(raw)) return "cat";
+    if (/\bchó\b/i.test(raw)) return "dog";
+    if (/\bcún\b/i.test(raw)) return "dog";
 
     const catMatches = PET_TYPE_PATTERNS.cat.filter((keyword) =>
-        normalized.includes(normalizeText(keyword)),
+        hasWholePhrase(raw, keyword),
     );
 
     const dogMatches = PET_TYPE_PATTERNS.dog.filter((keyword) =>
-        normalized.includes(normalizeText(keyword)),
+        hasWholePhrase(raw, keyword),
     );
 
     if (catMatches.length > 0 && dogMatches.length === 0) return "cat";
@@ -45,16 +66,20 @@ const detectPetType = (text = "") => {
     const longestCat = Math.max(0, ...catMatches.map((item) => item.length));
     const longestDog = Math.max(0, ...dogMatches.map((item) => item.length));
 
-    if (longestCat > longestDog) return "cat";
-    if (longestDog > longestCat) return "dog";
+    if (longestCat > longestDog && longestCat >= 6) return "cat";
+    if (longestDog > longestCat && longestDog >= 6) return "dog";
 
     return null;
 };
 
 const detectPetSize = (text = "") => {
-    if (includesPhrase(text, PET_SIZE_KEYWORDS.small)) return "small";
-    if (includesPhrase(text, PET_SIZE_KEYWORDS.medium)) return "medium";
-    if (includesPhrase(text, PET_SIZE_KEYWORDS.large)) return "large";
+    const hasAnyWholePhrase = (keywords = []) =>
+        keywords.some((keyword) => hasWholePhrase(text, keyword));
+
+    if (hasAnyWholePhrase(PET_SIZE_KEYWORDS.small)) return "small";
+    if (hasAnyWholePhrase(PET_SIZE_KEYWORDS.medium)) return "medium";
+    if (hasAnyWholePhrase(PET_SIZE_KEYWORDS.large)) return "large";
+
     return null;
 };
 
@@ -83,11 +108,21 @@ const detectDiscountMode = (text = "") => {
 const detectProductForm = (text = "") => {
     const normalized = normalizeText(text);
 
+    const containsKeyword = (keyword = "") => {
+        const normalizedKeyword = normalizeText(keyword);
+
+        if (!normalizedKeyword) return false;
+
+        if (normalizedKeyword.length <= 4) {
+            return hasWholePhrase(normalized, normalizedKeyword);
+        }
+
+        return normalized.includes(normalizedKeyword);
+    };
+
     const matchedForms = Object.entries(PRODUCT_FORM_KEYWORDS)
         .filter(([, keywords]) =>
-            keywords.some((keyword) =>
-                normalized.includes(normalizeText(keyword)),
-            ),
+            keywords.some((keyword) => containsKeyword(keyword)),
         )
         .map(([form]) => form);
 

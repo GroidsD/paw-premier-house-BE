@@ -287,8 +287,8 @@ let hardDeleteOrder = async (req, res) => {
 
 let getAllOrdersByUserId = async (req, res) => {
     try {
-        const customer_id = req.query.customer_id;
-        const result = await OrderService.getAllOrdersByUserId(customer_id);
+        const { customer_id, limit, cursor, status } = req.query;
+        const result = await OrderService.getAllOrdersByUserId(customer_id, limit, cursor, status);
 
         if (!result || result.errCode !== 0) {
             return res.status(400).json(

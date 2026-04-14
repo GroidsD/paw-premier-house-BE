@@ -68,6 +68,19 @@ const extractDeterministicSignals = (message = "") => {
             ...(productForm ? [productForm] : []),
         ].filter((term) => term.length >= 3),
     );
+    console.log("deterministic signals debug:", {
+        message,
+        normalized,
+        tokens,
+        phraseTokens,
+        rawKeywords,
+        ngrams,
+        strongPhrases,
+        petType,
+        petSize,
+        discountMode,
+        productForm,
+    });
 
     return {
         raw: normalized,
@@ -84,10 +97,22 @@ const extractDeterministicSignals = (message = "") => {
     };
 };
 
-const shouldUseLLMExpansion = (analysis) =>
-    analysis.inputLanguage !== "vi" ||
-    analysis.searchTerms.length < 4 ||
-    (!analysis.petType && !analysis.discountMode && !analysis.productForm);
+const shouldUseLLMExpansion = (analysis) => {
+    const hasStrongStructuredSignals = Boolean(
+        analysis.petType || analysis.productForm || analysis.discountMode,
+    );
+
+    if (hasStrongStructuredSignals) {
+        return false;
+    }
+
+    const tooFewTerms = analysis.searchTerms.length < 3;
+    const foreignLanguageWeak =
+        ["en", "mixed"].includes(analysis.inputLanguage) &&
+        analysis.searchTerms.length < 5;
+
+    return tooFewTerms || foreignLanguageWeak;
+};
 
 const mergeSignals = (base, extra = {}) => ({
     ...base,
@@ -121,10 +146,13 @@ const mergeSignals = (base, extra = {}) => ({
 });
 
 const analyzeMessage = async (message = "") => {
+    const startedAt = Date.now();
     const deterministic = extractDeterministicSignals(message);
     let merged = deterministic;
+    let usedLLMExpansion = false;
 
     if (shouldUseLLMExpansion(deterministic)) {
+        usedLLMExpansion = true;
         const llmSignals = await llmService.expandSearchSignals({
             message,
             language: deterministic.language,
@@ -132,11 +160,23 @@ const analyzeMessage = async (message = "") => {
         merged = mergeSignals(deterministic, llmSignals || {});
     }
 
-    return {
+    const result = {
         ...merged,
         searchTerms: uniqueList(merged.searchTerms),
         categoryHints: uniqueList(merged.categoryHints),
     };
+
+    console.log("analyze timing:", {
+        duration: Date.now() - startedAt,
+        usedLLMExpansion,
+        inputLanguage: result.inputLanguage,
+        petType: result.petType,
+        productForm: result.productForm,
+        discountMode: result.discountMode,
+        searchTermsCount: result.searchTerms.length,
+    });
+
+    return result;
 };
 
 module.exports = analyzeMessage;
