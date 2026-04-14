@@ -5,6 +5,53 @@ const llmService = require("./llmService");
 const analyzeMessage = require("./productQueryAnalyzer");
 const formatResponse = require("./formatters/chatResponseFormatter");
 
+const shouldUseLLMReply = ({ intent, context }) => {
+    const answerMode = context?.answer_mode || "general_fallback";
+    const contextType = context?.type || "general";
+    const hasItems = Array.isArray(context?.items) && context.items.length > 0;
+    const confidence = context?.confidence ?? 0;
+    const hasReply = Boolean(String(context?.reply || "").trim());
+
+    const hasKnowledgeItems =
+        Array.isArray(context?.knowledge_items) &&
+        context.knowledge_items.length > 0;
+
+    const hasExternalSources =
+        Array.isArray(context?.external_sources) &&
+        context.external_sources.length > 0;
+
+    if (answerMode === "internal_knowledge") {
+        return hasKnowledgeItems;
+    }
+
+    if (answerMode === "external_reference") {
+        return hasExternalSources;
+    }
+
+    if (contextType === "general") {
+        return true;
+    }
+
+    if (intent === "general_support") {
+        return true;
+    }
+
+    if (answerMode === "db_strict") {
+        if (
+            !hasItems &&
+            contextType !== "auth_required" &&
+            confidence < 0.35 &&
+            !hasReply
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    return false;
+};
+
 const handleChat = async ({ message, currentUser }) => {
     const startedAt = Date.now();
 
@@ -28,17 +75,12 @@ const handleChat = async ({ message, currentUser }) => {
     let rawReply = context?.reply || "";
     let llmTime = 0;
 
-    const shouldUseLLMReply =
-        intent === "general_support" ||
-        (context?.type === "general" &&
-            (!context?.items ||
-                context.items.length === 0 ||
-                (context?.confidence ?? 0) < 0.35));
-
-    if (shouldUseLLMReply) {
+    if (shouldUseLLMReply({ intent, context })) {
         const t4 = Date.now();
+
         rawReply = await llmService.generateReply(
             buildPrompt({
+                mode: context?.answer_mode,
                 intent,
                 message,
                 currentUser,
@@ -47,6 +89,7 @@ const handleChat = async ({ message, currentUser }) => {
             }),
             { language: analysis.language },
         );
+
         llmTime = Date.now() - t4;
     }
 
@@ -66,7 +109,14 @@ const handleChat = async ({ message, currentUser }) => {
         llmTime,
         intent,
         contextType: context?.type,
+        answerMode: context?.answer_mode,
         confidence: context?.confidence,
+        hasKnowledgeItems:
+            Array.isArray(context?.knowledge_items) &&
+            context.knowledge_items.length > 0,
+        hasExternalSources:
+            Array.isArray(context?.external_sources) &&
+            context.external_sources.length > 0,
     });
 
     return formatted;
