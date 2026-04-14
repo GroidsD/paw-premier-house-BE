@@ -76,10 +76,6 @@ const createService = async (data) => {
 const getAllServices = async () => {
     try {
         const services = await db.Service.findAll({
-            where: {
-                isDeleted: false,
-                isActive: true,
-            },
             include: [
                 {
                     model: db.ServiceCategory,
@@ -161,7 +157,6 @@ const getServicesByCategory = async (category_id) => {
         const services = await db.Service.findAll({
             where: {
                 serviceCategories_id: category_id,
-                isDeleted: false,
             },
             include: [
                 {
@@ -199,103 +194,7 @@ const getServicesByCategory = async (category_id) => {
         };
     }
 };
-// const updateService = async (id, data) => {
-//     const t = await db.sequelize.transaction();
-//     let oldMedia = [];
-//     let newUploadedMedia = [];
 
-//     try {
-//         const service = await db.Service.findByPk(id, {
-//             include: [{ model: db.Media, as: "media" }],
-//             transaction: t,
-//             lock: t.LOCK.UPDATE,
-//         });
-
-//         if (!service || service.isDeleted) {
-//             await t.rollback();
-
-//             if (Array.isArray(data.media) && data.media[0]?.url) {
-//                 await safeUnlinkByUrl(data.media[0].url);
-//             }
-
-//             return { errCode: 1, errMessage: "Service not found" };
-//         }
-
-//         // lưu media cũ
-//         oldMedia = (service.media || []).map((m) => m.url).filter(Boolean);
-
-//         // update service
-//         await service.update(
-//             {
-//                 name: data.name ?? service.name,
-//                 description: data.description ?? service.description,
-//                 price: data.price ?? service.price,
-//                 duration: data.duration ?? service.duration,
-//                 serviceCategories_id:
-//                     data.serviceCategories_id ?? service.serviceCategories_id,
-//                 isActive:
-//                     data.isActive !== undefined
-//                         ? data.isActive
-//                         : service.isActive,
-//             },
-//             { transaction: t },
-//         );
-
-//         // update features
-//         if (Array.isArray(data.feature_ids)) {
-//             await service.setFeatures(data.feature_ids, { transaction: t });
-//         }
-
-//         // update media
-//         if (Array.isArray(data.media) && data.media.length > 0) {
-//             newUploadedMedia = data.media.map((m) => m.url).filter(Boolean);
-
-//             await MediaService.updateMediaForEntity(
-//                 data.media,
-//                 id,
-//                 "service",
-//                 t,
-//             );
-//         }
-
-//         await t.commit();
-
-//         // xoá media cũ không còn dùng
-//         if (newUploadedMedia.length > 0 && oldMedia.length > 0) {
-//             for (const url of oldMedia) {
-//                 if (!newUploadedMedia.includes(url)) {
-//                     await safeUnlinkByUrl(url);
-//                 }
-//             }
-//         }
-
-//         const updated = await db.Service.findByPk(id, {
-//             include: [
-//                 { model: db.Media, as: "media" },
-//                 {
-//                     model: db.Feature,
-//                     as: "features",
-//                     through: { attributes: [] },
-//                 },
-//             ],
-//         });
-
-//         return {
-//             errCode: 0,
-//             errMessage: "Service updated successfully",
-//             service: updated,
-//         };
-//     } catch (error) {
-//         await t.rollback();
-
-//         if (Array.isArray(data.media) && data.media[0]?.url) {
-//             await safeUnlinkByUrl(data.media[0].url);
-//         }
-
-//         console.error("❌ Error in updateService:", error);
-//         return { errCode: 1, errMessage: error.message };
-//     }
-// };
 const updateService = async (id, data) => {
     const t = await db.sequelize.transaction();
     let oldMedia = [];
@@ -419,6 +318,38 @@ const softDeleteService = async (id) => {
     }
 };
 
+const restoreService = async (id) => {
+    try {
+        const service = await db.Service.findByPk(id);
+        if (!service) {
+            return { errCode: 1, errMessage: "Service not found" };
+        }
+
+        if (!service.isDeleted) {
+            return {
+                errCode: 1,
+                errMessage: "Service is not deleted, cannot restore",
+            };
+        }
+
+        await service.update({
+            isDeleted: false,
+            isActive: true,
+        });
+
+        return {
+            errCode: 0,
+            errMessage: "Service restored successfully",
+        };
+    } catch (error) {
+        console.error("❌ Error in restoreService:", error);
+        return {
+            errCode: 1,
+            errMessage: error.message,
+        };
+    }
+};
+
 const hardDeleteService = async (id) => {
     const t = await db.sequelize.transaction();
     let mediaUrls = [];
@@ -456,6 +387,7 @@ export default {
     getServiceById,
     updateService,
     softDeleteService,
+    restoreService,
     hardDeleteService,
     getServicesByCategory,
 };

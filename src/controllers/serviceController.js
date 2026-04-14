@@ -110,6 +110,24 @@ let softDeleteService = async (req, res) => {
     }
 };
 
+let restoreService = async (req, res) => {
+    try {
+        const service_id = req.query.service_id;
+        const result = await ServiceService.restoreService(service_id);
+
+        return res.status(result.errCode === 0 ? 200 : 400).json({
+            errCode: result.errCode,
+            errMessage: result.errMessage,
+        });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({
+            errCode: 1,
+            errMessage: e.toString(),
+        });
+    }
+};
+
 let hardDeleteService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
@@ -161,6 +179,7 @@ export default {
     getServiceById,
     updateService,
     softDeleteService,
+    restoreService,
     hardDeleteService,
     getServicesByCategory,
 };
