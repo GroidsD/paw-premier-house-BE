@@ -1,5 +1,5 @@
 const normalizeText = require("../../../utils/normalizeText");
-const { hasVietnameseDiacritics, includesPhrase } = require("./utils");
+const { hasVietnameseDiacritics } = require("./utils");
 const {
     VI_STOPWORDS,
     VI_DOMAIN_KEYWORDS,
@@ -48,7 +48,6 @@ const hasWholePhrase = (text = "", phrase = "") => {
 const detectPetType = (text = "") => {
     const raw = String(text || "");
 
-    // ưu tiên bắt từ có dấu trước
     if (/\bmèo\b/i.test(raw)) return "cat";
     if (/\bchó\b/i.test(raw)) return "dog";
     if (/\bcún\b/i.test(raw)) return "dog";
@@ -74,9 +73,13 @@ const detectPetType = (text = "") => {
 };
 
 const detectPetSize = (text = "") => {
-    if (includesPhrase(text, PET_SIZE_KEYWORDS.small)) return "small";
-    if (includesPhrase(text, PET_SIZE_KEYWORDS.medium)) return "medium";
-    if (includesPhrase(text, PET_SIZE_KEYWORDS.large)) return "large";
+    const hasAnyWholePhrase = (keywords = []) =>
+        keywords.some((keyword) => hasWholePhrase(text, keyword));
+
+    if (hasAnyWholePhrase(PET_SIZE_KEYWORDS.small)) return "small";
+    if (hasAnyWholePhrase(PET_SIZE_KEYWORDS.medium)) return "medium";
+    if (hasAnyWholePhrase(PET_SIZE_KEYWORDS.large)) return "large";
+
     return null;
 };
 
@@ -105,11 +108,21 @@ const detectDiscountMode = (text = "") => {
 const detectProductForm = (text = "") => {
     const normalized = normalizeText(text);
 
+    const containsKeyword = (keyword = "") => {
+        const normalizedKeyword = normalizeText(keyword);
+
+        if (!normalizedKeyword) return false;
+
+        if (normalizedKeyword.length <= 4) {
+            return hasWholePhrase(normalized, normalizedKeyword);
+        }
+
+        return normalized.includes(normalizedKeyword);
+    };
+
     const matchedForms = Object.entries(PRODUCT_FORM_KEYWORDS)
         .filter(([, keywords]) =>
-            keywords.some((keyword) =>
-                normalized.includes(normalizeText(keyword)),
-            ),
+            keywords.some((keyword) => containsKeyword(keyword)),
         )
         .map(([form]) => form);
 

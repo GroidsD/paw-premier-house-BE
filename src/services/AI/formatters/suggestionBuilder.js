@@ -9,11 +9,76 @@ const getSuggestionsByContext = ({
     const petType = analysis.petType || null;
     const discountMode = analysis.discountMode || null;
     const productForm = analysis.productForm || null;
+    const answerMode = context?.answer_mode || null;
 
     if (contextType === "auth_required") {
         return language === "en"
             ? ["Log in", "Dog products", "Grooming services"]
             : ["Đăng nhập", "Sản phẩm cho chó", "Dịch vụ grooming"];
+    }
+
+    if (contextType === "knowledge") {
+        if (language === "en") {
+            if (petType === "cat" && productForm === "pate") {
+                return ["How to use cat pate", "Cat food", "Cat pate"];
+            }
+            if (petType === "dog" && productForm === "pate") {
+                return ["How to use dog pate", "Dog food", "Dog pate"];
+            }
+            if (petType === "cat") {
+                return ["Cat food", "Usage guide", "Related products"];
+            }
+            if (petType === "dog") {
+                return ["Dog food", "Usage guide", "Related products"];
+            }
+            return ["Usage guide", "Related products", "Services"];
+        }
+
+        if (petType === "cat" && productForm === "pate") {
+            return [
+                "Cách dùng pate cho mèo",
+                "Pate cho mèo",
+                "Thức ăn cho mèo",
+            ];
+        }
+        if (petType === "dog" && productForm === "pate") {
+            return [
+                "Cách dùng pate cho chó",
+                "Pate cho chó",
+                "Thức ăn cho chó",
+            ];
+        }
+        if (petType === "cat") {
+            return ["Thức ăn cho mèo", "Cách sử dụng", "Sản phẩm liên quan"];
+        }
+        if (petType === "dog") {
+            return ["Thức ăn cho chó", "Cách sử dụng", "Sản phẩm liên quan"];
+        }
+        return ["Cách sử dụng", "Sản phẩm liên quan", "Dịch vụ"];
+    }
+
+    if (contextType === "external_reference") {
+        if (language === "en") {
+            if (petType === "cat") {
+                return ["Cat nutrition", "Omega 3 for cats", "Cat care"];
+            }
+            if (petType === "dog") {
+                return ["Dog nutrition", "Omega 3 for dogs", "Dog care"];
+            }
+            return ["Pet nutrition", "Pet care", "Related products"];
+        }
+
+        if (petType === "cat") {
+            return ["Dinh dưỡng cho mèo", "Omega 3 cho mèo", "Chăm sóc mèo"];
+        }
+        if (petType === "dog") {
+            return ["Dinh dưỡng cho chó", "Omega 3 cho chó", "Chăm sóc chó"];
+        }
+        return [
+            "Dinh dưỡng thú cưng",
+            "Chăm sóc thú cưng",
+            "Sản phẩm liên quan",
+        ];
     }
 
     if (contextType === "products") {
@@ -186,6 +251,22 @@ const getSuggestionsByContext = ({
         return language === "en"
             ? ["My recent orders", "Buy again", "Products"]
             : ["Đơn hàng gần nhất", "Mua lại", "Xem sản phẩm"];
+    }
+
+    if (answerMode === "external_reference") {
+        return language === "en"
+            ? ["Pet nutrition", "Pet care", "Related products"]
+            : [
+                  "Dinh dưỡng thú cưng",
+                  "Chăm sóc thú cưng",
+                  "Sản phẩm liên quan",
+              ];
+    }
+
+    if (answerMode === "internal_knowledge") {
+        return language === "en"
+            ? ["Usage guide", "Related products", "Services"]
+            : ["Cách sử dụng", "Sản phẩm liên quan", "Dịch vụ"];
     }
 
     return language === "en"

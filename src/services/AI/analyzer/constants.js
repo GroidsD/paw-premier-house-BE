@@ -172,7 +172,7 @@ const PET_TYPE_PATTERNS = {
 const PET_SIZE_KEYWORDS = {
     small: ["nho", "mini", "be", "size s", "small", "tiny"],
     medium: ["vua", "size m", "medium"],
-    large: ["lon", "to", "size l", "large", "big"],
+    large: ["lon", "size l", "large", "big"],
 };
 
 const PRODUCT_FORM_KEYWORDS = {
