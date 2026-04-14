@@ -164,15 +164,53 @@ const categoryBelongsToPetType = (categoryName = "", petType = null) => {
 };
 
 const getMatchedCategories = (analysis = {}, categories = []) => {
-    const hints = [
+    const rawHints = [
         ...(analysis?.categoryHints || []),
         ...(analysis?.searchTerms || []),
     ];
+
+    const genericHints = new Set([
+        "pet",
+        "pets",
+        "san pham",
+        "product",
+        "products",
+        "item",
+        "items",
+        "care",
+        "dog",
+        "cat",
+    ]);
+
+    const hints = rawHints.filter((hint) => {
+        const normalizedHint = normalizeTerm(hint);
+        return normalizedHint && !genericHints.has(normalizedHint);
+    });
 
     let matched = categories.filter((category) => {
         const normalizedCategory = normalizeTerm(category.type);
         return hints.some((hint) => includesTerm(normalizedCategory, hint));
     });
+
+    const formToCategoryMatchers = {
+        shampoo: ["hygiene", "care", "ve sinh", "lam sach"],
+        wipes: ["hygiene", "care", "ve sinh", "lam sach"],
+        litter: ["hygiene", "care", "cat litter", "litter"],
+        brush: ["hygiene", "care", "grooming"],
+    };
+
+    if (analysis?.productForm && formToCategoryMatchers[analysis.productForm]) {
+        const matchedByFormCategory = categories.filter((category) => {
+            const type = normalizeTerm(category.type);
+            return formToCategoryMatchers[analysis.productForm].some(
+                (keyword) => type.includes(normalizeTerm(keyword)),
+            );
+        });
+
+        if (matchedByFormCategory.length > 0) {
+            matched = matchedByFormCategory;
+        }
+    }
 
     if (analysis?.petType) {
         matched = matched.filter((category) =>
@@ -182,7 +220,6 @@ const getMatchedCategories = (analysis = {}, categories = []) => {
 
     return matched;
 };
-
 const buildFullHaystack = (product = {}) =>
     normalizeTerm(
         [
@@ -239,37 +276,53 @@ const getProductFormSignals = (product = {}) => {
     const haystack = buildFullHaystack(product);
 
     return {
-        pate: haystack.includes("pate") || haystack.includes("wet food"),
+        pate: hasWholeTerm(haystack, "pate") || haystack.includes("wet food"),
 
         kibble:
-            haystack.includes("kibble") ||
+            hasWholeTerm(haystack, "kibble") ||
             haystack.includes("dry food") ||
             hasWholeTerm(haystack, "hat"),
 
-        milk: haystack.includes("milk") || hasWholeTerm(haystack, "sua"),
+        milk: hasWholeTerm(haystack, "milk") || hasWholeTerm(haystack, "sua"),
 
         toy:
-            haystack.includes("toy") ||
+            hasWholeTerm(haystack, "toy") ||
             haystack.includes("do choi") ||
-            haystack.includes("ball") ||
-            haystack.includes("chew"),
+            hasWholeTerm(haystack, "ball") ||
+            hasWholeTerm(haystack, "chew"),
 
-        snack: haystack.includes("snack") || haystack.includes("treat"),
+        snack:
+            hasWholeTerm(haystack, "snack") || hasWholeTerm(haystack, "treat"),
 
         shampoo:
-            haystack.includes("shampoo") ||
-            haystack.includes("sua tam") ||
-            haystack.includes("cleaning") ||
-            haystack.includes("lam sach") ||
-            haystack.includes("ve sinh") ||
-            haystack.includes("wipes"),
+            hasWholeTerm(haystack, "shampoo") ||
+            hasWholeTerm(haystack, "pet shampoo") ||
+            hasWholeTerm(haystack, "deodorizing pet shampoo") ||
+            hasWholeTerm(haystack, "sua tam"),
+
+        wipes:
+            hasWholeTerm(haystack, "wipes") ||
+            hasWholeTerm(haystack, "cleaning wipes") ||
+            hasWholeTerm(haystack, "wet wipes"),
+
+        litter:
+            hasWholeTerm(haystack, "litter") ||
+            hasWholeTerm(haystack, "cat litter") ||
+            hasWholeTerm(haystack, "bentonite"),
+
+        brush:
+            hasWholeTerm(haystack, "brush") ||
+            hasWholeTerm(haystack, "grooming brush"),
     };
 };
 
 const matchesProductForm = (product = {}, productForm = null) => {
     if (!productForm) return true;
+
     const signals = getProductFormSignals(product);
-    return Boolean(signals[productForm]);
+    const matched = Boolean(signals[productForm]);
+
+    return matched;
 };
 
 const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {

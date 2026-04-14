@@ -27,7 +27,6 @@ const termMatches = (terms, keyword) => {
 
     return terms.some((term) => {
         if (!term || term.length < 3) return false;
-
         return term === normalizedKeyword || term.includes(normalizedKeyword);
     });
 };
@@ -107,6 +106,11 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "training",
     ]);
 
+    // Ưu tiên cứng: nếu analyzer đã xác định được form sản phẩm
+    if (analysis?.productForm) {
+        return CHAT_INTENTS.PRODUCT_SEARCH;
+    }
+
     const hasProductWords = Boolean(
         analysis.petType ||
         analysis.petSize ||
@@ -126,11 +130,21 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
             "toy",
             "toys",
             "shampoo",
+            "wipes",
+            "cleaning wipes",
+            "wet wipes",
+            "pet wipes",
+            "litter",
+            "cat litter",
+            "bentonite",
+            "brush",
+            "grooming brush",
             "accessory",
             "accessories",
             "clothes",
             "pate",
             "kibble",
+            "milk",
             "dental care",
             "oral care",
             "giam gia",

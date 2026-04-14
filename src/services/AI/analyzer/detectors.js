@@ -47,17 +47,42 @@ const hasWholePhrase = (text = "", phrase = "") => {
 
 const detectPetType = (text = "") => {
     const raw = String(text || "");
+    const normalized = normalizeText(raw);
 
+    // 1) Ưu tiên bắt từ có dấu trong câu gốc
     if (/\bmèo\b/i.test(raw)) return "cat";
     if (/\bchó\b/i.test(raw)) return "dog";
     if (/\bcún\b/i.test(raw)) return "dog";
 
-    const catMatches = PET_TYPE_PATTERNS.cat.filter((keyword) =>
-        hasWholePhrase(raw, keyword),
+    // 2) Ưu tiên các cụm rõ nghĩa sau normalize
+    if (
+        normalized.includes("cho nho") ||
+        normalized.includes("cho con") ||
+        normalized.includes("cho truong thanh") ||
+        normalized.includes("small dog") ||
+        normalized.includes("puppy")
+    ) {
+        return "dog";
+    }
+
+    if (
+        normalized.includes("meo con") ||
+        normalized.includes("meo nho") ||
+        normalized.includes("meo truong thanh") ||
+        normalized.includes("kitten")
+    ) {
+        return "cat";
+    }
+
+    // 3) Fallback bằng dictionary patterns
+    const catMatches = PET_TYPE_PATTERNS.cat.filter(
+        (keyword) =>
+            hasWholePhrase(raw, keyword) || hasWholePhrase(normalized, keyword),
     );
 
-    const dogMatches = PET_TYPE_PATTERNS.dog.filter((keyword) =>
-        hasWholePhrase(raw, keyword),
+    const dogMatches = PET_TYPE_PATTERNS.dog.filter(
+        (keyword) =>
+            hasWholePhrase(raw, keyword) || hasWholePhrase(normalized, keyword),
     );
 
     if (catMatches.length > 0 && dogMatches.length === 0) return "cat";
@@ -66,12 +91,11 @@ const detectPetType = (text = "") => {
     const longestCat = Math.max(0, ...catMatches.map((item) => item.length));
     const longestDog = Math.max(0, ...dogMatches.map((item) => item.length));
 
-    if (longestCat > longestDog && longestCat >= 6) return "cat";
-    if (longestDog > longestCat && longestDog >= 6) return "dog";
+    if (longestCat > longestDog && longestCat >= 4) return "cat";
+    if (longestDog > longestCat && longestDog >= 4) return "dog";
 
     return null;
 };
-
 const detectPetSize = (text = "") => {
     const hasAnyWholePhrase = (keywords = []) =>
         keywords.some((keyword) => hasWholePhrase(text, keyword));
@@ -128,7 +152,17 @@ const detectProductForm = (text = "") => {
 
     if (!matchedForms.length) return null;
 
-    const priority = ["pate", "kibble", "milk", "toy", "snack", "shampoo"];
+    const priority = [
+        "pate",
+        "kibble",
+        "milk",
+        "toy",
+        "snack",
+        "shampoo",
+        "wipes",
+        "litter",
+        "brush",
+    ];
     return (
         priority.find((item) => matchedForms.includes(item)) || matchedForms[0]
     );

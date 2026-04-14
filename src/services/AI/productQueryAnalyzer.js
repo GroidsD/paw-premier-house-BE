@@ -1,5 +1,6 @@
 const normalizeText = require("../../utils/normalizeText");
 const llmService = require("./llmService");
+const { hasVietnameseDiacritics } = require("./../AI/analyzer/utils");
 const { KEEP_IN_PHRASES } = require("./analyzer/constants");
 const {
     tokenize,
@@ -37,10 +38,10 @@ const extractDeterministicSignals = (message = "") => {
 
     const ngrams = buildNgrams(phraseTokens);
     const strongPhrases = extractStrongPhrases(normalized);
-    const petType = detectPetType(normalized);
-    const petSize = detectPetSize(normalized);
-    const discountMode = detectDiscountMode(normalized);
-    const productForm = detectProductForm(normalized);
+    const petType = detectPetType(message);
+    const petSize = detectPetSize(message);
+    const discountMode = detectDiscountMode(message);
+    const productForm = detectProductForm(message);
 
     const inferredHints = inferCategoryHints({
         normalized,
@@ -81,12 +82,17 @@ const extractDeterministicSignals = (message = "") => {
         discountMode,
         productForm,
     });
-
+    const resolvedLanguage =
+        inputLanguage === "mixed"
+            ? hasVietnameseDiacritics(message)
+                ? "vi"
+                : "en"
+            : inputLanguage;
     return {
         raw: normalized,
         normalized,
         inputLanguage,
-        language: inputLanguage === "mixed" ? "vi" : inputLanguage,
+        language: resolvedLanguage,
         petType,
         petSize,
         discountMode,
@@ -98,11 +104,51 @@ const extractDeterministicSignals = (message = "") => {
 };
 
 const shouldUseLLMExpansion = (analysis) => {
+    const raw = String(analysis?.normalized || analysis?.raw || "");
+
     const hasStrongStructuredSignals = Boolean(
         analysis.petType || analysis.productForm || analysis.discountMode,
     );
 
     if (hasStrongStructuredSignals) {
+        return false;
+    }
+
+    const hasDirectAccountIntent =
+        raw.includes("my orders") ||
+        raw.includes("my order") ||
+        raw.includes("my bookings") ||
+        raw.includes("my booking") ||
+        raw.includes("my reservation") ||
+        raw.includes("my reservations") ||
+        raw.includes("order history") ||
+        raw.includes("purchase history") ||
+        raw.includes("don hang cua toi") ||
+        raw.includes("order cua toi") ||
+        raw.includes("orders cua toi") ||
+        raw.includes("booking cua toi") ||
+        raw.includes("lich hen cua toi") ||
+        raw.includes("booking cua minh");
+
+    if (hasDirectAccountIntent) {
+        return false;
+    }
+
+    const hasClearCommerceSignals =
+        raw.includes("gia bao nhieu") ||
+        raw.includes("bao nhieu tien") ||
+        raw.includes("con hang") ||
+        raw.includes("het hang") ||
+        raw.includes("giam gia") ||
+        raw.includes("khuyen mai") ||
+        raw.includes("dang sale") ||
+        raw.includes("price") ||
+        raw.includes("stock") ||
+        raw.includes("available") ||
+        raw.includes("discount") ||
+        raw.includes("sale");
+
+    if (hasClearCommerceSignals) {
         return false;
     }
 

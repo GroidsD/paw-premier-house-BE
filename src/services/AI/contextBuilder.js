@@ -5,7 +5,7 @@ const bookingRepo = require("./repositories/bookingChatRepository");
 const recommendationRepo = require("./repositories/recommendationChatRepository");
 const orderRepo = require("./repositories/orderChatRepository");
 const productKnowledgeRepo = require("./repositories/productKnowledgeRepository");
-
+const externalSearchService = require("./search/externalSearchService");
 const MIN_RELATED_ITEM_CONFIDENCE = 0.6;
 
 const PRODUCT_ENTITY_TERMS = new Set([
@@ -247,7 +247,14 @@ const buildInternalKnowledgeContext = async ({
                     confidence: Math.max(productContext?.confidence ?? 0, 0.75),
                 };
             }
-
+            console.log(
+                "knowledge best match:",
+                productContext?.items?.map((item) => ({
+                    id: item.product_id,
+                    name: item.name,
+                    category: item.category,
+                })),
+            );
             return {
                 ...productContext,
                 type: "knowledge",
@@ -343,12 +350,31 @@ const buildExternalReferenceContext = async ({
         relatedItems = [];
     }
 
+    const externalSources = await externalSearchService.searchExternalKnowledge(
+        {
+            message,
+            analysis,
+            limit: 4,
+        },
+    );
+
+    if (externalSources.length > 0) {
+        return {
+            type: "external_reference",
+            items: relatedItems.slice(0, 2),
+            external_sources: externalSources,
+            note: "External reference sources loaded successfully.",
+            reply: "",
+            confidence: 0.75,
+        };
+    }
+
     return {
         type: "external_reference",
         items: relatedItems.slice(0, 2),
         external_sources: [],
-        note: "External reference mode selected, but external search is not implemented yet.",
-        reply: "Câu hỏi này thuộc dạng kiến thức tham khảo ngoài hệ thống. Hiện backend của bạn chưa tích hợp web search hoặc nguồn tham khảo ngoài để trả lời một cách grounded.",
+        note: "External reference mode selected, but no outside sources were returned.",
+        reply: "Câu hỏi này thuộc dạng kiến thức tham khảo ngoài hệ thống. Hiện chưa lấy được nguồn ngoài phù hợp để trả lời một cách đúng nhất.",
         confidence: 0.25,
     };
 };

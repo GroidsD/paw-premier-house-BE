@@ -1,6 +1,7 @@
 const productRepo = require("../repositories/productChatRepository");
 const { mapProductRecord } = require("./productMapper");
 const ranker = require("./productRanker");
+
 const findRelevantProducts = async ({ message, analysis }) => {
     const startedAt = Date.now();
 
@@ -26,6 +27,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
     const mappingTime = Date.now() - t3;
 
     const t4 = Date.now();
+
     const petTypeFiltered = analysis?.petType
         ? mapped.filter((item) =>
               ranker.belongsToPetType(item, analysis.petType),
@@ -44,14 +46,40 @@ const findRelevantProducts = async ({ message, analysis }) => {
           )
         : formFiltered;
 
-    const basePool =
-        discountFiltered.length > 0
-            ? discountFiltered
-            : formFiltered.length > 0
-              ? formFiltered
-              : petTypeFiltered.length > 0
-                ? petTypeFiltered
-                : mapped;
+    // Ưu tiên cứng khi user đã chỉ rõ productForm
+    let basePool;
+    let hardFormConstraintFailed = false;
+    if (analysis?.productForm === "shampoo") {
+        console.log(
+            "shampoo candidates debug:",
+            mapped.slice(0, 10).map((item) => ({
+                id: item.product_id,
+                name: item.name,
+                category: item.category,
+                description: item.description,
+                formMatch: ranker.matchesProductForm(item, "shampoo"),
+            })),
+        );
+    }
+    if (analysis?.productForm) {
+        if (discountFiltered.length > 0) {
+            basePool = discountFiltered;
+        } else if (formFiltered.length > 0) {
+            basePool = formFiltered;
+        } else {
+            basePool = [];
+            hardFormConstraintFailed = true;
+        }
+    } else {
+        basePool =
+            discountFiltered.length > 0
+                ? discountFiltered
+                : formFiltered.length > 0
+                  ? formFiltered
+                  : petTypeFiltered.length > 0
+                    ? petTypeFiltered
+                    : mapped;
+    }
 
     const ranked = basePool
         .map((item) => {
@@ -71,8 +99,12 @@ const findRelevantProducts = async ({ message, analysis }) => {
 
     const rankingTime = Date.now() - t4;
 
-    const finalItems =
-        ranked.length > 0 ? ranked.slice(0, 4) : basePool.slice(0, 4);
+    let finalItems = [];
+    if (ranked.length > 0) {
+        finalItems = ranked.slice(0, 4);
+    } else if (!analysis?.productForm) {
+        finalItems = basePool.slice(0, 4);
+    }
 
     console.log("product search timing:", {
         total: Date.now() - startedAt,
@@ -84,6 +116,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
         mappedCount: mapped.length,
         finalCount: finalItems.length,
         categoryIdsCount: categoryIds.length,
+        hardFormConstraintFailed,
     });
 
     return {
@@ -92,6 +125,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
         user_question: message,
         analysis,
         matched_categories: matchedCategories.map((category) => category.type),
+
         applied_filters: [
             "active_products_only",
             categoryIds.length
@@ -104,14 +138,20 @@ const findRelevantProducts = async ({ message, analysis }) => {
             analysis?.discountMode
                 ? `discount_mode:${analysis.discountMode}`
                 : null,
+            analysis?.productForm && hardFormConstraintFailed
+                ? "product_form_no_match"
+                : null,
             "variant_level_matching",
             "post_ranked_search",
             analysis?.petType ? `pet_type:${analysis.petType}` : null,
             analysis?.petSize ? `pet_size:${analysis.petSize}` : null,
         ].filter(Boolean),
-        confidence: ranker.calculateConfidence(finalItems, analysis),
+        confidence: hardFormConstraintFailed
+            ? 0
+            : ranker.calculateConfidence(finalItems, analysis),
     };
 };
+
 module.exports = {
     findRelevantProducts,
 };
