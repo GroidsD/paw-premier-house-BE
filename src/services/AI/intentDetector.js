@@ -49,6 +49,27 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
                 textContains(text, keyword) || termMatches(terms, keyword),
         );
 
+    const isSmallTalkOrVagueSupport =
+        hasPhrase([
+            "help me",
+            "can you help me",
+            "i need help",
+            "hello",
+            "hi",
+            "hey",
+            "xin chao",
+            "chao",
+            "chao shop",
+            "ban oi",
+            "alo",
+            "giup minh voi",
+            "tu van giup minh",
+            "tu van giup",
+            "tu van ho",
+            "tu van",
+        ]) ||
+        hasTextOrTerm(["help", "hello", "hi", "hey", "alo", "tuvan", "tu van"]);
+
     const asksMyBookings = hasPhrase([
         "booking cua toi",
         "lich hen cua toi",
@@ -106,55 +127,84 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "training",
     ]);
 
+    const hasGeneralKnowledgeSignals = hasTextOrTerm([
+        "co may",
+        "bao nhieu",
+        "la gi",
+        "tai sao",
+        "vi sao",
+        "khi nao",
+        "o dau",
+        "co dung khong",
+        "co that khong",
+        "thong tin",
+        "tim hieu",
+        "kien thuc",
+        "facts",
+        "fact",
+        "how many",
+        "what is",
+        "why",
+        "when",
+        "where",
+        "is it true",
+    ]);
+
     // Ưu tiên cứng: nếu analyzer đã xác định được form sản phẩm
     if (analysis?.productForm) {
         return CHAT_INTENTS.PRODUCT_SEARCH;
     }
 
+    const hasGenericCommerce = hasTextOrTerm([
+        "san pham",
+        "product",
+        "products",
+        "pet supplies",
+        "shop",
+    ]);
+
+    const hasSpecificProductTerms = hasTextOrTerm([
+        "mua",
+        "buy",
+        "food",
+        "thuc an",
+        "do an",
+        "hat",
+        "snack",
+        "toy",
+        "toys",
+        "shampoo",
+        "wipes",
+        "cleaning wipes",
+        "wet wipes",
+        "pet wipes",
+        "litter",
+        "cat litter",
+        "bentonite",
+        "brush",
+        "grooming brush",
+        "accessory",
+        "accessories",
+        "clothes",
+        "pate",
+        "kibble",
+        "milk",
+        "dental care",
+        "oral care",
+        "giam gia",
+        "khuyen mai",
+        "sale",
+        "discount",
+        "discounted",
+        "deal",
+        "promotion",
+    ]);
+
+    const hasPetSignal = Boolean(analysis.petType || analysis.petSize);
+
     const hasProductWords = Boolean(
-        analysis.petType ||
-        analysis.petSize ||
-        hasTextOrTerm([
-            "san pham",
-            "product",
-            "products",
-            "pet supplies",
-            "shop",
-            "mua",
-            "buy",
-            "food",
-            "thuc an",
-            "do an",
-            "hat",
-            "snack",
-            "toy",
-            "toys",
-            "shampoo",
-            "wipes",
-            "cleaning wipes",
-            "wet wipes",
-            "pet wipes",
-            "litter",
-            "cat litter",
-            "bentonite",
-            "brush",
-            "grooming brush",
-            "accessory",
-            "accessories",
-            "clothes",
-            "pate",
-            "kibble",
-            "milk",
-            "dental care",
-            "oral care",
-            "giam gia",
-            "khuyen mai",
-            "sale",
-            "discount",
-            "discounted",
-            "deal",
-            "promotion",
-        ]),
+        hasSpecificProductTerms ||
+            (hasGenericCommerce && hasSpecificProductTerms),
     );
 
     if (asksMyBookings) {
@@ -169,8 +219,33 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         return CHAT_INTENTS.SERVICE_BOOKING_INTENT;
     }
 
-    if (asksRecommendation && hasProductWords) {
+    if (asksRecommendation && (hasProductWords || hasPetSignal)) {
         return CHAT_INTENTS.PRODUCT_RECOMMEND;
+    }
+
+    if (
+        hasPetSignal &&
+        !hasProductWords &&
+        !hasServiceWords &&
+        !asksRecommendation &&
+        !hasBookingAction &&
+        !asksMyBookings &&
+        !asksMyOrders
+    ) {
+        return CHAT_INTENTS.GENERAL_SUPPORT;
+    }
+
+    if (
+        hasGeneralKnowledgeSignals &&
+        !hasProductWords &&
+        !hasServiceWords &&
+        !asksRecommendation
+    ) {
+        return CHAT_INTENTS.GENERAL_SUPPORT;
+    }
+
+    if (isSmallTalkOrVagueSupport && !hasProductWords && !hasServiceWords) {
+        return CHAT_INTENTS.GENERAL_SUPPORT;
     }
 
     if (hasServiceWords) {

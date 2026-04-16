@@ -6,6 +6,9 @@ const {
     calcDiscountPercent,
     getStockStatus,
     sanitizeReplyText,
+    stripExternalLinks,
+    getLowConfidenceReply,
+    extractBudget,
 } = require("./utils");
 const {
     buildProductReply,
@@ -165,8 +168,12 @@ const formatResponse = ({
 }) => {
     const language = pickLanguage(analysis, context);
     const isLoggedIn = Boolean(currentUser?.user_id);
-    const safeRawReply = sanitizeReplyText(rawReply);
+    let safeRawReply = sanitizeReplyText(rawReply);
     const answerMode = context?.answer_mode || "general_fallback";
+
+    if (["db_strict", "internal_knowledge"].includes(answerMode)) {
+        safeRawReply = stripExternalLinks(safeRawReply);
+    }
 
     let cards = [];
     let reply = getFallbackReply(language, context?.type);
@@ -179,15 +186,63 @@ const formatResponse = ({
     });
 
     if (context?.type === "products") {
-        cards = (context.items || []).map((item, index) =>
-            buildProductCard(item, index, language),
-        );
+        if ((context?.confidence ?? 0) < 0.5) {
+            return {
+                intent,
+                reply: getLowConfidenceReply(language),
+                cards: [],
+                suggestions,
+                meta: {
+                    language,
+                    isLoggedIn,
+                    confidence: context?.confidence ?? 0,
+                    matched_categories: context?.matched_categories || [],
+                    applied_filters: context?.applied_filters || [],
+                    context_type: context?.type || "general",
+                    product_form: context?.analysis?.productForm || null,
+                    discount_mode: context?.analysis?.discountMode || null,
+                    answer_mode: answerMode,
+                    answer_mode_reason: context?.answer_mode_reason || null,
+                    answer_source:
+                        answerMode === "db_strict"
+                            ? "db"
+                            : answerMode === "internal_knowledge"
+                              ? "internal_knowledge"
+                              : answerMode === "external_reference"
+                                ? "external_reference"
+                                : "fallback",
+                    knowledge_count:
+                        (context?.knowledge_items || []).length || 0,
+                    external_source_count:
+                        (context?.external_sources || []).length || 0,
+                },
+            };
+        }
 
-        reply = buildProductReply({
-            items: context.items || [],
-            language,
-            context,
-        });
+        const budget = extractBudget(context?.user_question || "");
+        const items = context.items || [];
+        const budgetFiltered =
+            budget && Number(budget) > 0
+                ? items.filter((item) => Number(item.price || 0) <= budget)
+                : items;
+
+        if (budget && budgetFiltered.length === 0) {
+            reply =
+                language === "en"
+                    ? `I couldn't find products within ${budget} VND yet. Do you want to increase the budget or view similar items?`
+                    : `Mình chưa thấy sản phẩm nào trong khoảng ${budget} VND. Bạn muốn tăng ngân sách hoặc xem sản phẩm gần mức đó không?`;
+            cards = [];
+        } else {
+            cards = budgetFiltered.map((item, index) =>
+                buildProductCard(item, index, language),
+            );
+
+            reply = buildProductReply({
+                items: budgetFiltered,
+                language,
+                context,
+            });
+        }
     } else if (context?.type === "services") {
         cards = (context.items || []).map((item, index) =>
             buildServiceCard(item, index, language, intent),

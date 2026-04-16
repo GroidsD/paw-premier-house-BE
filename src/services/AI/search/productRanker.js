@@ -254,6 +254,13 @@ const hasCatSemanticSignal = (haystack = "") =>
     haystack.includes("do choi cho meo") ||
     haystack.includes("meo ken an");
 
+const GENERIC_FORMS = new Set([
+    "shampoo",
+    "wipes",
+    "brush",
+    "litter",
+]);
+
 const belongsToPetType = (product = {}, petType = null) => {
     if (!petType) return true;
 
@@ -271,6 +278,9 @@ const belongsToPetType = (product = {}, petType = null) => {
 
     return true;
 };
+
+const shouldSkipPetTypeFilter = (analysis = {}) =>
+    Boolean(analysis?.productForm && GENERIC_FORMS.has(analysis.productForm));
 
 const getProductFormSignals = (product = {}) => {
     const haystack = buildFullHaystack(product);
@@ -518,4 +528,5 @@ module.exports = {
     matchesProductForm,
     scoreProduct,
     calculateConfidence,
+    shouldSkipPetTypeFilter,
 };

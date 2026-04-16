@@ -297,20 +297,6 @@ const detectAnswerMode = ({
         };
     }
 
-    if (hasFeedingOrDietIntent) {
-        return {
-            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
-            reason: "feeding or diet guidance is external knowledge",
-        };
-    }
-
-    if (hasGeneralNutritionOrHealthSignals && !hasConcreteShopEntity) {
-        return {
-            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
-            reason: "general nutrition or health knowledge",
-        };
-    }
-
     if (hasInternalKnowledgeSignals && hasConcreteShopEntity) {
         return {
             mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
@@ -327,6 +313,27 @@ const detectAnswerMode = ({
         return {
             mode: ANSWER_MODES.DB_STRICT,
             reason: "structured commerce intent",
+        };
+    }
+
+    if (hasConcreteShopEntity) {
+        return {
+            mode: ANSWER_MODES.DB_STRICT,
+            reason: "concrete shop entity should stay in db mode",
+        };
+    }
+
+    if (hasFeedingOrDietIntent) {
+        return {
+            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
+            reason: "feeding or diet guidance is external knowledge",
+        };
+    }
+
+    if (hasGeneralNutritionOrHealthSignals && !hasConcreteShopEntity) {
+        return {
+            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
+            reason: "general nutrition or health knowledge",
         };
     }
 

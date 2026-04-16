@@ -9,15 +9,16 @@
         const responseLanguage =
             analysis?.language === "en" ? "English" : "Vietnamese";
 
-        const modeInstruction =
-            mode === "db_strict"
-                ? `
+    const modeInstruction =
+        mode === "db_strict"
+            ? `
     - Answer only from the provided CONTEXT.
     - Do not invent prices, stock, booking details, order details, service details, or product facts.
     - If the data is missing or the match is weak, say that clearly.
+    - Do not include external links or references to other shops.
     `
-                : mode === "internal_knowledge"
-                ? `
+            : mode === "internal_knowledge"
+            ? `
     - Answer only from the provided CONTEXT.
     - Prioritize knowledge_items first, then matched shop items.
     - Summarize the knowledge clearly and naturally.
@@ -26,6 +27,7 @@
     - Do not invent benefits, ingredients, warnings, or usage instructions beyond the provided context.
     - Do not infer missing usage instructions from product names alone.
     - If internal knowledge is missing, say that clearly.
+    - Do not include external links or references to other shops.
     `
                 : mode === "external_reference"
                     ? `

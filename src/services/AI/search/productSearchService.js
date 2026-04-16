@@ -28,11 +28,12 @@ const findRelevantProducts = async ({ message, analysis }) => {
 
     const t4 = Date.now();
 
-    const petTypeFiltered = analysis?.petType
-        ? mapped.filter((item) =>
-              ranker.belongsToPetType(item, analysis.petType),
-          )
-        : mapped;
+    const petTypeFiltered =
+        analysis?.petType && !ranker.shouldSkipPetTypeFilter(analysis)
+            ? mapped.filter((item) =>
+                  ranker.belongsToPetType(item, analysis.petType),
+              )
+            : mapped;
 
     const formFiltered = analysis?.productForm
         ? petTypeFiltered.filter((item) =>

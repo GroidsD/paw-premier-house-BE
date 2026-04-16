@@ -54,6 +54,11 @@ const detectPetType = (text = "") => {
     if (/\bchó\b/i.test(raw)) return "dog";
     if (/\bcún\b/i.test(raw)) return "dog";
 
+    // 1b) Tránh hiểu nhầm "cho" (không dấu) thành chó
+    if (/\bcho\b/i.test(raw) && !/\bchó\b/i.test(raw)) {
+        // Không kết luận petType chỉ từ "cho"
+    }
+
     // 2) Ưu tiên các cụm rõ nghĩa sau normalize
     if (
         normalized.includes("cho nho") ||
@@ -72,6 +77,13 @@ const detectPetType = (text = "") => {
         normalized.includes("kitten")
     ) {
         return "cat";
+    }
+
+    // Nếu chỉ có "cho" (không dấu) mà không có tín hiệu khác, bỏ qua
+    if (/\bcho\b/i.test(normalized) && !normalized.includes("cho con") && !normalized.includes("cho nho")) {
+        if (!normalized.includes("dog") && !normalized.includes("puppy")) {
+            // keep null
+        }
     }
 
     // 3) Fallback bằng dictionary patterns
