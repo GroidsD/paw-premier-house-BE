@@ -52,15 +52,15 @@ const shouldUseLLMReply = ({ intent, context }) => {
     return false;
 };
 
-const handleChat = async ({ message, currentUser, history = [] }) => {
+const handleChat = async ({ message, currentUser }) => {
     const startedAt = Date.now();
 
     const t1 = Date.now();
-    const analysis = await analyzeMessage(message, history);
+    const analysis = await analyzeMessage(message);
     const analysisTime = Date.now() - t1;
 
     const t2 = Date.now();
-    const intent = detectIntent({ message, analysis, currentUser, history });
+    const intent = detectIntent({ message, analysis, currentUser });
     const intentTime = Date.now() - t2;
 
     const t3 = Date.now();
@@ -69,7 +69,6 @@ const handleChat = async ({ message, currentUser, history = [] }) => {
         message,
         currentUser,
         analysis,
-        history,
     });
     const contextTime = Date.now() - t3;
 
@@ -100,17 +99,6 @@ const handleChat = async ({ message, currentUser, history = [] }) => {
         context,
         analysis,
         currentUser,
-    });
-
-    formatted.meta = Object.assign({}, formatted.meta, {
-        petType: analysis.petType,
-        petSize: analysis.petSize,
-        discount_mode: analysis.discountMode,
-        product_form: analysis.productForm,
-        confidence: context?.confidence,
-        context_type: context?.type,
-        intent,
-        history_length: history.length,
     });
 
     console.log("chat timing:", {

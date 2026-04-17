@@ -2,11 +2,11 @@ import chatService from "../services/AI/chatService";
 
 const chat = async (req, res) => {
     try {
-        const { message, history } = req.body;
+        const { message } = req.body;
         const currentUser = req.user;
 
         console.log("Received chat message:", message);
-        console.log("History length:", history?.length || 0);
+        console.log("Current user:", req.user);
 
         if (!message || !String(message).trim()) {
             return res.status(400).json({
@@ -18,7 +18,6 @@ const chat = async (req, res) => {
         const data = await chatService.handleChat({
             message: String(message).trim(),
             currentUser,
-            history: history || [],
         });
 
         return res.status(200).json({

@@ -1,5 +1,4 @@
 const OpenAI = require("openai");
-require("dotenv").config();
 
 let cachedClient = null;
 
@@ -127,7 +126,6 @@ const generateReply = async (prompt, { language = "vi" } = {}) => {
 
         return completion.choices?.[0]?.message?.content || fallback;
     } catch (error) {
-        console.error("LLM generateReply error:", error.message);
         return fallback;
     }
 };
@@ -174,7 +172,6 @@ const expandSearchSignals = async ({ message, language = "vi" }) => {
 
         return payload ? sanitizeSignalPayload(payload) : null;
     } catch (error) {
-        console.error("LLM expandSearchSignals error:", error.message);
         return null;
     }
 };

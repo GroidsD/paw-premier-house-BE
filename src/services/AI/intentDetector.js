@@ -125,28 +125,6 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "hotel",
         "boarding",
         "training",
-        "tam",
-        "ve sinh",
-        "cat tia",
-        "hotel",
-        "luu tru",
-        "cham soc",
-    ]);
-
-    const hasWashServicePrefix = hasPhrase([
-        "sua tam",
-        "dau tam",
-        "shampoo",
-        "shower gel",
-    ]);
-
-    const hasDirectServiceAction = hasTextOrTerm([
-        "tam cho cho",
-        "tam cho meo",
-        "ve sinh cho",
-        "cat tia long",
-        "spa cho",
-        "hotel cho",
     ]);
 
     const hasGeneralKnowledgeSignals = hasTextOrTerm([
@@ -172,17 +150,7 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "is it true",
     ]);
 
-    // Priority 1: Direct Service Actions (explicit service intent)
-    if (hasDirectServiceAction) {
-        return CHAT_INTENTS.SERVICE_SEARCH;
-    }
-
-    // Priority 2: Service words without specific Product Form prefixes (e.g. "tam" vs "sua tam")
-    if ((hasServiceWords && !hasWashServicePrefix) || (text.includes("tam") && !hasWashServicePrefix && !text.includes("sua"))) {
-        return CHAT_INTENTS.SERVICE_SEARCH;
-    }
-
-    // Priority 3: Analysis signals (analyzer determined context)
+    // Ưu tiên cứng: nếu analyzer đã xác định được form sản phẩm
     if (analysis?.productForm) {
         return CHAT_INTENTS.PRODUCT_SEARCH;
     }
@@ -280,15 +248,7 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         return CHAT_INTENTS.GENERAL_SUPPORT;
     }
 
-    if (
-        (hasServiceWords || hasDirectServiceAction) &&
-        !hasWashServicePrefix &&
-        !hasProductWords
-    ) {
-        return CHAT_INTENTS.SERVICE_SEARCH;
-    }
-
-    if (hasServiceWords || hasDirectServiceAction) {
+    if (hasServiceWords) {
         return CHAT_INTENTS.SERVICE_SEARCH;
     }
 

@@ -49,36 +49,65 @@ const detectPetType = (text = "") => {
     const raw = String(text || "");
     const normalized = normalizeText(raw);
 
-    // Order of priority:
-    // 1. Explicit mention of cat/meo
+    // 1) Ưu tiên bắt từ có dấu trong câu gốc
+    if (/\bmèo\b/i.test(raw)) return "cat";
+    if (/\bchó\b/i.test(raw)) return "dog";
+    if (/\bcún\b/i.test(raw)) return "dog";
+
+    // 1b) Tránh hiểu nhầm "cho" (không dấu) thành chó
+    if (/\bcho\b/i.test(raw) && !/\bchó\b/i.test(raw)) {
+        // Không kết luận petType chỉ từ "cho"
+    }
+
+    // 2) Ưu tiên các cụm rõ nghĩa sau normalize
     if (
-        normalized.includes("meo") ||
-        normalized.includes("cat") ||
+        normalized.includes("cho nho") ||
+        normalized.includes("cho con") ||
+        normalized.includes("cho truong thanh") ||
+        normalized.includes("small dog") ||
+        normalized.includes("puppy")
+    ) {
+        return "dog";
+    }
+
+    if (
+        normalized.includes("meo con") ||
+        normalized.includes("meo nho") ||
+        normalized.includes("meo truong thanh") ||
         normalized.includes("kitten")
     ) {
         return "cat";
     }
 
-    // 2. Explicit mention of dog/cun/puppy
-    if (
-        normalized.includes("dog") ||
-        normalized.includes("puppy") ||
-        normalized.includes("cun") ||
-        normalized.includes("cho con") ||
-        normalized.includes("cho nho") ||
-        normalized.includes("cho truong thanh")
-    ) {
-        return "dog";
+    // Nếu chỉ có "cho" (không dấu) mà không có tín hiệu khác, bỏ qua
+    if (/\bcho\b/i.test(normalized) && !normalized.includes("cho con") && !normalized.includes("cho nho")) {
+        if (!normalized.includes("dog") && !normalized.includes("puppy")) {
+            // keep null
+        }
     }
 
-    // 3. Fallback for "cho/chó"
-    if (normalized.includes("cho")) {
-        return "dog";
-    }
+    // 3) Fallback bằng dictionary patterns
+    const catMatches = PET_TYPE_PATTERNS.cat.filter(
+        (keyword) =>
+            hasWholePhrase(raw, keyword) || hasWholePhrase(normalized, keyword),
+    );
+
+    const dogMatches = PET_TYPE_PATTERNS.dog.filter(
+        (keyword) =>
+            hasWholePhrase(raw, keyword) || hasWholePhrase(normalized, keyword),
+    );
+
+    if (catMatches.length > 0 && dogMatches.length === 0) return "cat";
+    if (dogMatches.length > 0 && catMatches.length === 0) return "dog";
+
+    const longestCat = Math.max(0, ...catMatches.map((item) => item.length));
+    const longestDog = Math.max(0, ...dogMatches.map((item) => item.length));
+
+    if (longestCat > longestDog && longestCat >= 4) return "cat";
+    if (longestDog > longestCat && longestDog >= 4) return "dog";
 
     return null;
 };
-
 const detectPetSize = (text = "") => {
     const hasAnyWholePhrase = (keywords = []) =>
         keywords.some((keyword) => hasWholePhrase(text, keyword));
@@ -151,51 +180,10 @@ const detectProductForm = (text = "") => {
     );
 };
 
-const detectMaxPrice = (text = "") => {
-    // We use a lighter normalization to keep numbers and units together
-    const raw = String(text || "");
-    const normalized = raw.toLowerCase().replace(/[,.]/g, "");
-    
-    // Handle "triệu"
-    if (normalized.includes("trieu")) {
-        const trieuMatch = normalized.match(/(\d+)\s*trieu/);
-        if (trieuMatch) {
-            return parseInt(trieuMatch[1], 10) * 1000000;
-        }
-    }
-
-    // Handle standard units (k, d, vnd)
-    // After normalizeText, đ becomes d, vnđ becomes vnd
-    const standardNorm = normalizeText(raw);
-    const priceMatch = standardNorm.match(/(\d+)\s*(k|vnd|d|dong)\b/);
-    
-    if (priceMatch) {
-        let value = parseInt(priceMatch[1], 10);
-        const unit = priceMatch[2];
-        
-        if (unit === "k") {
-            value *= 1000;
-        }
-        
-        return value;
-    }
-
-    // fallback for plain numbers in context
-    if (standardNorm.includes("tam") || standardNorm.includes("khoang") || standardNorm.includes("duoi")) {
-        const plainMatch = standardNorm.match(/\b(\d{4,})\b/);
-        if (plainMatch) {
-            return parseInt(plainMatch[1], 10);
-        }
-    }
-
-    return null;
-};
-
 module.exports = {
     detectInputLanguage,
     detectPetType,
     detectPetSize,
     detectDiscountMode,
     detectProductForm,
-    detectMaxPrice,
 };

@@ -228,7 +228,8 @@ const PRODUCT_FORM_KEYWORDS = {
     snack: ["snack", "treat", "treats", "banh thuong", "thuong"],
     shampoo: [
         "sua tam",
-        "dau tam",
+        "tam",
+        "tắm",
         "shampoo",
         "pet shampoo",
         "deodorizing pet shampoo",

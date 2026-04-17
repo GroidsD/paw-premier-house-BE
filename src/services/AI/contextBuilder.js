@@ -406,20 +406,6 @@ const buildContext = async ({ intent, message, currentUser, analysis }) => {
                 currentUser,
                 analysis,
             });
-
-            // FALLBACK logic: Nếu kiến thức nội bộ quá yếu hoặc không có, thử search ngoài
-            if (
-                (context?.confidence ?? 0) < 0.5 &&
-                (!context?.knowledge_items || context.knowledge_items.length === 0)
-            ) {
-                console.log("Internal knowledge is weak, falling back to external sources...");
-                context = await buildExternalReferenceContext({
-                    intent,
-                    message,
-                    currentUser,
-                    analysis,
-                });
-            }
             break;
 
         case "external_reference":
