@@ -11,13 +11,15 @@ const {
     inferCategoryHints,
     expandSynonyms,
 } = require("./analyzer/utils");
+const detectors = require("./analyzer/detectors");
 const {
     detectInputLanguage,
     detectPetType,
     detectPetSize,
     detectDiscountMode,
     detectProductForm,
-} = require("./analyzer/detectors");
+    detectMaxPrice,
+} = detectors;
 
 const extractDeterministicSignals = (message = "") => {
     const normalized = normalizeText(message);
@@ -42,6 +44,7 @@ const extractDeterministicSignals = (message = "") => {
     const petSize = detectPetSize(message);
     const discountMode = detectDiscountMode(message);
     const productForm = detectProductForm(message);
+    const maxPrice = detectMaxPrice(message);
 
     const inferredHints = inferCategoryHints({
         normalized,
@@ -69,19 +72,7 @@ const extractDeterministicSignals = (message = "") => {
             ...(productForm ? [productForm] : []),
         ].filter((term) => term.length >= 3),
     );
-    console.log("deterministic signals debug:", {
-        message,
-        normalized,
-        tokens,
-        phraseTokens,
-        rawKeywords,
-        ngrams,
-        strongPhrases,
-        petType,
-        petSize,
-        discountMode,
-        productForm,
-    });
+
     const resolvedLanguage =
         inputLanguage === "mixed"
             ? hasVietnameseDiacritics(message)
@@ -89,7 +80,7 @@ const extractDeterministicSignals = (message = "") => {
                 : "en"
             : inputLanguage;
     return {
-        raw: normalized,
+        raw: message,
         normalized,
         inputLanguage,
         language: resolvedLanguage,
@@ -100,6 +91,7 @@ const extractDeterministicSignals = (message = "") => {
         searchTerms,
         categoryHints,
         productForm,
+        maxPrice,
     };
 };
 
@@ -191,19 +183,50 @@ const mergeSignals = (base, extra = {}) => ({
     ]),
 });
 
-const analyzeMessage = async (message = "") => {
+const analyzeMessage = async (message = "", history = []) => {
     const startedAt = Date.now();
     const deterministic = extractDeterministicSignals(message);
-    let merged = deterministic;
+    let merged = { ...deterministic };
+
+    // Inherit from history if current is missing signals
+    if (history && history.length > 0) {
+        // Walk backwards through history to find the most recent values for missing signals
+        for (let i = history.length - 1; i >= 0; i--) {
+            const turn = history[i];
+            if (turn.role !== "user") continue;
+
+            const pastSignals = extractDeterministicSignals(turn.content || "");
+
+            if (!merged.petType && pastSignals.petType) {
+                merged.petType = pastSignals.petType;
+            }
+            if (!merged.productForm && pastSignals.productForm) {
+                merged.productForm = pastSignals.productForm;
+            }
+            if (!merged.discountMode && pastSignals.discountMode) {
+                merged.discountMode = pastSignals.discountMode;
+            }
+
+            // If we found everything, we can stop
+            if (
+                merged.petType &&
+                merged.productForm &&
+                merged.discountMode
+            ) {
+                break;
+            }
+        }
+    }
+
     let usedLLMExpansion = false;
 
-    if (shouldUseLLMExpansion(deterministic)) {
+    if (shouldUseLLMExpansion(merged)) {
         usedLLMExpansion = true;
         const llmSignals = await llmService.expandSearchSignals({
             message,
             language: deterministic.language,
         });
-        merged = mergeSignals(deterministic, llmSignals || {});
+        merged = mergeSignals(merged, llmSignals || {});
     }
 
     const result = {

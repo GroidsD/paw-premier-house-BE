@@ -186,7 +186,15 @@ const formatResponse = ({
     });
 
     if (context?.type === "products") {
-        if ((context?.confidence ?? 0) < 0.5) {
+        const hasStructuralSignals =
+            analysis.petType || analysis.productForm || analysis.discountMode;
+        const itemsCount = (context.items || []).length;
+        const confidence = context?.confidence ?? 0;
+
+        // Relax threshold if we have items and clear intent signal
+        const minConfidence = hasStructuralSignals && itemsCount > 0 ? 0.25 : 0.5;
+
+        if (confidence < minConfidence) {
             return {
                 intent,
                 reply: getLowConfidenceReply(language),

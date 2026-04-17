@@ -47,6 +47,12 @@ const findRelevantProducts = async ({ message, analysis }) => {
           )
         : formFiltered;
 
+    const priceFiltered = analysis?.maxPrice
+        ? discountFiltered.filter(
+              (item) => Number(item.price || 0) <= analysis.maxPrice,
+          )
+        : discountFiltered;
+
     // Ưu tiên cứng khi user đã chỉ rõ productForm
     let basePool;
     let hardFormConstraintFailed = false;
@@ -63,8 +69,8 @@ const findRelevantProducts = async ({ message, analysis }) => {
         );
     }
     if (analysis?.productForm) {
-        if (discountFiltered.length > 0) {
-            basePool = discountFiltered;
+        if (priceFiltered.length > 0) {
+            basePool = priceFiltered;
         } else if (formFiltered.length > 0) {
             basePool = formFiltered;
         } else {
@@ -73,8 +79,8 @@ const findRelevantProducts = async ({ message, analysis }) => {
         }
     } else {
         basePool =
-            discountFiltered.length > 0
-                ? discountFiltered
+            priceFiltered.length > 0
+                ? priceFiltered
                 : formFiltered.length > 0
                   ? formFiltered
                   : petTypeFiltered.length > 0

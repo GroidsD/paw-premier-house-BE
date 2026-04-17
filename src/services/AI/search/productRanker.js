@@ -178,8 +178,6 @@ const getMatchedCategories = (analysis = {}, categories = []) => {
         "item",
         "items",
         "care",
-        "dog",
-        "cat",
     ]);
 
     const hints = rawHints.filter((hint) => {
@@ -191,6 +189,13 @@ const getMatchedCategories = (analysis = {}, categories = []) => {
         const normalizedCategory = normalizeTerm(category.type);
         return hints.some((hint) => includesTerm(normalizedCategory, hint));
     });
+
+    // If no specific keyword match, and we have a pet type, match ALL categories for that pet
+    if (matched.length === 0 && analysis?.petType && hints.length <= 1) {
+        matched = categories.filter((category) =>
+            categoryBelongsToPetType(category.type, analysis.petType),
+        );
+    }
 
     const formToCategoryMatchers = {
         shampoo: ["hygiene", "care", "ve sinh", "lam sach"],
@@ -235,24 +240,62 @@ const buildFullHaystack = (product = {}) =>
             .join(" "),
     );
 
-const hasDogSemanticSignal = (haystack = "") =>
-    hasWholeTerm(haystack, "dog") ||
-    hasWholeTerm(haystack, "dogs") ||
-    hasWholeTerm(haystack, "puppy") ||
-    haystack.includes("thuc an cho cho") ||
-    haystack.includes("pate cho cho") ||
-    haystack.includes("do choi cho cho") ||
-    haystack.includes("cho dang moc rang") ||
-    haystack.includes("cho moc rang");
+const hasDogSemanticSignal = (haystack = "") => {
+    const h = (haystack || "").toLowerCase();
+    return (
+        /\b(dog|dogs|puppy|puppies|poodle|husky|corgi|shiba|alaska|golden|retriever|pitbull|becgie|bully|phu quoc|rottweiler)\b/.test(h) ||
+        /\bcho cho\b/.test(h) ||
+        /\bsnack cho cho\b/.test(h) ||
+        /\bpate cho cho\b/.test(h) ||
+        /\bthuc an cho cho\b/.test(h) ||
+        /\bdo choi cho cho\b/.test(h) ||
+        /\bdog snack\b/.test(h) ||
+        /\bdog treat\b/.test(h) ||
+        /\bcho dang moc rang\b/.test(h) ||
+        /\bcho con\b/.test(h) ||
+        /\bcho truong thanh\b/.test(h) ||
+        /\bcho me\b/.test(h)
+    );
+};
 
-const hasCatSemanticSignal = (haystack = "") =>
-    hasWholeTerm(haystack, "cat") ||
-    hasWholeTerm(haystack, "cats") ||
+const hasCatSemanticSignal = (haystack = "") => {
+    const h = (haystack || "").toLowerCase();
+    return (
+        /\b(cat|cats|kitten|kittens|meo|meow|persian|siamese|maine coon|sphynx|ragdoll)\b/.test(h) ||
+        /\bcho meo\b/.test(h) ||
+        /\bsnack cho meo\b/.test(h) ||
+        /\bpate cho meo\b/.test(h) ||
+        /\bthuc an cho meo\b/.test(h) ||
+        /\bdo choi cho meo\b/.test(h) ||
+        /\bcat snack\b/.test(h) ||
+        /\bcat treat\b/.test(h) ||
+        /\bmeo ken an\b/.test(h) ||
+        /\bmeo con\b/.test(h) ||
+        /\bmeo truong thanh\b/.test(h) ||
+        /\bmeo me\b/.test(h) ||
+        /\bcat litter\b/.test(h) ||
+        /\bcat tree\b/.test(h)
+    );
+};
+
+const hasKittenSignal = (haystack = "") =>
     hasWholeTerm(haystack, "kitten") ||
-    haystack.includes("thuc an cho meo") ||
-    haystack.includes("pate cho meo") ||
-    haystack.includes("do choi cho meo") ||
-    haystack.includes("meo ken an");
+    hasWholeTerm(haystack, "meo con") ||
+    hasWholeTerm(haystack, "meo nho") ||
+    hasWholeTerm(haystack, "meo baby");
+
+const hasPuppySignal = (haystack = "") =>
+    hasWholeTerm(haystack, "puppy") ||
+    hasWholeTerm(haystack, "cho con") ||
+    hasWholeTerm(haystack, "cho nho") ||
+    hasWholeTerm(haystack, "cho baby");
+
+const hasAdultSignal = (haystack = "") =>
+    hasWholeTerm(haystack, "adult") ||
+    hasWholeTerm(haystack, "truong thanh") ||
+    hasWholeTerm(haystack, "lon") ||
+    hasWholeTerm(haystack, "cho lon") ||
+    hasWholeTerm(haystack, "meo lon");
 
 const GENERIC_FORMS = new Set([
     "shampoo",
@@ -265,15 +308,15 @@ const belongsToPetType = (product = {}, petType = null) => {
     if (!petType) return true;
 
     const haystack = buildFullHaystack(product);
-    const hasDogSignal = hasDogSemanticSignal(haystack);
-    const hasCatSignal = hasCatSemanticSignal(haystack);
+    const hasDog = hasDogSemanticSignal(haystack);
+    const hasCat = hasCatSemanticSignal(haystack);
 
     if (petType === "cat") {
-        return hasCatSignal && !hasDogSignal;
+        return !hasDog || hasCat;
     }
 
     if (petType === "dog") {
-        return hasDogSignal && !hasCatSignal;
+        return !hasCat || hasDog;
     }
 
     return true;
@@ -401,7 +444,7 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
         }
 
         if (hasCatSignal && !hasDogSignal) {
-            score -= 120;
+            score -= 500;
             matchedReasons.push("pet_type_mismatch:cat");
         }
     }
@@ -413,7 +456,7 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
         }
 
         if (hasDogSignal && !hasCatSignal) {
-            score -= 120;
+            score -= 500;
             matchedReasons.push("pet_type_mismatch:dog");
         }
     }
@@ -477,6 +520,43 @@ const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
         }
     }
 
+    // Age-based ranking
+    const queryHasKitten =
+        includesTerm(analysis.message, "con") ||
+        includesTerm(analysis.message, "nho") ||
+        includesTerm(analysis.message, "baby") ||
+        includesTerm(analysis.message, "kitten");
+
+    const queryHasPuppy =
+        includesTerm(analysis.message, "puppy") ||
+        includesTerm(analysis.message, "con") ||
+        includesTerm(analysis.message, "nho");
+
+    const queryHasAdult =
+        includesTerm(analysis.message, "adult") ||
+        includesTerm(analysis.message, "truong thanh") ||
+        includesTerm(analysis.message, "lon");
+
+    if (queryHasKitten || queryHasPuppy) {
+        if (hasKittenSignal(haystack) || hasPuppySignal(haystack)) {
+            score += 45;
+            matchedReasons.push("age_match:young");
+        } else if (hasAdultSignal(haystack)) {
+            score -= 100;
+            matchedReasons.push("age_mismatch:adult_product_for_young");
+        }
+    }
+
+    if (queryHasAdult) {
+        if (hasAdultSignal(haystack)) {
+            score += 35;
+            matchedReasons.push("age_match:adult");
+        } else if (hasKittenSignal(haystack) || hasPuppySignal(haystack)) {
+            score -= 90;
+            matchedReasons.push("age_mismatch:young_product_for_adult");
+        }
+    }
+
     if (Number(product.quantity || 0) > 0) {
         score += 3;
         matchedReasons.push("in_stock");
@@ -494,18 +574,19 @@ const calculateConfidence = (items = [], analysis = {}) => {
 
     if (topScore <= 0) return 0;
 
-    let confidence = Math.min(1, topScore / 110);
+    let confidence = Math.min(1, topScore / 100); // Lowered denominator slightly
 
-    if (analysis?.productForm) confidence += 0.06;
-    if (analysis?.petType) confidence += 0.05;
-    if (analysis?.discountMode) confidence += 0.04;
+    // Significant bonus for structural signals
+    if (analysis?.productForm) confidence += 0.15;
+    if (analysis?.petType) confidence += 0.1;
+    if (analysis?.discountMode) confidence += 0.1;
 
     if (
         analysis?.petType &&
         topItem?._semantic_metadata?.pet_type &&
         topItem._semantic_metadata.pet_type !== analysis.petType
     ) {
-        confidence -= 0.2;
+        confidence -= 0.3;
     }
 
     return Number(Math.max(0, Math.min(1, confidence)).toFixed(2));
