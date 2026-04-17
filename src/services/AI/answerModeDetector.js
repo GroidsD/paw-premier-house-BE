@@ -60,7 +60,6 @@ const detectAnswerMode = ({
             "chao",
             "ban oi",
             "alo",
-            "ban oi",
             "giup minh voi",
             "tu van giup minh",
         ]) || hasTerm(["help", "hello", "hi", "hey", "alo"]);
@@ -72,14 +71,25 @@ const detectAnswerMode = ({
             "bao nhieu tien",
             "con hang",
             "het hang",
+            "co san khong",
+            "co hang khong",
+            "so luong",
             "giam gia",
             "khuyen mai",
             "dang sale",
             "co ban khong",
             "shop co",
+            "co size nao",
+            "co mau nao",
+            "co loai nao",
+            "co chai",
+            "co tui",
             "do you have",
             "available",
             "in stock",
+            "price",
+            "how much",
+            "promotion",
         ]) ||
         hasTerm([
             "price",
@@ -91,6 +101,12 @@ const detectAnswerMode = ({
             "promotion",
             "buy",
             "mua",
+            "gia",
+            "ton kho",
+            "so luong",
+            "variant",
+            "size",
+            "color",
         ]);
 
     const hasConcreteShopEntity =
@@ -132,21 +148,34 @@ const detectAnswerMode = ({
             "dung ra sao",
             "su dung ra sao",
             "thanh phan",
+            "thanh phan gi",
+            "co thanh phan gi",
             "luu y",
             "gom nhung gi",
             "bao gom gi",
             "bao gom nhung gi",
             "co nhung gi",
+            "cong dung",
+            "tac dung",
+            "dung cho",
+            "phu hop cho",
+            "co an toan khong",
+            "an toan khong",
             "how to use",
             "how do i use",
             "what is included",
             "what does it include",
             "ingredients",
+            "ingredient",
+            "benefit of this product",
+            "is it safe",
+            "suitable for",
         ]) ||
         hasTerm([
             "usage",
             "instruction",
             "ingredient",
+            "ingredients",
             "warning",
             "include",
             "included",
@@ -155,6 +184,11 @@ const detectAnswerMode = ({
             "su dung",
             "thanh phan",
             "luu y",
+            "cong dung",
+            "tac dung",
+            "safe",
+            "safety",
+            "suitable",
         ]);
 
     const hasGeneralNutritionOrHealthSignals =
@@ -178,13 +212,10 @@ const detectAnswerMode = ({
             "meo con an gi",
             "che do an cho cho nho",
             "che do an cho meo con",
-            "co tac dung gi",
-            "giup ich gi",
-            "giup ich cho",
-            "co loi cho",
-            "co loi khong",
-            "good for",
-            "helpful for",
+            "co tac dung gi cho suc khoe",
+            "giup ich cho suc khoe",
+            "good for health",
+            "helpful for health",
             "benefits of",
             "diet for",
             "feeding guide",
@@ -290,6 +321,14 @@ const detectAnswerMode = ({
         };
     }
 
+    // Ưu tiên internal knowledge trước strict commerce
+    if (hasInternalKnowledgeSignals && hasConcreteShopEntity) {
+        return {
+            mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
+            reason: "knowledge question tied to a concrete shop entity",
+        };
+    }
+
     if (hasStrictCommerceIntent) {
         return {
             mode: ANSWER_MODES.DB_STRICT,
@@ -297,10 +336,17 @@ const detectAnswerMode = ({
         };
     }
 
-    if (hasInternalKnowledgeSignals && hasConcreteShopEntity) {
+    if (hasFeedingOrDietIntent) {
         return {
-            mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
-            reason: "knowledge question tied to a concrete shop entity",
+            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
+            reason: "feeding or diet guidance is external knowledge",
+        };
+    }
+
+    if (hasGeneralNutritionOrHealthSignals && !hasConcreteShopEntity) {
+        return {
+            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
+            reason: "general nutrition or health knowledge",
         };
     }
 
@@ -320,20 +366,6 @@ const detectAnswerMode = ({
         return {
             mode: ANSWER_MODES.DB_STRICT,
             reason: "concrete shop entity should stay in db mode",
-        };
-    }
-
-    if (hasFeedingOrDietIntent) {
-        return {
-            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
-            reason: "feeding or diet guidance is external knowledge",
-        };
-    }
-
-    if (hasGeneralNutritionOrHealthSignals && !hasConcreteShopEntity) {
-        return {
-            mode: ANSWER_MODES.EXTERNAL_REFERENCE,
-            reason: "general nutrition or health knowledge",
         };
     }
 

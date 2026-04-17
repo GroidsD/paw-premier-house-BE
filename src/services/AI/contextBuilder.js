@@ -92,6 +92,7 @@ const buildAuthRequiredContext = ({
     confidence: 1,
     answer_mode: "db_strict",
     answer_mode_reason: "login required for personal data",
+    failure_reason: "auth_required",
 });
 
 const buildGeneralContext = ({ message, reply, confidence = 0.2 }) => ({
@@ -106,8 +107,52 @@ const buildGeneralContext = ({ message, reply, confidence = 0.2 }) => ({
     ],
     user_question: message,
     confidence,
+    failure_reason: "general_fallback",
     ...(reply ? { reply } : {}),
 });
+
+const buildAmbiguousReferenceContext = ({ message, kind = "product" }) => ({
+    type: "knowledge",
+    items: [],
+    knowledge_items: [],
+    note: "Ambiguous contextual reference without enough product/service context.",
+    reply:
+        kind === "product"
+            ? "Mình chưa biết chính xác bạn đang hỏi sản phẩm nào. Bạn cho mình tên sản phẩm cụ thể nhé."
+            : "Mình chưa biết chính xác bạn đang hỏi dịch vụ nào. Bạn nói rõ tên dịch vụ giúp mình nhé.",
+    confidence: 0.2,
+    failure_reason: "ambiguous_reference_no_context",
+    answer_source: "internal_knowledge",
+    user_question: message,
+});
+
+const getResolvedProductContext = ({ currentUser = {}, analysis = {} }) => {
+    const productId =
+        currentUser?.currentProductId || currentUser?.lastProductId || null;
+
+    const productName =
+        currentUser?.currentProductName || currentUser?.lastProductName || null;
+
+    return {
+        productId,
+        productName,
+        hasBinding: Boolean(productId || analysis?.explicitProductName),
+    };
+};
+
+const getResolvedServiceContext = ({ currentUser = {}, analysis = {} }) => {
+    const serviceId =
+        currentUser?.currentServiceId || currentUser?.lastServiceId || null;
+
+    const serviceName =
+        currentUser?.currentServiceName || currentUser?.lastServiceName || null;
+
+    return {
+        serviceId,
+        serviceName,
+        hasBinding: Boolean(serviceId),
+    };
+};
 
 const buildDbStrictContext = async ({
     intent,
@@ -217,7 +262,75 @@ const buildInternalKnowledgeContext = async ({
         (intent === "service_search" || intent === "service_booking_intent") &&
         hasConcreteServiceEntity(analysis);
 
+    const resolvedProduct = getResolvedProductContext({
+        currentUser,
+        analysis,
+    });
+
+    const resolvedService = getResolvedServiceContext({
+        currentUser,
+        analysis,
+    });
+
+    if (analysis?.contextualReference) {
+        if (canUseProductEntity && !resolvedProduct.hasBinding) {
+            return buildAmbiguousReferenceContext({
+                message,
+                kind: "product",
+            });
+        }
+
+        if (canUseServiceEntity && !resolvedService.hasBinding) {
+            return buildAmbiguousReferenceContext({
+                message,
+                kind: "service",
+            });
+        }
+    }
+
     if (canUseProductEntity) {
+        if (resolvedProduct.productId) {
+            const knowledgeItems =
+                await productKnowledgeRepo.findKnowledgeByProductId({
+                    productId: resolvedProduct.productId,
+                    language: analysis?.language || null,
+                });
+
+            if (knowledgeItems.length > 0) {
+                return {
+                    type: "knowledge",
+                    items: [
+                        {
+                            product_id: resolvedProduct.productId,
+                            name: resolvedProduct.productName || null,
+                        },
+                    ],
+                    knowledge_items: knowledgeItems,
+                    note: "Bound by currentProductId/lastProductId from chat context.",
+                    reply: "",
+                    confidence: 1,
+                    failure_reason: null,
+                    answer_source: "internal_knowledge",
+                };
+            }
+
+            return {
+                type: "knowledge",
+                items: [
+                    {
+                        product_id: resolvedProduct.productId,
+                        name: resolvedProduct.productName || null,
+                    },
+                ],
+                knowledge_items: [],
+                note: "Bound product exists, but no knowledge records yet.",
+                reply: "Mình đã xác định được sản phẩm bạn đang hỏi, nhưng hiện chưa có dữ liệu kiến thức nội bộ phù hợp để trả lời chi tiết.",
+                confidence: 0.45,
+                failure_reason: "no_internal_knowledge_records",
+                answer_source: "internal_knowledge",
+            };
+        }
+
         const productContext = await productSearchService.findRelevantProducts({
             message,
             currentUser,
@@ -245,24 +358,21 @@ const buildInternalKnowledgeContext = async ({
                     note: "Internal product knowledge loaded successfully.",
                     reply: "",
                     confidence: Math.max(productContext?.confidence ?? 0, 0.75),
+                    failure_reason: null,
+                    answer_source: "internal_knowledge",
                 };
             }
-            console.log(
-                "knowledge best match:",
-                productContext?.items?.map((item) => ({
-                    id: item.product_id,
-                    name: item.name,
-                    category: item.category,
-                })),
-            );
+
             return {
                 ...productContext,
                 type: "knowledge",
                 items: [bestMatch],
                 knowledge_items: [],
                 note: "Matched product found, but no product knowledge records yet.",
-                reply: "Mình đã xác định được sản phẩm liên quan trong shop, nhưng hiện chưa có kho kiến thức nội bộ để trả lời chính xác phần công dụng hoặc cách dùng.",
+                reply: "Mình đã xác định được sản phẩm liên quan trong shop, nhưng hiện chưa có kho kiến thức nội bộ để trả lời chính xác phần công dụng, thành phần hoặc cách dùng.",
                 confidence: Math.min(productContext?.confidence ?? 0, 0.45),
+                failure_reason: "no_internal_knowledge_records",
+                answer_source: "internal_knowledge",
             };
         }
     }
@@ -285,6 +395,8 @@ const buildInternalKnowledgeContext = async ({
                 note: "Service matched, but service knowledge repository is not connected yet.",
                 reply: "Mình đã xác định được dịch vụ liên quan, nhưng hiện chưa có kho kiến thức nội bộ cho dịch vụ để trả lời chi tiết.",
                 confidence: Math.min(serviceContext?.confidence ?? 0, 0.45),
+                failure_reason: "no_internal_knowledge_records",
+                answer_source: "internal_knowledge",
             };
         }
     }
@@ -294,8 +406,10 @@ const buildInternalKnowledgeContext = async ({
         items: [],
         knowledge_items: [],
         note: "No strong concrete shop entity matched for internal knowledge mode.",
-        reply: "Mình chưa xác định được chính xác sản phẩm hoặc dịch vụ cụ thể trong shop để trả lời phần công dụng hoặc cách dùng.",
+        reply: "Mình chưa xác định được chính xác sản phẩm hoặc dịch vụ cụ thể trong shop để trả lời phần công dụng, thành phần hoặc cách dùng.",
         confidence: 0.2,
+        failure_reason: "no_entity_match_for_internal_knowledge",
+        answer_source: "internal_knowledge",
     };
 };
 
@@ -366,6 +480,8 @@ const buildExternalReferenceContext = async ({
             note: "External reference sources loaded successfully.",
             reply: "",
             confidence: 0.75,
+            failure_reason: null,
+            answer_source: "external_reference",
         };
     }
 
@@ -376,6 +492,8 @@ const buildExternalReferenceContext = async ({
         note: "External reference mode selected, but no outside sources were returned.",
         reply: "Câu hỏi này thuộc dạng kiến thức tham khảo ngoài hệ thống. Hiện chưa lấy được nguồn ngoài phù hợp để trả lời một cách đúng nhất.",
         confidence: 0.25,
+        failure_reason: "no_external_sources",
+        answer_source: "external_reference",
     };
 };
 

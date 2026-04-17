@@ -104,7 +104,26 @@ const sanitizeSignalPayload = (payload = {}) => {
     };
 };
 
-const generateReply = async (prompt, { language = "vi" } = {}) => {
+const normalizeChatMessages = (input) => {
+    if (Array.isArray(input)) {
+        return input
+            .filter(Boolean)
+            .map((msg) => ({
+                role: msg.role,
+                content: String(msg.content ?? ""),
+            }))
+            .filter((msg) => msg.role && msg.content.trim());
+    }
+
+    if (typeof input === "string") {
+        const prompt = String(input || "").trim();
+        return prompt ? [{ role: "user", content: prompt }] : [];
+    }
+
+    return [];
+};
+
+const generateReply = async (promptOrMessages, { language = "vi" } = {}) => {
     const fallback = FALLBACK_BY_LANGUAGE[normalizeLanguage(language)];
     const client = getClient();
 
@@ -113,15 +132,13 @@ const generateReply = async (prompt, { language = "vi" } = {}) => {
     }
 
     try {
+        const messages = normalizeChatMessages(promptOrMessages);
+        if (!messages.length) return fallback;
+
         const completion = await client.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-            messages: [
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
-            temperature: 0.2,
+            messages,
+            temperature: 0.1,
         });
 
         return completion.choices?.[0]?.message?.content || fallback;

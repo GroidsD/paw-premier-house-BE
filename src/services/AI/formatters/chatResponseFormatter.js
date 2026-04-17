@@ -9,6 +9,7 @@ const {
     stripExternalLinks,
     getLowConfidenceReply,
     extractBudget,
+    getFormLabel,
 } = require("./utils");
 const {
     buildProductReply,
@@ -88,7 +89,118 @@ const buildProductCard = (item, index, language) => {
         action_label: getActionLabel(language, "product"),
     };
 };
+const isGenericLlmFailure = (text = "") => {
+    const value = String(text || "")
+        .trim()
+        .toLowerCase();
+    if (!value) return true;
 
+    return (
+        value === "xin loi, toi chua the tra loi luc nay." ||
+        value === "sorry, i cannot answer that right now." ||
+        value === "xin lỗi, tôi chưa thể trả lời lúc này." ||
+        value === "sorry, i can't answer that right now."
+    );
+};
+const pickBestKnowledgeItem = ({ knowledgeItems = [], userQuestion = "" }) => {
+    const question = String(userQuestion || "").toLowerCase();
+
+    const scoreItem = (item = {}) => {
+        const title = String(item.title || "").toLowerCase();
+        const content = String(item.content || item.text || "").toLowerCase();
+        const source = String(item.source || "").toLowerCase();
+        const haystack = `${title} ${content} ${source}`;
+
+        let score = 0;
+
+        if (
+            question.includes("thanh phan") ||
+            question.includes("ingredient") ||
+            question.includes("ingredients")
+        ) {
+            if (haystack.includes("thanh phan")) score += 10;
+            if (haystack.includes("ingredient")) score += 10;
+            if (haystack.includes("ingredients")) score += 10;
+            if (haystack.includes("cach dung")) score -= 6;
+            if (haystack.includes("huong dan")) score -= 4;
+            if (haystack.includes("su dung")) score -= 4;
+        }
+
+        if (
+            question.includes("cach dung") ||
+            question.includes("su dung") ||
+            question.includes("how to use") ||
+            question.includes("usage")
+        ) {
+            if (haystack.includes("cach dung")) score += 10;
+            if (haystack.includes("huong dan")) score += 8;
+            if (haystack.includes("su dung")) score += 8;
+            if (haystack.includes("usage")) score += 8;
+            if (haystack.includes("thanh phan")) score -= 5;
+            if (haystack.includes("ingredient")) score -= 5;
+        }
+
+        if (
+            question.includes("cong dung") ||
+            question.includes("tac dung") ||
+            question.includes("benefit")
+        ) {
+            if (haystack.includes("cong dung")) score += 10;
+            if (haystack.includes("tac dung")) score += 10;
+            if (haystack.includes("benefit")) score += 8;
+            if (haystack.includes("usage")) score -= 3;
+            if (haystack.includes("ingredient")) score -= 3;
+        }
+
+        if (
+            question.includes("luu y") ||
+            question.includes("canh bao") ||
+            question.includes("warning")
+        ) {
+            if (haystack.includes("luu y")) score += 10;
+            if (haystack.includes("canh bao")) score += 10;
+            if (haystack.includes("warning")) score += 10;
+        }
+
+        return score;
+    };
+
+    const sorted = [...knowledgeItems].sort(
+        (a, b) => scoreItem(b) - scoreItem(a),
+    );
+    return sorted[0] || null;
+};
+const buildKnowledgeFallbackReply = ({
+    item,
+    knowledgeItems = [],
+    userQuestion = "",
+    language = "vi",
+}) => {
+    const bestKnowledge = pickBestKnowledgeItem({
+        knowledgeItems,
+        userQuestion,
+    });
+
+    const productName =
+        item?.name || (language === "en" ? "this product" : "sản phẩm này");
+
+    const content = String(
+        bestKnowledge?.content || bestKnowledge?.text || "",
+    ).trim();
+
+    if (!content) {
+        return language === "en"
+            ? `I found the related product ${productName}, but I still do not have enough internal knowledge content to answer accurately.`
+            : `Mình đã xác định được sản phẩm liên quan là ${productName}, nhưng hiện chưa đủ nội dung kiến thức nội bộ để trả lời chính xác.`;
+    }
+
+    const shortContent =
+        content.length > 220 ? `${content.slice(0, 220).trim()}...` : content;
+
+    return language === "en"
+        ? `${productName}: ${shortContent}`
+        : `${productName}: ${shortContent}`;
+};
 const buildServiceCard = (item, index, language, intent) => ({
     type: "service",
     id: item.service_id,
@@ -138,9 +250,7 @@ const buildKnowledgeCards = ({
         badge:
             index === 0
                 ? language === "en"
-                    ? answerMode === "external_reference"
-                        ? "Related item"
-                        : "Related item"
+                    ? "Related item"
                     : answerMode === "external_reference"
                       ? "Sản phẩm liên quan"
                       : "Liên quan nhất"
@@ -186,6 +296,48 @@ const formatResponse = ({
     });
 
     if (context?.type === "products") {
+        const appliedFilters = context?.applied_filters || [];
+        const productFormNoMatch = appliedFilters.includes(
+            "product_form_no_match",
+        );
+
+        if (productFormNoMatch) {
+            const formLabel = getFormLabel(
+                context?.analysis?.productForm || null,
+                language,
+            );
+            const replyText =
+                language === "en"
+                    ? `I couldn't find any ${formLabel || "matching"} products in the shop right now. Do you want to try a different type, or share your budget?`
+                    : `Hiện shop chưa thấy sản phẩm ${formLabel || "phù hợp"} trong dữ liệu. Bạn muốn đổi loại khác hoặc cho mình biết ngân sách không?`;
+
+            return {
+                intent,
+                reply: replyText,
+                cards: [],
+                suggestions,
+                meta: {
+                    language,
+                    isLoggedIn,
+                    confidence: context?.confidence ?? 0,
+                    matched_categories: context?.matched_categories || [],
+                    applied_filters: appliedFilters,
+                    context_type: context?.type || "general",
+                    product_form: context?.analysis?.productForm || null,
+                    discount_mode: context?.analysis?.discountMode || null,
+                    answer_mode: answerMode,
+                    answer_mode_reason: context?.answer_mode_reason || null,
+                    answer_source: "db",
+                    failure_reason:
+                        context?.failure_reason || "product_form_no_match",
+                    knowledge_count:
+                        (context?.knowledge_items || []).length || 0,
+                    external_source_count:
+                        (context?.external_sources || []).length || 0,
+                },
+            };
+        }
+
         if ((context?.confidence ?? 0) < 0.5) {
             return {
                 intent,
@@ -197,7 +349,7 @@ const formatResponse = ({
                     isLoggedIn,
                     confidence: context?.confidence ?? 0,
                     matched_categories: context?.matched_categories || [],
-                    applied_filters: context?.applied_filters || [],
+                    applied_filters: appliedFilters,
                     context_type: context?.type || "general",
                     product_form: context?.analysis?.productForm || null,
                     discount_mode: context?.analysis?.discountMode || null,
@@ -211,6 +363,7 @@ const formatResponse = ({
                               : answerMode === "external_reference"
                                 ? "external_reference"
                                 : "fallback",
+                    failure_reason: context?.failure_reason || "low_confidence",
                     knowledge_count:
                         (context?.knowledge_items || []).length || 0,
                     external_source_count:
@@ -244,6 +397,40 @@ const formatResponse = ({
             });
         }
     } else if (context?.type === "services") {
+        if ((context?.confidence ?? 0) < 0.5) {
+            return {
+                intent,
+                reply: getLowConfidenceReply(language),
+                cards: [],
+                suggestions,
+                meta: {
+                    language,
+                    isLoggedIn,
+                    confidence: context?.confidence ?? 0,
+                    matched_categories: context?.matched_categories || [],
+                    applied_filters: context?.applied_filters || [],
+                    context_type: context?.type || "general",
+                    product_form: context?.analysis?.productForm || null,
+                    discount_mode: context?.analysis?.discountMode || null,
+                    answer_mode: answerMode,
+                    answer_mode_reason: context?.answer_mode_reason || null,
+                    answer_source:
+                        answerMode === "db_strict"
+                            ? "db"
+                            : answerMode === "internal_knowledge"
+                              ? "internal_knowledge"
+                              : answerMode === "external_reference"
+                                ? "external_reference"
+                                : "fallback",
+                    failure_reason: context?.failure_reason || "low_confidence",
+                    knowledge_count:
+                        (context?.knowledge_items || []).length || 0,
+                    external_source_count:
+                        (context?.external_sources || []).length || 0,
+                },
+            };
+        }
+
         cards = (context.items || []).map((item, index) =>
             buildServiceCard(item, index, language, intent),
         );
@@ -312,12 +499,27 @@ const formatResponse = ({
             knowledgeItems: context.knowledge_items || [],
         });
 
-        reply =
-            safeRawReply ||
-            context?.reply ||
-            (language === "en"
-                ? "I found a related item, but internal knowledge is still limited right now."
-                : "Mình đã xác định được sản phẩm liên quan, nhưng kho kiến thức nội bộ hiện vẫn còn hạn chế.");
+        const firstItem = (context.items || [])[0] || null;
+        const knowledgeItems = context.knowledge_items || [];
+
+        if (
+            knowledgeItems.length > 0 &&
+            (isGenericLlmFailure(safeRawReply) || !safeRawReply)
+        ) {
+            reply = buildKnowledgeFallbackReply({
+                item: firstItem,
+                knowledgeItems,
+                userQuestion: context?.user_question || "",
+                language,
+            });
+        } else {
+            reply =
+                safeRawReply ||
+                context?.reply ||
+                (language === "en"
+                    ? "I found a related item, but internal knowledge is still limited right now."
+                    : "Mình đã xác định được sản phẩm liên quan, nhưng kho kiến thức nội bộ hiện vẫn còn hạn chế.");
+        }
     } else if (context?.type === "external_reference") {
         cards = buildKnowledgeCards({
             items: context.items || [],
@@ -393,13 +595,15 @@ const formatResponse = ({
             answer_mode: answerMode,
             answer_mode_reason: context?.answer_mode_reason || null,
             answer_source:
-                answerMode === "db_strict"
+                context?.answer_source ||
+                (answerMode === "db_strict"
                     ? "db"
                     : answerMode === "internal_knowledge"
                       ? "internal_knowledge"
                       : answerMode === "external_reference"
                         ? "external_reference"
-                        : "fallback",
+                        : "fallback"),
+            failure_reason: context?.failure_reason || null,
             knowledge_count: (context?.knowledge_items || []).length || 0,
             external_source_count:
                 (context?.external_sources || []).length || 0,

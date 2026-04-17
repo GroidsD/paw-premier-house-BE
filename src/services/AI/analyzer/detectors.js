@@ -144,6 +144,12 @@ const detectDiscountMode = (text = "") => {
 const detectProductForm = (text = "") => {
     const normalized = normalizeText(text);
 
+    // Disambiguation: "sữa tắm" is shampoo, not milk.
+    // Because normalizeText removes diacritics, we check normalized phrases.
+    if (normalized.includes("sua tam") || normalized.includes("pet shampoo")) {
+        return "shampoo";
+    }
+
     const containsKeyword = (keyword = "") => {
         const normalizedKeyword = normalizeText(keyword);
 
@@ -167,10 +173,10 @@ const detectProductForm = (text = "") => {
     const priority = [
         "pate",
         "kibble",
-        "milk",
+        "shampoo",
         "toy",
         "snack",
-        "shampoo",
+        "milk",
         "wipes",
         "litter",
         "brush",

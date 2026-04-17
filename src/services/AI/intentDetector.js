@@ -97,14 +97,27 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "recent orders",
     ]);
 
-    const asksRecommendation = hasTextOrTerm([
-        "goi y",
-        "de xuat",
-        "recommend",
-        "recommended",
-        "suggest",
-        "suggestion",
-    ]);
+    const asksRecommendation =
+        hasTextOrTerm([
+            "goi y",
+            "de xuat",
+            "recommend",
+            "recommended",
+            "suggest",
+            "suggestion",
+            "nen dung",
+            "nen mua",
+            "phu hop",
+            "tot cho",
+        ]) ||
+        hasPhrase([
+            "goi y cho minh",
+            "de xuat cho minh",
+            "nen dung loai nao",
+            "nen mua loai nao",
+            "san pham nao phu hop",
+            "loai nao phu hop",
+        ]);
 
     const hasBookingAction = hasTextOrTerm([
         "dat lich",
@@ -150,8 +163,10 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "is it true",
     ]);
 
-    // Ưu tiên cứng: nếu analyzer đã xác định được form sản phẩm
     if (analysis?.productForm) {
+        if (asksRecommendation) {
+            return CHAT_INTENTS.PRODUCT_RECOMMEND;
+        }
         return CHAT_INTENTS.PRODUCT_SEARCH;
     }
 
@@ -204,7 +219,7 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
 
     const hasProductWords = Boolean(
         hasSpecificProductTerms ||
-            (hasGenericCommerce && hasSpecificProductTerms),
+        (hasGenericCommerce && hasSpecificProductTerms),
     );
 
     if (asksMyBookings) {

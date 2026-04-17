@@ -74,6 +74,9 @@ const getFormLabel = (productForm, language = "vi") => {
             toy: "đồ chơi",
             snack: "snack",
             shampoo: "sữa tắm",
+            wipes: "khăn lau",
+            litter: "cát vệ sinh",
+            brush: "lược chải lông",
         },
         en: {
             pate: "pate",
@@ -82,6 +85,9 @@ const getFormLabel = (productForm, language = "vi") => {
             toy: "toy",
             snack: "snack",
             shampoo: "shampoo",
+            wipes: "wipes",
+            litter: "cat litter",
+            brush: "brush",
         },
     };
 
