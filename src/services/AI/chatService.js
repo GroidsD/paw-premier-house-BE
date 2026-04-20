@@ -7,6 +7,7 @@ const formatResponse = require("./formatters/chatResponseFormatter");
 
 const shouldUseLLMReply = ({ context }) => {
     const answerMode = context?.answer_mode || "general_fallback";
+    const failureReason = context?.failure_reason || null;
 
     const hasKnowledgeItems =
         Array.isArray(context?.knowledge_items) &&
@@ -15,6 +16,16 @@ const shouldUseLLMReply = ({ context }) => {
     const hasExternalSources =
         Array.isArray(context?.external_sources) &&
         context.external_sources.length > 0;
+
+    if (
+        failureReason === "ambiguous_reference_no_context" ||
+        failureReason === "needs_clarification" ||
+        failureReason === "product_not_resolved_for_internal_knowledge" ||
+        failureReason === "service_not_resolved_for_internal_knowledge" ||
+        failureReason === "auth_required"
+    ) {
+        return false;
+    }
 
     if (answerMode === "db_strict") {
         return false;
@@ -29,7 +40,7 @@ const shouldUseLLMReply = ({ context }) => {
     }
 
     if (answerMode === "general_fallback") {
-        return true;
+        return false;
     }
 
     return false;
@@ -107,7 +118,6 @@ const buildResolvedContext = ({ context, formatted, normalizedUser }) => {
         }
     }
 
-    // Nếu câu bị ambiguous thì giữ last context cũ để frontend tiếp tục dùng
     if (formatted?.meta?.failure_reason === "ambiguous_reference_no_context") {
         return resolved;
     }
@@ -142,7 +152,7 @@ const handleChat = async ({ message, currentUser }) => {
 
     let rawReply = context?.reply || "";
     let llmTime = 0;
-
+    console.log("shouldUseLLMReply:", shouldUseLLMReply({ context }));
     if (shouldUseLLMReply({ context })) {
         const t4 = Date.now();
 
@@ -193,6 +203,7 @@ const handleChat = async ({ message, currentUser }) => {
         contextType: context?.type,
         answerMode: context?.answer_mode,
         confidence: context?.confidence,
+        failureReason: context?.failure_reason,
         hasKnowledgeItems:
             Array.isArray(context?.knowledge_items) &&
             context.knowledge_items.length > 0,

@@ -132,44 +132,48 @@ const summarizeContext = (context = {}) => {
 };
 
 const buildSystemPrompt = ({ mode, responseLanguage }) => {
+    const commonRules = [
+        "Reply in the user's latest language.",
+        "Maximum 3 short sentences.",
+        "Be concise and practical.",
+        "Do not invent facts.",
+        "If the question is ambiguous, ask exactly 1 short clarifying question and stop.",
+        "Do not add external links unless explicitly present in CONTEXT and allowed by mode.",
+    ];
+
     const modeInstruction =
         mode === "db_strict"
             ? [
-                  "Answer only from the provided CONTEXT.",
-                  "Do not invent prices, stock, booking details, order details, service details, or product facts.",
-                  "If the data is missing or the match is weak, say that clearly and ask 1-2 short clarifying questions.",
-                  "Do not include external links or references to other shops.",
+                  "Answer only from CONTEXT.",
+                  "Only mention product facts, price, stock, booking, order, service, or variant data that already exist in CONTEXT.",
+                  "If the data is missing, say that clearly.",
+                  "Do not give broad advice or general pet knowledge.",
               ]
             : mode === "internal_knowledge"
               ? [
-                    "Answer only from the provided CONTEXT.",
+                    "Answer only from CONTEXT.",
                     "Prioritize knowledge_items first, then matched shop items.",
-                    "If knowledge_items are empty, clearly say that internal knowledge is not available yet for a grounded answer.",
-                    "Do not invent benefits, ingredients, warnings, usage instructions, suitability, or safety claims beyond the provided context.",
-                    "Do not include external links or references to other shops.",
+                    "If knowledge_items are empty, clearly say internal knowledge is not available yet.",
+                    "Do not invent benefits, ingredients, warnings, usage instructions, suitability, or safety claims.",
+                    "If the exact product/service is not resolved, ask 1 short clarification question and stop.",
                 ]
               : mode === "external_reference"
                 ? [
-                      "Use only the information provided in CONTEXT, especially external_sources.",
-                      "If external_sources are empty, clearly say that grounded outside sources are not connected yet and ask 1-2 clarifying questions.",
-                      "Clearly distinguish between shop data and external reference information.",
-                      "Do not present speculative information as official shop facts.",
-                      "Do not provide veterinary diagnosis, prescription, or medical certainty.",
+                      "Use only external_sources and grounded CONTEXT.",
+                      "Clearly separate external reference information from shop data.",
+                      "If external_sources are empty, say grounded outside sources are not available yet.",
+                      "Do not provide diagnosis, prescription, or medical certainty.",
                   ]
                 : [
                       "Use the provided CONTEXT when available.",
-                      "If information is incomplete, say so clearly and ask 1-2 clarifying questions.",
+                      "If information is incomplete, say so clearly.",
                   ];
 
     return [
         "You are the AI assistant for a pet care ecommerce platform.",
-        `Reply in ${responseLanguage}. Match the user's latest message language.`,
-        "Keep the answer friendly, concise, and practical.",
-        "If a product/service list exists, mention the best match first and keep the list short.",
-        "If the user asks about bookings/orders, only discuss the current user's data.",
-        "Never claim you performed actions (placed orders, booked services) unless explicitly present in CONTEXT.",
-        "If the user says something vague like 'loại này' or 'this one', use the matched item in CONTEXT if available; otherwise ask a short clarifying question.",
+        `Reply in ${responseLanguage}.`,
         "Rules:",
+        ...commonRules.map((x) => `- ${x}`),
         ...modeInstruction.map((x) => `- ${x}`),
     ].join("\n");
 };

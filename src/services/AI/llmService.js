@@ -124,16 +124,16 @@ const normalizeChatMessages = (input) => {
 };
 
 const generateReply = async (promptOrMessages, { language = "vi" } = {}) => {
-    const fallback = FALLBACK_BY_LANGUAGE[normalizeLanguage(language)];
     const client = getClient();
 
     if (!client) {
-        return fallback;
+        console.error("llmService.generateReply: missing OpenAI client");
+        return "";
     }
 
     try {
         const messages = normalizeChatMessages(promptOrMessages);
-        if (!messages.length) return fallback;
+        if (!messages.length) return "";
 
         const completion = await client.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -141,9 +141,13 @@ const generateReply = async (promptOrMessages, { language = "vi" } = {}) => {
             temperature: 0.1,
         });
 
-        return completion.choices?.[0]?.message?.content || fallback;
+        return String(completion.choices?.[0]?.message?.content || "").trim();
     } catch (error) {
-        return fallback;
+        console.error(
+            "llmService.generateReply error:",
+            error?.message || error,
+        );
+        return "";
     }
 };
 

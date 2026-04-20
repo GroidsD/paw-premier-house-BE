@@ -18,7 +18,101 @@ const {
     buildOrderReply,
 } = require("./replyBuilders");
 const { getSuggestionsByContext } = require("./suggestionBuilder");
+const buildExternalFallbackReply = ({
+    externalSources = [],
+    language = "vi",
+}) => {
+    const firstSource = externalSources[0] || null;
+    const snippet = String(firstSource?.snippet || "").trim();
 
+    if (snippet) {
+        return snippet.length > 220
+            ? `${snippet.slice(0, 220).trim()}...`
+            : snippet;
+    }
+
+    return language === "en"
+        ? "I found outside references for this question, but I could not generate a grounded summary right now."
+        : "Mình đã tìm thấy nguồn tham khảo ngoài cho câu hỏi này, nhưng hiện chưa tạo được phần tóm tắt grounded.";
+};
+const normalizeLooseText = (value = "") =>
+    String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+const buildGeneralFallbackReplyByMessage = ({
+    message = "",
+    language = "vi",
+}) => {
+    const text = normalizeLooseText(message);
+
+    const isGreeting =
+        text.includes("hello") ||
+        text.includes("hi") ||
+        text.includes("hey") ||
+        text.includes("xin chao") ||
+        text === "chao" ||
+        text.includes("chao shop") ||
+        text.includes("alo");
+
+    const asksHelp =
+        text.includes("giup minh") ||
+        text.includes("help me") ||
+        text.includes("can you help me") ||
+        text.includes("shop oi");
+
+    const asksCapability =
+        text.includes("ban lam duoc gi") ||
+        text.includes("ban ho tro gi") ||
+        text.includes("what can you do");
+
+    if (language === "en") {
+        if (isGreeting) {
+            return "Hi there! I can help you find products, services, bookings, or orders.";
+        }
+
+        if (asksHelp) {
+            return "Sure, I’m here. Do you want help with products, services, bookings, or orders?";
+        }
+
+        if (asksCapability) {
+            return "I can help you find products, services, bookings, and orders. What would you like to check first?";
+        }
+
+        return "I can help you find products, services, bookings, or orders. What do you need?";
+    }
+
+    if (isGreeting) {
+        return "Chào bạn nha! Mình có thể hỗ trợ tìm sản phẩm, dịch vụ, booking hoặc đơn hàng.";
+    }
+
+    if (asksHelp) {
+        return "Mình đây nha. Bạn muốn mình hỗ trợ sản phẩm, dịch vụ, booking hay đơn hàng?";
+    }
+
+    if (asksCapability) {
+        return "Mình có thể giúp bạn tìm sản phẩm, dịch vụ, kiểm tra booking và đơn hàng. Bạn muốn xem phần nào trước?";
+    }
+
+    return "Mình có thể hỗ trợ tìm sản phẩm, dịch vụ, booking hoặc đơn hàng. Bạn đang cần gì nhé?";
+};
+const limitReplySentences = (text = "", maxSentences = 3) => {
+    const value = String(text || "").trim();
+    if (!value) return "";
+
+    const parts = value
+        .split(/(?<=[.!?。！？])/)
+        .map((x) => x.trim())
+        .filter(Boolean);
+
+    if (parts.length <= maxSentences) {
+        return value;
+    }
+
+    return parts.slice(0, maxSentences).join(" ").trim();
+};
 const buildProductCard = (item, index, language) => {
     const matchedVariant = item.matched_variant || null;
     const displayPrice = Number(item.price || 0);
@@ -279,6 +373,7 @@ const formatResponse = ({
     const language = pickLanguage(analysis, context);
     const isLoggedIn = Boolean(currentUser?.user_id);
     let safeRawReply = sanitizeReplyText(rawReply);
+    safeRawReply = limitReplySentences(safeRawReply, 3);
     const answerMode = context?.answer_mode || "general_fallback";
 
     if (["db_strict", "internal_knowledge"].includes(answerMode)) {
@@ -502,7 +597,13 @@ const formatResponse = ({
         const firstItem = (context.items || [])[0] || null;
         const knowledgeItems = context.knowledge_items || [];
 
-        if (
+        if (context?.failure_reason === "ambiguous_reference_no_context") {
+            reply =
+                context?.reply ||
+                (language === "en"
+                    ? "Which exact product are you asking about?"
+                    : "Bạn đang hỏi sản phẩm nào cụ thể vậy?");
+        } else if (
             knowledgeItems.length > 0 &&
             (isGenericLlmFailure(safeRawReply) || !safeRawReply)
         ) {
@@ -528,12 +629,19 @@ const formatResponse = ({
             knowledgeItems: [],
         });
 
-        reply =
-            safeRawReply ||
-            context?.reply ||
-            (language === "en"
-                ? "This answer is based on external reference mode, but grounded outside sources are not connected yet."
-                : "Câu hỏi này thuộc dạng tham khảo ngoài hệ thống, nhưng hiện backend chưa kết nối nguồn ngoài một cách grounded.");
+        if (isGenericLlmFailure(safeRawReply) || !safeRawReply) {
+            reply = buildExternalFallbackReply({
+                externalSources: context?.external_sources || [],
+                language,
+            });
+        } else {
+            reply =
+                safeRawReply ||
+                context?.reply ||
+                (language === "en"
+                    ? "This answer is based on external reference mode, but grounded outside sources are not connected yet."
+                    : "Câu hỏi này thuộc dạng tham khảo ngoài hệ thống, nhưng hiện backend chưa kết nối nguồn ngoài một cách grounded.");
+        }
     } else if (context?.type === "auth_required") {
         cards = [
             {
@@ -563,7 +671,12 @@ const formatResponse = ({
         reply =
             safeRawReply ||
             context?.reply ||
-            getFallbackReply(language, context?.type || "default");
+            (context?.type === "general"
+                ? buildGeneralFallbackReplyByMessage({
+                      message: context?.user_question || "",
+                      language,
+                  })
+                : getFallbackReply(language, context?.type || "default"));
     }
 
     if (
@@ -575,7 +688,12 @@ const formatResponse = ({
         reply =
             safeRawReply ||
             context?.reply ||
-            getFallbackReply(language, context?.type || "default");
+            (context?.type === "general"
+                ? buildGeneralFallbackReplyByMessage({
+                      message: context?.user_question || "",
+                      language,
+                  })
+                : getFallbackReply(language, context?.type || "default"));
     }
 
     return {

@@ -67,8 +67,7 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
             "tu van giup",
             "tu van ho",
             "tu van",
-        ]) ||
-        hasTextOrTerm(["help", "hello", "hi", "hey", "alo", "tuvan", "tu van"]);
+        ]) || hasTextOrTerm(["help", "hello", "alo", "tuvan", "tu van"]);
 
     const asksMyBookings = hasPhrase([
         "booking cua toi",
@@ -108,7 +107,8 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
             "nen dung",
             "nen mua",
             "phu hop",
-            "tot cho",
+            // Fix: bỏ "tot cho" ra khỏi đây — "tốt cho" là câu hỏi đánh giá
+            // không phải xin gợi ý sản phẩm
         ]) ||
         hasPhrase([
             "goi y cho minh",
@@ -117,7 +117,29 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
             "nen mua loai nao",
             "san pham nao phu hop",
             "loai nao phu hop",
+            // Fix: chỉ "tốt cho" khi rõ ràng là hỏi mua gì
+            "loai nao tot cho",
+            "san pham nao tot cho",
+            "nen chon loai nao",
         ]);
+
+    // Fix: tách riêng signal đánh giá — "có tốt không?", "có hại không?"
+    // Các câu này là general_support, KHÔNG phải recommendation
+    const hasEvaluationQuestion = hasPhrase([
+        "co tot khong",
+        "tot khong",
+        "co hai khong",
+        "co an toan khong",
+        "an toan khong",
+        "co phu hop khong",
+        "co nen khong",
+        "tot cho",
+        "is it good",
+        "is it safe",
+        "good for",
+        "safe for",
+        "is it ok",
+    ]);
 
     const hasBookingAction = hasTextOrTerm([
         "dat lich",
@@ -139,10 +161,40 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
         "boarding",
         "training",
     ]);
-
+    const hasProductKnowledgeQuestion =
+        hasPhrase([
+            "thanh phan",
+            "thanh phan gi",
+            "co thanh phan gi",
+            "cach dung",
+            "huong dan",
+            "cong dung",
+            "tac dung",
+            "luu y",
+            "bao gom gi",
+            "co nhung gi",
+            "ingredients",
+            "ingredient",
+            "how to use",
+            "usage",
+            "warning",
+            "benefits",
+            "what does it do",
+        ]) ||
+        hasTextOrTerm([
+            "thanh phan",
+            "cach dung",
+            "huong dan",
+            "cong dung",
+            "tac dung",
+            "luu y",
+            "ingredients",
+            "ingredient",
+            "usage",
+            "warning",
+        ]);
     const hasGeneralKnowledgeSignals = hasTextOrTerm([
         "co may",
-        "bao nhieu",
         "la gi",
         "tai sao",
         "vi sao",
@@ -164,9 +216,18 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
     ]);
 
     if (analysis?.productForm) {
+        if (
+            hasEvaluationQuestion ||
+            hasGeneralKnowledgeSignals ||
+            hasProductKnowledgeQuestion
+        ) {
+            return CHAT_INTENTS.GENERAL_SUPPORT;
+        }
+
         if (asksRecommendation) {
             return CHAT_INTENTS.PRODUCT_RECOMMEND;
         }
+
         return CHAT_INTENTS.PRODUCT_SEARCH;
     }
 
@@ -232,6 +293,12 @@ const detectIntent = ({ message = "", analysis = {} } = {}) => {
 
     if (hasBookingAction && hasServiceWords) {
         return CHAT_INTENTS.SERVICE_BOOKING_INTENT;
+    }
+
+    // Fix: câu hỏi đánh giá "grooming có tốt không?", "pate này có hại không?"
+    // KHÔNG được nhảy vào PRODUCT_RECOMMEND hay SERVICE_SEARCH
+    if (hasEvaluationQuestion) {
+        return CHAT_INTENTS.GENERAL_SUPPORT;
     }
 
     if (asksRecommendation && (hasProductWords || hasPetSignal)) {
