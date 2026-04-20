@@ -4,7 +4,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
 import rbacMiddleware from "../middleware/rbacMiddleware.js";
-import { multiUpload } from "./../middleware/uploadImageProducts.js";
+import { multiUpload, singleUpload } from "./../middleware/uploadImageProducts.js";
 
 const router = express.Router();
 
@@ -55,6 +55,18 @@ router.delete(
         all: ["dashboard:admin", "product:delete"],
     }),
     productController.hardDeleteProduct,
+);
+
+router.post(
+    "/api/products/upload-description-image",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        any: ["dashboard:admin", "dashboard:manager"],
+        all: ["product:update", "product:create"],
+    }),
+    singleUpload,
+    productController.uploadDescriptionImage,
 );
 
 export default router;
