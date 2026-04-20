@@ -218,6 +218,30 @@ let hardDeleteProduct = async (req, res) => {
     }
 };
 
+const uploadDescriptionImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                errCode: 1,
+                errMessage: "No file uploaded",
+            });
+        }
+
+        return res.status(200).json({
+            errCode: 0,
+            errMessage: "File uploaded successfully",
+            url: `/uploadImageProducts/${req.file.filename}`,
+        });
+    } catch (e) {
+        console.error("uploadDescriptionImage error:", e);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: "Server error",
+            details: e?.message || String(e),
+        });
+    }
+};
+
 export default {
     createProduct,
     getAllProducts,
@@ -225,4 +249,5 @@ export default {
     updateProduct,
     softDeleteProduct,
     hardDeleteProduct,
+    uploadDescriptionImage,
 };

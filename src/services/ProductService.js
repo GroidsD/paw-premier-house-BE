@@ -2,6 +2,7 @@ import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
+import { extractLocalImageUrls } from "../utils/mediaUtils.js";
 
 const hasMultiValueField = (variant) => {
     return [variant.size, variant.color, variant.pet_weight].some((field) =>
@@ -109,6 +110,34 @@ const calcProductSummaryFromVariants = (variants = []) => {
         minOriginalPrice,
         totalQuantity,
     };
+};
+
+/**
+ * Helper to identify and delete image files that are no longer used by the product.
+ * @param {string[]} oldUrls - URLs extracted from old text fields.
+ * @param {string[]} newUrls - URLs extracted from new text fields + current gallery.
+ */
+const cleanupOrphanedFiles = async (oldUrls = [], newUrls = []) => {
+    const newUrlsSet = new Set(newUrls);
+    const orphaned = oldUrls.filter(url => url && !newUrlsSet.has(url));
+    
+    for (const url of orphaned) {
+        await safeUnlinkByUrl(url);
+    }
+};
+
+/**
+ * Extracts and cleans up all local images used in a product's description/summary.
+ */
+const cleanupAllProductDescriptionImages = async (product) => {
+    if (!product) return;
+    const urls = [
+        ...extractLocalImageUrls(product.description),
+        ...extractLocalImageUrls(product.summary)
+    ];
+    for (const url of [...new Set(urls)]) {
+        await safeUnlinkByUrl(url);
+    }
 };
 
 let createProduct = async (data) => {
@@ -451,6 +480,11 @@ let updateProduct = async (product_id, data, files) => {
                 product: null,
             };
         }
+
+        // Track images before update for cleanup
+        const oldDescriptionImages = extractLocalImageUrls(product.description);
+        const oldSummaryImages = extractLocalImageUrls(product.summary);
+        const oldImages = [...new Set([...oldDescriptionImages, ...oldSummaryImages])];
 
         const nextHasVariants =
             has_variants !== undefined
@@ -807,6 +841,25 @@ let updateProduct = async (product_id, data, files) => {
             thumbnail_url: finalMainMedia ? finalMainMedia.url : null
         }, { transaction: t });
 
+        // Asset Cleanup for Description/Summary images
+        const newDescriptionImages = extractLocalImageUrls(product.description);
+        const newSummaryImages = extractLocalImageUrls(product.summary);
+        
+        // Also get all images currently in the gallery (Media table) to avoid deletion if still used there
+        const currentGalleryMedia = await db.Media.findAll({
+            where: { entity_type: "product", entity_id: String(product_id) },
+            transaction: t
+        });
+        const galleryUrls = currentGalleryMedia.map(m => m.url);
+
+        const newImages = [...new Set([
+            ...newDescriptionImages, 
+            ...newSummaryImages, 
+            ...galleryUrls
+        ])];
+
+        await cleanupOrphanedFiles(oldImages, newImages);
+
         await t.commit();
 
         const updatedProduct = await db.Product.findByPk(product_id, {
@@ -837,6 +890,17 @@ let deleteProduct = async (id) => {
     if (!product) throw "Product not found";
 
     await db.ProductTranslate.destroy({ where: { product_id: id } });
+    
+    // Clean up all images from disk before deleting records
+    await cleanupAllProductDescriptionImages(product);
+    
+    const mediaList = await db.Media.findAll({
+        where: { entity_type: "product", entity_id: String(id) },
+    });
+    for (const m of mediaList) {
+        await safeUnlinkByUrl(m.url);
+    }
+
     await mediaService.deleteMediaByEntity("product", id);
     await product.destroy();
 
@@ -862,6 +926,9 @@ let hardDeleteProduct = async (id) => {
     for (const m of mediaList) {
         await safeUnlinkByUrl(m.url);
     }
+
+    // Clean up all images from disk for description/summary
+    await cleanupAllProductDescriptionImages(product);
 
     await db.Media.destroy({
         where: { entity_type: "product", entity_id: String(id) },
