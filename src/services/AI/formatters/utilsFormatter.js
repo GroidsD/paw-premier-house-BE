@@ -1,4 +1,4 @@
-const { FALLBACK_REPLY, ACTION_LABELS } = require("./constants");
+const { FALLBACK_REPLY, ACTION_LABELS } = require("./constantsFormatter");
 
 const pickLanguage = (analysis, context) =>
     analysis?.language || context?.analysis?.language || "vi";

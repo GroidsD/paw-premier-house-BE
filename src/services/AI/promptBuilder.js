@@ -100,14 +100,15 @@ const summarizeContext = (context = {}) => {
                       category: takeTop(context?.items, 1)[0]?.category || null,
                   }
                 : null,
+            requested_knowledge_type: context?.requested_knowledge_type || null,
             knowledge_items: takeTop(context?.knowledge_items, 4).map((k) => ({
+                knowledge_type: k.knowledge_type || null,
                 title: k.title || null,
                 content: k.content || k.text || null,
                 source: k.source || null,
             })),
         };
     }
-
     if (type === "external_reference") {
         return {
             ...base,
@@ -156,6 +157,8 @@ const buildSystemPrompt = ({ mode, responseLanguage }) => {
                     "If knowledge_items are empty, clearly say internal knowledge is not available yet.",
                     "Do not invent benefits, ingredients, warnings, usage instructions, suitability, or safety claims.",
                     "If the exact product/service is not resolved, ask 1 short clarification question and stop.",
+                    "Answer only the requested knowledge aspect if requested_knowledge_type exists.",
+                    "Do not default to ingredients unless the user explicitly asks about ingredients.",
                 ]
               : mode === "external_reference"
                 ? [

@@ -1,9 +1,12 @@
-const detectIntent = require("./intentDetector");
 const buildContext = require("./contextBuilder");
-const buildMessages = require("./promptBuilder");
-const llmService = require("./llmService");
-const analyzeMessage = require("./productQueryAnalyzer");
 const formatResponse = require("./formatters/chatResponseFormatter");
+const aiGateway = require("./aiGateway");
+
+const detectIntent = require("./intentDetector");
+const analyzeMessage = require("./productQueryAnalyzer");
+const detectAnswerMode = require("./answerModeDetector");
+
+const USE_PYTHON_AI = process.env.USE_PYTHON_AI === "true";
 
 const shouldUseLLMReply = ({ context }) => {
     const answerMode = context?.answer_mode || "general_fallback";
@@ -125,21 +128,209 @@ const buildResolvedContext = ({ context, formatted, normalizedUser }) => {
     return resolved;
 };
 
+// const handleChat = async ({ message, currentUser }) => {
+//     const startedAt = Date.now();
+//     const normalizedUser = normalizeUserContext(currentUser);
+//     let analysis = {};
+//     let intent = "general_support";
+//     let answerModeResult = {
+//         mode: "general_fallback",
+//         reason: "default fallback",
+//     };
+
+//     let analysisTime = 0;
+//     let intentTime = 0;
+
+//     const t1 = Date.now();
+
+//     if (USE_PYTHON_AI) {
+//         try {
+//             const aiResult = await aiGateway.analyze({
+//                 message,
+//                 currentUser: normalizedUser,
+//             });
+
+//             analysis = aiResult?.analysis || {};
+//             intent = aiResult?.intent || "general_support";
+//             answerModeResult = aiResult?.answerMode || {
+//                 mode: "general_fallback",
+//                 reason: "python analyze fallback",
+//             };
+//         } catch (error) {
+//             console.error("Python analyze failed:", error.message);
+
+//             analysis = await analyzeMessage(message);
+//             intent = detectIntent({
+//                 message,
+//                 analysis,
+//                 currentUser: normalizedUser,
+//             });
+//             answerModeResult = detectAnswerMode({
+//                 intent,
+//                 message,
+//                 analysis,
+//                 currentUser: normalizedUser,
+//             });
+//         }
+//     } else {
+//         analysis = await analyzeMessage(message);
+//         intent = detectIntent({
+//             message,
+//             analysis,
+//             currentUser: normalizedUser,
+//         });
+//         answerModeResult = detectAnswerMode({
+//             intent,
+//             message,
+//             analysis,
+//             currentUser: normalizedUser,
+//         });
+//     }
+
+//     analysisTime = Date.now() - t1;
+//     intentTime = 0;
+
+//     const t3 = Date.now();
+//     const context = await buildContext({
+//         intent,
+//         message,
+//         currentUser: normalizedUser,
+//         analysis,
+//         answerModeResult,
+//     });
+//     const contextTime = Date.now() - t3;
+
+//     let rawReply = context?.reply || "";
+//     let llmTime = 0;
+//     console.log("shouldUseLLMReply:", shouldUseLLMReply({ context }));
+//     if (shouldUseLLMReply({ context })) {
+//         const t4 = Date.now();
+
+//         rawReply = await aiGateway.generateReply({
+//             mode: context?.answer_mode,
+//             intent,
+//             message,
+//             currentUser: normalizedUser,
+//             context,
+//             analysis,
+//         });
+//         if (!rawReply || !String(rawReply).trim()) {
+//             rawReply =
+//                 context?.reply || "Xin lỗi, hiện AI chưa thể trả lời lúc này.";
+//         }
+//         llmTime = Date.now() - t4;
+//     }
+
+//     const formatted = formatResponse({
+//         intent,
+//         rawReply,
+//         context,
+//         analysis,
+//         currentUser: normalizedUser,
+//     });
+
+//     const resolvedContext = buildResolvedContext({
+//         context,
+//         formatted,
+//         normalizedUser,
+//     });
+
+//     const response = {
+//         ...formatted,
+//         meta: {
+//             ...(formatted?.meta || {}),
+//             resolved_context: resolvedContext,
+//         },
+//     };
+
+//     console.log("chat timing:", {
+//         total: Date.now() - startedAt,
+//         analysisTime,
+//         intentTime,
+//         contextTime,
+//         llmTime,
+//         intent,
+//         contextType: context?.type,
+//         answerMode: context?.answer_mode,
+//         confidence: context?.confidence,
+//         failureReason: context?.failure_reason,
+//         hasKnowledgeItems:
+//             Array.isArray(context?.knowledge_items) &&
+//             context.knowledge_items.length > 0,
+//         hasExternalSources:
+//             Array.isArray(context?.external_sources) &&
+//             context.external_sources.length > 0,
+//         resolvedContext,
+//     });
+
+//     return response;
+// };
 const handleChat = async ({ message, currentUser }) => {
     const startedAt = Date.now();
     const normalizedUser = normalizeUserContext(currentUser);
+    let analysis = {};
+    let intent = "general_support";
+    let answerModeResult = {
+        mode: "general_fallback",
+        reason: "default fallback",
+    };
+
+    let analysisTime = 0;
+    let intentTime = 0;
 
     const t1 = Date.now();
-    const analysis = await analyzeMessage(message);
-    const analysisTime = Date.now() - t1;
 
-    const t2 = Date.now();
-    const intent = detectIntent({
-        message,
-        analysis,
-        currentUser: normalizedUser,
-    });
-    const intentTime = Date.now() - t2;
+    if (USE_PYTHON_AI) {
+        try {
+            console.log("[AI] using PYTHON analyze");
+            const aiResult = await aiGateway.analyze({
+                message,
+                currentUser: normalizedUser,
+            });
+
+            console.log("[AI] python analyze result:", aiResult);
+
+            analysis = aiResult?.analysis || {};
+            intent = aiResult?.intent || "general_support";
+            answerModeResult = aiResult?.answerMode || {
+                mode: "general_fallback",
+                reason: "python analyze fallback",
+            };
+        } catch (error) {
+            console.error("[AI] python analyze failed -> fallback LOCAL:", error.message);
+
+            analysis = await analyzeMessage(message);
+            intent = detectIntent({
+                message,
+                analysis,
+                currentUser: normalizedUser,
+            });
+            answerModeResult = detectAnswerMode({
+                intent,
+                message,
+                analysis,
+                currentUser: normalizedUser,
+            });
+        }
+    } else {
+        console.log("[AI] USE_PYTHON_AI=false -> using LOCAL analyze");
+
+        analysis = await analyzeMessage(message);
+        intent = detectIntent({
+            message,
+            analysis,
+            currentUser: normalizedUser,
+        });
+        answerModeResult = detectAnswerMode({
+            intent,
+            message,
+            analysis,
+            currentUser: normalizedUser,
+        });
+    }
+
+    analysisTime = Date.now() - t1;
+    intentTime = 0;
 
     const t3 = Date.now();
     const context = await buildContext({
@@ -147,26 +338,36 @@ const handleChat = async ({ message, currentUser }) => {
         message,
         currentUser: normalizedUser,
         analysis,
+        answerModeResult,
     });
     const contextTime = Date.now() - t3;
 
     let rawReply = context?.reply || "";
     let llmTime = 0;
     console.log("shouldUseLLMReply:", shouldUseLLMReply({ context }));
+
     if (shouldUseLLMReply({ context })) {
         const t4 = Date.now();
 
-        rawReply = await llmService.generateReply(
-            buildMessages({
+        try {
+            console.log("[AI] using PYTHON reply");
+            rawReply = await aiGateway.generateReply({
                 mode: context?.answer_mode,
                 intent,
                 message,
                 currentUser: normalizedUser,
                 context,
                 analysis,
-            }),
-            { language: analysis.language },
-        );
+            });
+            console.log("[AI] python reply:", rawReply);
+        } catch (error) {
+            console.error("[AI] python reply failed:", error.message);
+        }
+
+        if (!rawReply || !String(rawReply).trim()) {
+            rawReply =
+                context?.reply || "Xin lỗi, hiện AI chưa thể trả lời lúc này.";
+        }
 
         llmTime = Date.now() - t4;
     }
@@ -215,7 +416,6 @@ const handleChat = async ({ message, currentUser }) => {
 
     return response;
 };
-
 module.exports = {
     handleChat,
 };

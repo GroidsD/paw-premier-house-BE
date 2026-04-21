@@ -47,9 +47,9 @@ const findRelevantProducts = async ({ message, analysis }) => {
           )
         : formFiltered;
 
-    // Ưu tiên cứng khi user đã chỉ rõ productForm
     let basePool;
     let hardFormConstraintFailed = false;
+
     if (analysis?.productForm === "shampoo") {
         console.log(
             "shampoo candidates debug:",
@@ -62,6 +62,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
             })),
         );
     }
+
     if (analysis?.productForm) {
         if (discountFiltered.length > 0) {
             basePool = discountFiltered;
@@ -107,6 +108,20 @@ const findRelevantProducts = async ({ message, analysis }) => {
         finalItems = basePool.slice(0, 4);
     }
 
+    const baseConfidence = hardFormConstraintFailed
+        ? 0
+        : ranker.calculateConfidence(finalItems, analysis);
+
+    const isBroadBrowsePetQuery =
+        !analysis?.productForm &&
+        !analysis?.discountMode &&
+        Boolean(analysis?.petType) &&
+        finalItems.length > 0;
+
+    const adjustedConfidence = isBroadBrowsePetQuery
+        ? Math.max(baseConfidence, finalItems.length >= 3 ? 0.68 : 0.58)
+        : baseConfidence;
+
     console.log("product search timing:", {
         total: Date.now() - startedAt,
         categoriesTime,
@@ -126,7 +141,6 @@ const findRelevantProducts = async ({ message, analysis }) => {
         user_question: message,
         analysis,
         matched_categories: matchedCategories.map((category) => category.type),
-
         applied_filters: [
             "active_products_only",
             categoryIds.length
@@ -146,10 +160,9 @@ const findRelevantProducts = async ({ message, analysis }) => {
             "post_ranked_search",
             analysis?.petType ? `pet_type:${analysis.petType}` : null,
             analysis?.petSize ? `pet_size:${analysis.petSize}` : null,
+            isBroadBrowsePetQuery ? "broad_pet_browse" : null,
         ].filter(Boolean),
-        confidence: hardFormConstraintFailed
-            ? 0
-            : ranker.calculateConfidence(finalItems, analysis),
+        confidence: adjustedConfidence,
     };
 };
 

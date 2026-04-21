@@ -10,7 +10,7 @@ const {
     getLowConfidenceReply,
     extractBudget,
     getFormLabel,
-} = require("./utils");
+} = require("./utilsFormatter");
 const {
     buildProductReply,
     buildServiceReply,
@@ -269,17 +269,33 @@ const buildKnowledgeFallbackReply = ({
     knowledgeItems = [],
     userQuestion = "",
     language = "vi",
+    requestedKnowledgeType = null,
 }) => {
-    const bestKnowledge = pickBestKnowledgeItem({
-        knowledgeItems,
-        userQuestion,
-    });
+    const pickKnowledgeByType = ({
+        knowledgeItems = [],
+        requestedType = null,
+    }) => {
+        if (!requestedType) return null;
+        return (
+            knowledgeItems.find(
+                (k) =>
+                    normalizeLooseText(k.knowledge_type) ===
+                    normalizeLooseText(requestedType),
+            ) || null
+        );
+    };
+
+    const exactKnowledge =
+        pickKnowledgeByType({
+            knowledgeItems,
+            requestedType: requestedKnowledgeType,
+        }) || pickBestKnowledgeItem({ knowledgeItems, userQuestion });
 
     const productName =
         item?.name || (language === "en" ? "this product" : "sản phẩm này");
 
     const content = String(
-        bestKnowledge?.content || bestKnowledge?.text || "",
+        exactKnowledge?.content || exactKnowledge?.text || "",
     ).trim();
 
     if (!content) {
@@ -295,6 +311,56 @@ const buildKnowledgeFallbackReply = ({
         ? `${productName}: ${shortContent}`
         : `${productName}: ${shortContent}`;
 };
+// const buildKnowledgeFallbackReply = ({
+//     item,
+//     knowledgeItems = [],
+//     userQuestion = "",
+//     language = "vi",
+// }) => {
+//     const bestKnowledge = pickBestKnowledgeItem({
+//         knowledgeItems,
+//         userQuestion,
+//     });
+
+//     const productName =
+//         item?.name || (language === "en" ? "this product" : "sản phẩm này");
+//     const pickKnowledgeByType = ({
+//         knowledgeItems = [],
+//         requestedType = null,
+//     }) => {
+//         if (!requestedType) return null;
+//         return (
+//             knowledgeItems.find(
+//                 (k) =>
+//                     normalizeLooseText(k.knowledge_type) ===
+//                     normalizeLooseText(requestedType),
+//             ) || null
+//         );
+//     };
+//     const exactKnowledge =
+//         pickKnowledgeByType({
+//             knowledgeItems,
+//             requestedType: context?.requested_knowledge_type,
+//         }) || pickBestKnowledgeItem({ knowledgeItems, userQuestion });
+
+//     const content = String(exactKnowledge?.content || "").trim();
+//     // const content = String(
+//     //     bestKnowledge?.content || bestKnowledge?.text || "",
+//     // ).trim();
+
+//     if (!content) {
+//         return language === "en"
+//             ? `I found the related product ${productName}, but I still do not have enough internal knowledge content to answer accurately.`
+//             : `Mình đã xác định được sản phẩm liên quan là ${productName}, nhưng hiện chưa đủ nội dung kiến thức nội bộ để trả lời chính xác.`;
+//     }
+
+//     const shortContent =
+//         content.length > 220 ? `${content.slice(0, 220).trim()}...` : content;
+
+//     return language === "en"
+//         ? `${productName}: ${shortContent}`
+//         : `${productName}: ${shortContent}`;
+// };
 const buildServiceCard = (item, index, language, intent) => ({
     type: "service",
     id: item.service_id,
@@ -433,7 +499,13 @@ const formatResponse = ({
             };
         }
 
-        if ((context?.confidence ?? 0) < 0.5) {
+        const isBroadBrowseQuestion =
+            !context?.analysis?.productForm &&
+            !context?.analysis?.discountMode &&
+            Boolean(context?.analysis?.petType) &&
+            (context?.items || []).length > 0;
+
+        if ((context?.confidence ?? 0) < 0.5 && !isBroadBrowseQuestion) {
             return {
                 intent,
                 reply: getLowConfidenceReply(language),
@@ -608,10 +680,16 @@ const formatResponse = ({
             (isGenericLlmFailure(safeRawReply) || !safeRawReply)
         ) {
             reply = buildKnowledgeFallbackReply({
+                // item: firstItem,
+                // knowledgeItems,
+                // userQuestion: context?.user_question || "",
+                // language,
                 item: firstItem,
                 knowledgeItems,
                 userQuestion: context?.user_question || "",
                 language,
+                requestedKnowledgeType:
+                    context?.requested_knowledge_type || null,
             });
         } else {
             reply =

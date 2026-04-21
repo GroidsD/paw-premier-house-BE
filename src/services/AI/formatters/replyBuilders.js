@@ -1,4 +1,4 @@
-const { getFallbackReply, getFormLabel } = require("./utils");
+const { getFallbackReply, getFormLabel } = require("./utilsFormatter");
 const normalizeText = require("../../../utils/normalizeText");
 
 const FLAVOR_TERMS = [
@@ -99,7 +99,19 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
     const isYesNo = isYesNoShopQuestion(userQuestion);
     const isPriceQuestion = asksForPrice(userQuestion);
     const isStockQuestion = asksForStock(userQuestion);
-
+    const isBroadBrowseQuestion =
+        !analysis?.productForm &&
+        !analysis?.discountMode &&
+        Boolean(analysis?.petType) &&
+        (userQuestion.includes("san pham") ||
+            userQuestion.includes("shop co") ||
+            userQuestion.includes("co gi cho"));
+    const petType = analysis?.petType || null;
+    if (language === "vi" && isBroadBrowseQuestion) {
+        return petType === "dog"
+            ? `Shop mình có một số sản phẩm cho chó nha. Mình gợi ý vài lựa chọn nổi bật bên dưới, bạn muốn xem thức ăn, đồ chơi hay phụ kiện trước?`
+            : `Shop mình có một số sản phẩm cho mèo nha. Mình gợi ý vài lựa chọn nổi bật bên dưới, bạn muốn xem thức ăn, đồ chơi hay phụ kiện trước?`;
+    }
     const missingFlavorNote =
         flavorTerm && first && !productHasFlavor(first, flavorTerm)
             ? language === "en"

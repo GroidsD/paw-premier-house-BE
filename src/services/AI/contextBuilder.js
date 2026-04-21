@@ -282,7 +282,71 @@ const buildDbStrictContext = async ({
             return buildGeneralContext({ message });
     }
 };
+const detectRequestedKnowledgeType = (message = "") => {
+    const text = normalizeTerm(message);
 
+    if (
+        text.includes("thanh phan") ||
+        text.includes("ingredient") ||
+        text.includes("ingredients")
+    ) {
+        return "ingredient";
+    }
+
+    if (
+        text.includes("cach dung") ||
+        text.includes("su dung") ||
+        text.includes("huong dan") ||
+        text.includes("how to use") ||
+        text.includes("usage")
+    ) {
+        return "usage";
+    }
+
+    if (
+        text.includes("cong dung") ||
+        text.includes("tac dung") ||
+        text.includes("benefit") ||
+        text.includes("benefits") ||
+        text.includes("tot khong")
+    ) {
+        return "benefit";
+    }
+
+    if (
+        text.includes("phu hop") ||
+        text.includes("dung cho") ||
+        text.includes("suitable for")
+    ) {
+        return "suitable_for";
+    }
+
+    if (
+        text.includes("luu y") ||
+        text.includes("canh bao") ||
+        text.includes("warning") ||
+        text.includes("safe") ||
+        text.includes("an toan")
+    ) {
+        return "warning";
+    }
+
+    return null;
+};
+const filterKnowledgeItemsByRequestedType = ({
+    knowledgeItems = [],
+    requestedType = null,
+}) => {
+    if (!requestedType) return knowledgeItems;
+
+    const matched = knowledgeItems.filter(
+        (item) =>
+            normalizeTerm(item?.knowledge_type) ===
+            normalizeTerm(requestedType),
+    );
+
+    return matched.length > 0 ? matched : knowledgeItems;
+};
 const buildInternalKnowledgeContext = async ({
     intent,
     message,
@@ -362,16 +426,28 @@ const buildInternalKnowledgeContext = async ({
                     productId: bestMatch.product_id,
                     language: analysis?.language || null,
                 });
+            const requestedKnowledgeType =
+                detectRequestedKnowledgeType(message);
 
+            const filteredKnowledgeItems = requestedKnowledgeType
+                ? knowledgeItems.filter(
+                      (k) =>
+                          normalizeTerm(k.knowledge_type) ===
+                          requestedKnowledgeType,
+                  )
+                : knowledgeItems;
             if (knowledgeItems.length > 0) {
                 return {
                     ...productContext,
                     type: "knowledge",
                     items: [bestMatch],
-                    knowledge_items: knowledgeItems,
-                    note: "Resolved explicit product name to best match, then loaded internal knowledge.",
+                    knowledge_items: filteredKnowledgeItems.length
+                        ? filteredKnowledgeItems
+                        : knowledgeItems,
+                    requested_knowledge_type: requestedKnowledgeType,
+                    note: "Resolved product and filtered knowledge items by requested aspect.",
                     reply: "",
-                    confidence: Math.max(productContext?.confidence ?? 0, 0.75),
+                    confidence: Math.max(productContext?.confidence ?? 0, 0.78),
                     failure_reason: null,
                     answer_source: "internal_knowledge",
                 };
@@ -405,6 +481,12 @@ const buildInternalKnowledgeContext = async ({
                 language: analysis?.language || null,
             });
 
+        const requestedKnowledgeType = detectRequestedKnowledgeType(message);
+
+        const filteredKnowledgeItems = filterKnowledgeItemsByRequestedType({
+            knowledgeItems,
+            requestedType: requestedKnowledgeType,
+        });
         if (knowledgeItems.length > 0) {
             return {
                 type: "knowledge",
@@ -556,17 +638,25 @@ const buildExternalReferenceContext = async ({
     };
 };
 
-const buildContext = async ({ intent, message, currentUser, analysis }) => {
-    const answerModeResult = detectAnswerMode({
-        intent,
-        message,
-        analysis,
-        currentUser,
-    });
+const buildContext = async ({
+    intent,
+    message,
+    currentUser,
+    analysis,
+    answerModeResult = null,
+}) => {
+    const resolvedAnswerMode =
+        answerModeResult ||
+        detectAnswerMode({
+            intent,
+            message,
+            analysis,
+            currentUser,
+        });
 
     let context;
 
-    switch (answerModeResult.mode) {
+    switch (resolvedAnswerMode.mode) {
         case "db_strict":
             context = await buildDbStrictContext({
                 intent,
@@ -604,8 +694,7 @@ const buildContext = async ({ intent, message, currentUser, analysis }) => {
         analysis,
         message,
         currentUser,
-        answerModeResult,
+        resolvedAnswerMode,
     );
 };
-
 module.exports = buildContext;
