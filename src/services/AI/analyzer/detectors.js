@@ -79,10 +79,22 @@ const detectPetType = (text = "") => {
         return "cat";
     }
 
-    // Nếu chỉ có "cho" (không dấu) mà không có tín hiệu khác, bỏ qua
-    if (/\bcho\b/i.test(normalized) && !normalized.includes("cho con") && !normalized.includes("cho nho")) {
-        if (!normalized.includes("dog") && !normalized.includes("puppy")) {
-            // keep null
+    // Fix: "meo" standalone không dấu — an toàn vì "meo" không có nghĩa khác trong tiếng Việt
+    // Phải check trước guard "cho" bên dưới để tránh "cho meo" bị null
+    if (/\bmeo\b/i.test(normalized)) return "cat";
+
+    // Fix: "ban oi cho minh hoi" — "cho" ở đây là "cho phép/giúp", KHÔNG phải con chó
+    // Chỉ kết luận dog từ "cho" không dấu khi có thêm tín hiệu rõ ràng
+    if (/\bcho\b/i.test(normalized)) {
+        const hasExtraDogSignal =
+            normalized.includes("cho con") ||
+            normalized.includes("cho nho") ||
+            normalized.includes("dog") ||
+            normalized.includes("puppy") ||
+            normalized.includes("cun");
+        if (!hasExtraDogSignal) {
+            // "cho" đứng một mình hoặc trong "cho mình", "cho tôi" → không phải chó
+            return null;
         }
     }
 
@@ -144,6 +156,12 @@ const detectDiscountMode = (text = "") => {
 const detectProductForm = (text = "") => {
     const normalized = normalizeText(text);
 
+    // Disambiguation: "sữa tắm" is shampoo, not milk.
+    // Because normalizeText removes diacritics, we check normalized phrases.
+    if (normalized.includes("sua tam") || normalized.includes("pet shampoo")) {
+        return "shampoo";
+    }
+
     const containsKeyword = (keyword = "") => {
         const normalizedKeyword = normalizeText(keyword);
 
@@ -167,10 +185,10 @@ const detectProductForm = (text = "") => {
     const priority = [
         "pate",
         "kibble",
-        "milk",
+        "shampoo",
         "toy",
         "snack",
-        "shampoo",
+        "milk",
         "wipes",
         "litter",
         "brush",

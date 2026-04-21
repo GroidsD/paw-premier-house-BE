@@ -16,7 +16,9 @@ const FLAVOR_TERMS = [
 const extractFlavorTerm = (message = "") => {
     const text = normalizeText(message);
     if (!text) return null;
-    return FLAVOR_TERMS.find((term) => text.includes(normalizeText(term))) || null;
+    return (
+        FLAVOR_TERMS.find((term) => text.includes(normalizeText(term))) || null
+    );
 };
 
 const extractBudgetValue = (message = "") => {
@@ -42,6 +44,40 @@ const isYesNoShopQuestion = (message = "") => {
     );
 };
 
+const asksForPrice = (message = "") => {
+    const text = normalizeText(message);
+    if (!text) return false;
+
+    return (
+        text.includes("gia bao nhieu") ||
+        text.includes("bao nhieu tien") ||
+        text.includes("gia") ||
+        text.includes("price") ||
+        text.includes("how much")
+    );
+};
+
+const asksForStock = (message = "") => {
+    const text = normalizeText(message);
+    if (!text) return false;
+
+    return (
+        text.includes("con hang") ||
+        text.includes("het hang") ||
+        text.includes("co san khong") ||
+        text.includes("co hang khong") ||
+        text.includes("in stock") ||
+        text.includes("available") ||
+        text.includes("stock")
+    );
+};
+
+const formatPrice = (value = 0, language = "vi") => {
+    const num = Number(value || 0);
+    if (!num) return language === "en" ? "0 VND" : "0 VND";
+    return `${num.toLocaleString("vi-VN")} VND`;
+};
+
 const productHasFlavor = (product = {}, flavorTerm = "") => {
     if (!flavorTerm) return false;
     const haystack = normalizeText(
@@ -61,18 +97,23 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
     );
     const budgetValue = extractBudgetValue(userQuestion);
     const isYesNo = isYesNoShopQuestion(userQuestion);
+    const isPriceQuestion = asksForPrice(userQuestion);
+    const isStockQuestion = asksForStock(userQuestion);
+
     const missingFlavorNote =
         flavorTerm && first && !productHasFlavor(first, flavorTerm)
             ? language === "en"
                 ? `I don't see a clear "${flavorTerm}" flavor in the product info yet.`
                 : `Mình chưa thấy thông tin vị "${flavorTerm}" trong dữ liệu sản phẩm.`
             : "";
+
     const clarifyNote =
         flavorTerm && first && !productHasFlavor(first, flavorTerm)
             ? language === "en"
                 ? "Do you want to see similar options without that exact flavor?"
                 : "Bạn có muốn xem các lựa chọn tương tự nếu không đúng vị đó không?"
             : "";
+
     const selectorSeed =
         Number(first?.product_id || 0) +
         Number(first?.price || 0) +
@@ -101,19 +142,11 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
         : [""];
 
     const leadEnYesNoOptions = isYesNo
-        ? [
-              "Yes, the shop has ",
-              "Yes, we do have ",
-              "Có nhé — shop mình có ",
-          ]
+        ? ["Yes, the shop has ", "Yes, we do have ", "The shop currently has "]
         : [""];
 
     const leadViYesNoOptions = isYesNo
-        ? [
-              "Shop mình có ",
-              "Dạ có nhé, shop mình có ",
-              "Có nha, shop mình có ",
-          ]
+        ? ["Shop mình có ", "Dạ có nhé, shop mình có ", "Có nha, shop mình có "]
         : [""];
 
     if (!count) {
@@ -122,16 +155,28 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
 
     const productName =
         first?.name || (language === "en" ? "the top option" : "món nổi bật");
+
+    const firstPrice = formatPrice(first?.price || 0, language);
+    const firstOriginalPrice = formatPrice(
+        first?.original_price || 0,
+        language,
+    );
+    const isDiscounted =
+        Number(first?.original_price || 0) > Number(first?.price || 0);
+    const inStock = Number(first?.quantity || 0) > 0;
+
     const followUpsEn = [
         "Want me to narrow it down by price, size, or brand?",
         "Do you want to filter by price range or size?",
-        "If you want, I can filter by brand or price.",
+        "I can also show similar options if you want.",
     ];
+
     const followUpsVi = [
         "Bạn muốn lọc thêm theo giá, size, hay hãng không?",
         "Muốn mình lọc theo khoảng giá hoặc size không?",
-        "Nếu bạn muốn, mình có thể lọc theo hãng hoặc giá.",
+        "Mình cũng có thể gợi ý các lựa chọn tương tự nếu bạn muốn.",
     ];
+
     const askFilter =
         language === "en" ? pickBySeed(followUpsEn) : pickBySeed(followUpsVi);
 
@@ -141,6 +186,28 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
         const yesNoLead = isYesNo
             ? `${pickBySeed(leadEnYesNoOptions)}${label}products. `
             : "";
+
+        if (count === 1 && isPriceQuestion) {
+            if (isDiscounted) {
+                return `${budgetLead}${yesNoLead}${productName} is currently ${firstPrice} (originally ${firstOriginalPrice}). ${askFilter}`.trim();
+            }
+            return `${budgetLead}${yesNoLead}${productName} is currently ${firstPrice}. ${askFilter}`.trim();
+        }
+
+        if (count > 1 && isPriceQuestion) {
+            return `${budgetLead}${yesNoLead}I found ${count} ${label}products. The best match is ${productName}, currently ${firstPrice}. ${askFilter}`.trim();
+        }
+
+        if (count === 1 && isStockQuestion) {
+            return inStock
+                ? `${productName} is currently in stock. ${isDiscounted ? `Its current price is ${firstPrice} (originally ${firstOriginalPrice}).` : `Its current price is ${firstPrice}.`} ${askFilter}`.trim()
+                : `${productName} is currently out of stock. Do you want to see similar alternatives?`;
+        }
+
+        if (count > 1 && isStockQuestion) {
+            return `I found ${count} matching ${label}products. The best match is ${productName}, and it is currently ${inStock ? "in stock" : "out of stock"}. ${askFilter}`.trim();
+        }
+
         if (count === 1) {
             if (analysis.discountMode === "discounted") {
                 return `${budgetLead}${yesNoLead}I found one discounted ${label}product: ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
@@ -167,6 +234,28 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
     const yesNoLeadVi = isYesNo
         ? `${pickBySeed(leadViYesNoOptions)}${labelVi}nhé. `
         : "";
+
+    if (count === 1 && isPriceQuestion) {
+        if (isDiscounted) {
+            return `${budgetLeadVi}${yesNoLeadVi}Sản phẩm ${productName} hiện có giá ${firstPrice}, giá gốc ${firstOriginalPrice}. ${askFilter}`.trim();
+        }
+        return `${budgetLeadVi}${yesNoLeadVi}Sản phẩm ${productName} hiện có giá ${firstPrice}. ${askFilter}`.trim();
+    }
+
+    if (count > 1 && isPriceQuestion) {
+        return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy ${count} sản phẩm ${labelVi}phù hợp. Gợi ý nổi bật là ${productName}, hiện có giá ${firstPrice}. ${askFilter}`.trim();
+    }
+
+    if (count === 1 && isStockQuestion) {
+        return inStock
+            ? `Sản phẩm ${productName} hiện vẫn còn hàng. ${isDiscounted ? `Giá hiện tại là ${firstPrice}, giá gốc ${firstOriginalPrice}.` : `Giá hiện tại là ${firstPrice}.`} ${askFilter}`.trim()
+            : `Sản phẩm ${productName} hiện đang hết hàng. Bạn có muốn mình gợi ý sản phẩm tương tự không?`;
+    }
+
+    if (count > 1 && isStockQuestion) {
+        return `Mình tìm thấy ${count} sản phẩm ${labelVi}phù hợp. Gợi ý nổi bật là ${productName}, hiện ${inStock ? "còn hàng" : "hết hàng"}. ${askFilter}`.trim();
+    }
+
     if (count === 1) {
         if (analysis.discountMode === "discounted") {
             return `${budgetLeadVi}${yesNoLeadVi}Mình thấy 1 sản phẩm ${labelVi}đang giảm giá: ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();

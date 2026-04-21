@@ -102,9 +102,12 @@ const inferCategoryHints = ({
         normalized.includes("milk") ||
         productForm === "milk"
     ) {
-        hints.push("milk");
-        if (petType === "cat") hints.push("sua cho meo");
-        if (petType === "dog") hints.push("sua cho cho");
+        // Avoid misclassifying "sữa tắm" (shampoo) as milk.
+        if (!normalized.includes("sua tam") && productForm !== "shampoo") {
+            hints.push("milk");
+            if (petType === "cat") hints.push("sua cho meo");
+            if (petType === "dog") hints.push("sua cho cho");
+        }
     }
 
     if (

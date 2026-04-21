@@ -16,6 +16,7 @@ const detectAnswerMode = ({
     message = "",
     intent = "",
     analysis = {},
+    currentUser = {},
 } = {}) => {
     const text = normalizeText(message);
     const terms = normalizeTerms([
@@ -37,8 +38,7 @@ const detectAnswerMode = ({
                 terms.some(
                     (term) =>
                         term === normalizedKeyword ||
-                        term.includes(normalizedKeyword) ||
-                        normalizedKeyword.includes(term),
+                        term.includes(normalizedKeyword),
                 )
             );
         });
@@ -60,10 +60,9 @@ const detectAnswerMode = ({
             "chao",
             "ban oi",
             "alo",
-            "ban oi",
             "giup minh voi",
             "tu van giup minh",
-        ]) || hasTerm(["help", "hello", "hi", "hey", "alo"]);
+        ]) || hasTerm(["help", "hello", "alo"]);
 
     const hasStrictCommerceIntent =
         Boolean(analysis?.discountMode) ||
@@ -72,14 +71,25 @@ const detectAnswerMode = ({
             "bao nhieu tien",
             "con hang",
             "het hang",
+            "co san khong",
+            "co hang khong",
+            "so luong",
             "giam gia",
             "khuyen mai",
             "dang sale",
             "co ban khong",
             "shop co",
+            "co size nao",
+            "co mau nao",
+            "co loai nao",
+            "co chai",
+            "co tui",
             "do you have",
             "available",
             "in stock",
+            "price",
+            "how much",
+            "promotion",
         ]) ||
         hasTerm([
             "price",
@@ -91,9 +101,15 @@ const detectAnswerMode = ({
             "promotion",
             "buy",
             "mua",
+            "gia",
+            "ton kho",
+            "so luong",
+            "variant",
+            "size",
+            "color",
         ]);
 
-    const hasConcreteShopEntity =
+    const hasConcreteProductEntity =
         Boolean(analysis?.productForm) ||
         hasTerm([
             "pate",
@@ -104,8 +120,6 @@ const detectAnswerMode = ({
             "shampoo",
             "sua tam",
             "snack",
-            "milk",
-            "sua",
             "wipes",
             "cleaning wipes",
             "wet wipes",
@@ -114,12 +128,31 @@ const detectAnswerMode = ({
             "bentonite",
             "brush",
             "grooming brush",
-            "grooming",
-            "spa",
-            "hotel",
-            "service",
-            "dich vu",
         ]);
+
+    const hasMilkEntitySignal =
+        hasTerm(["milk", "sua"]) &&
+        !hasPhrase(["sua me", "sua cong thuc", "sua bo", "breast milk"]);
+
+    const hasConcreteServiceEntity =
+        hasTerm(["grooming", "spa", "hotel", "dich vu"]) &&
+        (hasPhrase([
+            "shop",
+            "ben minh",
+            "cua shop",
+            "dat lich",
+            "book",
+            "booking",
+            "dich vu cua",
+            "dang ky",
+        ]) ||
+            intent === "service_booking_intent" ||
+            intent === "service_search");
+
+    const hasConcreteShopEntity =
+        hasConcreteProductEntity ||
+        hasMilkEntitySignal ||
+        hasConcreteServiceEntity;
 
     const hasInternalKnowledgeSignals =
         hasPhrase([
@@ -132,21 +165,34 @@ const detectAnswerMode = ({
             "dung ra sao",
             "su dung ra sao",
             "thanh phan",
+            "thanh phan gi",
+            "co thanh phan gi",
             "luu y",
             "gom nhung gi",
             "bao gom gi",
             "bao gom nhung gi",
             "co nhung gi",
+            "cong dung",
+            "tac dung",
+            "dung cho",
+            "phu hop cho",
+            "co an toan khong",
+            "an toan khong",
             "how to use",
             "how do i use",
             "what is included",
             "what does it include",
             "ingredients",
+            "ingredient",
+            "benefit of this product",
+            "is it safe",
+            "suitable for",
         ]) ||
         hasTerm([
             "usage",
             "instruction",
             "ingredient",
+            "ingredients",
             "warning",
             "include",
             "included",
@@ -155,7 +201,44 @@ const detectAnswerMode = ({
             "su dung",
             "thanh phan",
             "luu y",
+            "cong dung",
+            "tac dung",
+            "safe",
+            "safety",
+            "suitable",
         ]);
+
+    const hasKnowledgeQuestionPattern =
+        hasPhrase([
+            "co tot khong",
+            "tot khong",
+            "co gi tot",
+            "co tac dung gi",
+            "co loi gi",
+            "co hai khong",
+            "co an toan khong",
+            "an toan khong",
+            "co nen dung",
+            "nen dung khong",
+            "co anh huong",
+            "co phu hop",
+            "phu hop khong",
+            "co nen cho an",
+            "nen cho an khong",
+            "is it good",
+            "is it safe",
+            "is it ok",
+            "is it beneficial",
+            "what does it do",
+            "what are the benefits",
+            "good for",
+            "safe for",
+            "ok for",
+            "harmful",
+            "is it harmful",
+        ]) ||
+        (hasTerm(["tot", "hai", "anh huong", "loi ich", "benefit"]) &&
+            hasConcreteShopEntity);
 
     const hasGeneralNutritionOrHealthSignals =
         hasPhrase([
@@ -178,13 +261,10 @@ const detectAnswerMode = ({
             "meo con an gi",
             "che do an cho cho nho",
             "che do an cho meo con",
-            "co tac dung gi",
-            "giup ich gi",
-            "giup ich cho",
-            "co loi cho",
-            "co loi khong",
-            "good for",
-            "helpful for",
+            "co tac dung gi cho suc khoe",
+            "giup ich cho suc khoe",
+            "good for health",
+            "helpful for health",
             "benefits of",
             "diet for",
             "feeding guide",
@@ -276,18 +356,91 @@ const detectAnswerMode = ({
             "order",
         ]);
 
+    const hasContextualRef = Boolean(analysis?.contextualReference);
+
+    const hasLastProductContext = Boolean(
+        currentUser?.lastProductId ||
+        currentUser?.currentProductId ||
+        currentUser?.lastProductName ||
+        currentUser?.currentProductName,
+    );
+
+    const hasLastServiceContext = Boolean(
+        currentUser?.lastServiceId || currentUser?.currentServiceId,
+    );
+
+    const hasResolvedProductContext =
+        hasLastProductContext || Boolean(analysis?.explicitProductName);
+
+    const hasResolvedServiceContext = hasLastServiceContext;
+
     if (isAuthIntent) {
         return {
             mode: ANSWER_MODES.DB_STRICT,
             reason: "authenticated transactional intent",
         };
     }
+    const hasBroadBrowseProductQuestion = hasPhrase([
+        "shop co",
+        "shop ban co",
+        "co do choi",
+        "co pate",
+        "co sua tam",
+        "co loai nao",
+        "co gi cho cho",
+        "co gi cho meo",
+    ]);
 
+    if (hasBroadBrowseProductQuestion && hasConcreteProductEntity) {
+        return {
+            mode: ANSWER_MODES.DB_STRICT,
+            reason: "broad browse product question should stay in db mode",
+        };
+    }
     if (intent === "general_support" && isSmallTalkOrVagueSupport) {
         return {
             mode: ANSWER_MODES.GENERAL_FALLBACK,
             reason: "small talk or vague support should stay general",
         };
+    }
+
+    if (hasContextualRef) {
+        if (
+            (hasInternalKnowledgeSignals || hasKnowledgeQuestionPattern) &&
+            hasResolvedProductContext
+        ) {
+            return {
+                mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
+                reason: "contextual reference + resolved product + knowledge question",
+            };
+        }
+
+        if (
+            (hasInternalKnowledgeSignals || hasKnowledgeQuestionPattern) &&
+            hasResolvedServiceContext
+        ) {
+            return {
+                mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
+                reason: "contextual reference + resolved service + knowledge question",
+            };
+        }
+
+        if (
+            hasStrictCommerceIntent &&
+            (hasResolvedProductContext || hasResolvedServiceContext)
+        ) {
+            return {
+                mode: ANSWER_MODES.DB_STRICT,
+                reason: "contextual reference + resolved entity + commerce intent",
+            };
+        }
+
+        if (!hasResolvedProductContext && !hasResolvedServiceContext) {
+            return {
+                mode: ANSWER_MODES.GENERAL_FALLBACK,
+                reason: "contextual reference but no active product/service context",
+            };
+        }
     }
 
     if (hasStrictCommerceIntent) {
@@ -297,30 +450,32 @@ const detectAnswerMode = ({
         };
     }
 
-    if (hasInternalKnowledgeSignals && hasConcreteShopEntity) {
-        return {
-            mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
-            reason: "knowledge question tied to a concrete shop entity",
-        };
-    }
+    if (hasInternalKnowledgeSignals || hasKnowledgeQuestionPattern) {
+        if (hasConcreteProductEntity && hasResolvedProductContext) {
+            return {
+                mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
+                reason: "product knowledge question with resolved product context",
+            };
+        }
 
-    if (
-        intent === "product_search" ||
-        intent === "product_recommend" ||
-        intent === "service_search" ||
-        hasStructuredCommerceSignals
-    ) {
-        return {
-            mode: ANSWER_MODES.DB_STRICT,
-            reason: "structured commerce intent",
-        };
-    }
+        if (
+            hasConcreteServiceEntity &&
+            (hasResolvedServiceContext ||
+                intent === "service_search" ||
+                intent === "service_booking_intent")
+        ) {
+            return {
+                mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
+                reason: "service knowledge question with resolvable service context",
+            };
+        }
 
-    if (hasConcreteShopEntity) {
-        return {
-            mode: ANSWER_MODES.DB_STRICT,
-            reason: "concrete shop entity should stay in db mode",
-        };
+        if (hasConcreteShopEntity) {
+            return {
+                mode: ANSWER_MODES.GENERAL_FALLBACK,
+                reason: "knowledge question but concrete entity is not resolved enough",
+            };
+        }
     }
 
     if (hasFeedingOrDietIntent) {
@@ -334,6 +489,18 @@ const detectAnswerMode = ({
         return {
             mode: ANSWER_MODES.EXTERNAL_REFERENCE,
             reason: "general nutrition or health knowledge",
+        };
+    }
+
+    if (
+        intent === "product_search" ||
+        intent === "product_recommend" ||
+        intent === "service_search" ||
+        hasStructuredCommerceSignals
+    ) {
+        return {
+            mode: ANSWER_MODES.DB_STRICT,
+            reason: "structured commerce intent",
         };
     }
 

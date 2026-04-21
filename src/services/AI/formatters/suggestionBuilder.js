@@ -205,6 +205,9 @@ const getDictionary = (language = "vi") => {
             recentOrders: q("My recent orders"),
             buyAgain: q("Buy again"),
             rebook: q("Book again"),
+            clarifyProduct: q("Tên sản phẩm cụ thể"),
+            clarifyPetType: q("Cho chó hay mèo?"),
+            clarifyBudget: q("Ngân sách khoảng bao nhiêu?"),
         };
     }
 
@@ -254,6 +257,9 @@ const getDictionary = (language = "vi") => {
         recentOrders: q("Đơn hàng gần nhất"),
         buyAgain: q("Mua lại"),
         rebook: q("Đặt lại"),
+        clarifyProduct: q("Tên sản phẩm cụ thể"),
+        clarifyPetType: q("Cho chó hay mèo?"),
+        clarifyBudget: q("Ngân sách khoảng bao nhiêu?"),
     };
 };
 
@@ -397,7 +403,11 @@ const getProductSuggestions = ({
         : [S.dogProducts, S.catProducts, S.discounted];
 };
 
-const getKnowledgeSuggestions = ({ S, petType, productForm }) => {
+const getKnowledgeSuggestions = ({ S, petType, productForm, context }) => {
+    if (context?.failure_reason === "no_internal_knowledge_records") {
+        return [S.relatedProducts, S.ingredients, S.usageGuide];
+    }
+
     if (productForm === "pate") {
         return petType === "cat"
             ? [S.ingredients, S.catFood, S.relatedProducts]
@@ -433,7 +443,11 @@ const getKnowledgeSuggestions = ({ S, petType, productForm }) => {
     return [S.usageGuide, S.relatedProducts, S.relatedServices];
 };
 
-const getExternalSuggestions = ({ S, petType }) => {
+const getExternalSuggestions = ({ S, petType, context }) => {
+    if (context?.failure_reason === "no_external_sources") {
+        return [S.clarifyPetType, S.clarifyProduct, S.relatedProducts];
+    }
+
     if (petType === "cat") {
         return [S.catNutrition, S.omegaCat, S.catCare];
     }
@@ -469,17 +483,26 @@ const getSuggestionsByContext = ({
             S.grooming,
         ];
     } else if (contextType === "knowledge") {
-        suggestions = getKnowledgeSuggestions({ S, petType, productForm });
-    } else if (contextType === "external_reference") {
-        suggestions = getExternalSuggestions({ S, petType });
-    } else if (contextType === "products") {
-        suggestions = getProductSuggestions({
+        suggestions = getKnowledgeSuggestions({
             S,
             petType,
             productForm,
-            discountMode,
-            isLoggedIn,
+            context,
         });
+    } else if (contextType === "external_reference") {
+        suggestions = getExternalSuggestions({ S, petType, context });
+    } else if (contextType === "products") {
+        if ((context?.confidence ?? 0) < 0.5) {
+            suggestions = [S.clarifyPetType, S.clarifyBudget, S.clarifyProduct];
+        } else {
+            suggestions = getProductSuggestions({
+                S,
+                petType,
+                productForm,
+                discountMode,
+                isLoggedIn,
+            });
+        }
     } else if (contextType === "services") {
         if (intent === "service_booking_intent") {
             suggestions = isLoggedIn
@@ -495,18 +518,26 @@ const getSuggestionsByContext = ({
     } else if (contextType === "orders") {
         suggestions = [S.recentOrders, S.buyAgain, S.products];
     } else if (answerMode === "external_reference") {
-        suggestions = getExternalSuggestions({ S, petType });
+        suggestions = getExternalSuggestions({ S, petType, context });
     } else if (answerMode === "internal_knowledge") {
-        suggestions = getKnowledgeSuggestions({ S, petType, productForm });
+        suggestions = getKnowledgeSuggestions({
+            S,
+            petType,
+            productForm,
+            context,
+        });
     } else {
         suggestions = isLoggedIn
             ? [S.dogProducts, S.services, S.myBookings]
             : [S.dogProducts, S.services, S.login];
     }
 
-    const fallback = isLoggedIn
-        ? [S.products, S.services, S.myOrders]
-        : [S.dogProducts, S.catProducts, S.login];
+    const fallback =
+        (context?.confidence ?? 1) < 0.5
+            ? [S.clarifyPetType, S.clarifyBudget, S.clarifyProduct]
+            : isLoggedIn
+              ? [S.products, S.services, S.myOrders]
+              : [S.dogProducts, S.catProducts, S.login];
 
     return fillSuggestions(
         removeRedundantSuggestions({

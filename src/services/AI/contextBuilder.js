@@ -6,6 +6,7 @@ const recommendationRepo = require("./repositories/recommendationChatRepository"
 const orderRepo = require("./repositories/orderChatRepository");
 const productKnowledgeRepo = require("./repositories/productKnowledgeRepository");
 const externalSearchService = require("./search/externalSearchService");
+
 const MIN_RELATED_ITEM_CONFIDENCE = 0.6;
 
 const PRODUCT_ENTITY_TERMS = new Set([
@@ -54,6 +55,15 @@ const hasConcreteServiceEntity = (analysis = {}) =>
     hasAnyConcreteTerm(analysis?.categoryHints, SERVICE_ENTITY_TERMS) ||
     hasAnyConcreteTerm(analysis?.rawKeywords, SERVICE_ENTITY_TERMS);
 
+const shouldUseSessionProductContext = (analysis = {}) =>
+    Boolean(analysis?.contextualReference);
+
+const shouldResolveExplicitProductContext = (analysis = {}) =>
+    Boolean(analysis?.explicitProductName);
+
+const shouldUseSessionServiceContext = (analysis = {}) =>
+    Boolean(analysis?.contextualReference);
+
 const attachAnalysis = (
     context,
     analysis,
@@ -68,9 +78,9 @@ const attachAnalysis = (
     applied_filters: context?.applied_filters || [],
     confidence: context?.confidence ?? 0,
     answer_mode:
-        context?.answer_mode || answerModeResult?.mode || "general_fallback",
+        answerModeResult?.mode || context?.answer_mode || "general_fallback",
     answer_mode_reason:
-        context?.answer_mode_reason || answerModeResult?.reason || null,
+        answerModeResult?.reason || context?.answer_mode_reason || null,
     auth: {
         isLoggedIn: Boolean(currentUser?.user_id),
         user_id: currentUser?.user_id || null,
@@ -92,9 +102,15 @@ const buildAuthRequiredContext = ({
     confidence: 1,
     answer_mode: "db_strict",
     answer_mode_reason: "login required for personal data",
+    failure_reason: "auth_required",
 });
 
-const buildGeneralContext = ({ message, reply, confidence = 0.2 }) => ({
+const buildGeneralContext = ({
+    message,
+    reply,
+    confidence = 0.2,
+    failure_reason = "general_fallback",
+}) => ({
     type: "general",
     items: [],
     faq: [],
@@ -106,8 +122,72 @@ const buildGeneralContext = ({ message, reply, confidence = 0.2 }) => ({
     ],
     user_question: message,
     confidence,
+    failure_reason,
     ...(reply ? { reply } : {}),
 });
+
+const buildClarifyContext = ({
+    message,
+    reply = "Bạn cho mình tên sản phẩm hoặc dịch vụ cụ thể nhé.",
+    failure_reason = "needs_clarification",
+}) => ({
+    type: "general",
+    items: [],
+    faq: [],
+    note: "Clarification required before grounding answer.",
+    reply,
+    suggestions: [
+        "Tên sản phẩm cụ thể",
+        "Sản phẩm cho chó",
+        "Sản phẩm cho mèo",
+    ],
+    user_question: message,
+    confidence: 0.2,
+    failure_reason,
+});
+
+const buildAmbiguousReferenceContext = ({ message, kind = "product" }) => ({
+    type: "knowledge",
+    items: [],
+    knowledge_items: [],
+    note: "Ambiguous contextual reference without enough product/service context.",
+    reply:
+        kind === "product"
+            ? "Mình chưa biết chính xác bạn đang hỏi sản phẩm nào. Bạn cho mình tên sản phẩm cụ thể nhé."
+            : "Mình chưa biết chính xác bạn đang hỏi dịch vụ nào. Bạn nói rõ tên dịch vụ giúp mình nhé.",
+    confidence: 0.2,
+    failure_reason: "ambiguous_reference_no_context",
+    answer_source: "internal_knowledge",
+    user_question: message,
+});
+
+const getResolvedProductContext = ({ currentUser = {}, analysis = {} }) => {
+    const productId =
+        currentUser?.currentProductId || currentUser?.lastProductId || null;
+
+    const productName =
+        currentUser?.currentProductName || currentUser?.lastProductName || null;
+
+    return {
+        productId,
+        productName,
+        hasBinding: Boolean(productId || analysis?.explicitProductName),
+    };
+};
+
+const getResolvedServiceContext = ({ currentUser = {}, analysis = {} }) => {
+    const serviceId =
+        currentUser?.currentServiceId || currentUser?.lastServiceId || null;
+
+    const serviceName =
+        currentUser?.currentServiceName || currentUser?.lastServiceName || null;
+
+    return {
+        serviceId,
+        serviceName,
+        hasBinding: Boolean(serviceId),
+    };
+};
 
 const buildDbStrictContext = async ({
     intent,
@@ -209,15 +289,62 @@ const buildInternalKnowledgeContext = async ({
     currentUser,
     analysis,
 }) => {
-    const canUseProductEntity =
-        (intent === "product_search" || intent === "product_recommend") &&
-        hasConcreteProductEntity(analysis);
+    const resolvedProduct = getResolvedProductContext({
+        currentUser,
+        analysis,
+    });
 
-    const canUseServiceEntity =
-        (intent === "service_search" || intent === "service_booking_intent") &&
-        hasConcreteServiceEntity(analysis);
+    const resolvedService = getResolvedServiceContext({
+        currentUser,
+        analysis,
+    });
 
-    if (canUseProductEntity) {
+    const asksContextual = Boolean(analysis?.contextualReference);
+    const shouldUseSessionProduct = shouldUseSessionProductContext(analysis);
+    const shouldResolveExplicitProduct =
+        shouldResolveExplicitProductContext(analysis);
+    const shouldUseSessionService = shouldUseSessionServiceContext(analysis);
+
+    if (
+        asksContextual &&
+        !resolvedProduct.hasBinding &&
+        !resolvedService.hasBinding
+    ) {
+        return buildAmbiguousReferenceContext({
+            message,
+            kind: "product",
+        });
+    }
+
+    if (
+        hasConcreteProductEntity(analysis) &&
+        !resolvedProduct.hasBinding &&
+        !shouldResolveExplicitProduct &&
+        !shouldUseSessionProduct
+    ) {
+        return buildClarifyContext({
+            message,
+            reply: "Bạn cho mình tên sản phẩm cụ thể để mình kiểm tra thành phần, công dụng hoặc cách dùng nhé.",
+            failure_reason: "product_not_resolved_for_internal_knowledge",
+        });
+    }
+
+    if (
+        hasConcreteServiceEntity(analysis) &&
+        !resolvedService.hasBinding &&
+        !shouldUseSessionService &&
+        !(intent === "service_search" || intent === "service_booking_intent")
+    ) {
+        return buildClarifyContext({
+            message,
+            reply: "Bạn cho mình tên dịch vụ cụ thể để mình hỗ trợ chính xác hơn nhé.",
+            failure_reason: "service_not_resolved_for_internal_knowledge",
+        });
+    }
+
+    // 1) Explicit product name phải ưu tiên search best match trước,
+    // không dùng lastProductId cũ trong session.
+    if (shouldResolveExplicitProduct) {
         const productContext = await productSearchService.findRelevantProducts({
             message,
             currentUser,
@@ -242,32 +369,79 @@ const buildInternalKnowledgeContext = async ({
                     type: "knowledge",
                     items: [bestMatch],
                     knowledge_items: knowledgeItems,
-                    note: "Internal product knowledge loaded successfully.",
+                    note: "Resolved explicit product name to best match, then loaded internal knowledge.",
                     reply: "",
                     confidence: Math.max(productContext?.confidence ?? 0, 0.75),
+                    failure_reason: null,
+                    answer_source: "internal_knowledge",
                 };
             }
-            console.log(
-                "knowledge best match:",
-                productContext?.items?.map((item) => ({
-                    id: item.product_id,
-                    name: item.name,
-                    category: item.category,
-                })),
-            );
+
             return {
                 ...productContext,
                 type: "knowledge",
                 items: [bestMatch],
                 knowledge_items: [],
-                note: "Matched product found, but no product knowledge records yet.",
-                reply: "Mình đã xác định được sản phẩm liên quan trong shop, nhưng hiện chưa có kho kiến thức nội bộ để trả lời chính xác phần công dụng hoặc cách dùng.",
+                note: "Explicit product matched, but no product knowledge records yet.",
+                reply: "Mình đã xác định được sản phẩm liên quan trong shop, nhưng hiện chưa có kho kiến thức nội bộ để trả lời chính xác phần công dụng, thành phần hoặc cách dùng.",
                 confidence: Math.min(productContext?.confidence ?? 0, 0.45),
+                failure_reason: "no_internal_knowledge_records",
+                answer_source: "internal_knowledge",
             };
         }
+
+        return buildClarifyContext({
+            message,
+            reply: "Mình chưa xác định được đúng sản phẩm bạn đang hỏi. Bạn gửi lại tên sản phẩm cụ thể giúp mình nhé.",
+            failure_reason: "explicit_product_not_matched",
+        });
     }
 
-    if (canUseServiceEntity) {
+    // 2) Contextual follow-up mới dùng session product hiện tại/cũ
+    if (shouldUseSessionProduct && resolvedProduct.productId) {
+        const knowledgeItems =
+            await productKnowledgeRepo.findKnowledgeByProductId({
+                productId: resolvedProduct.productId,
+                language: analysis?.language || null,
+            });
+
+        if (knowledgeItems.length > 0) {
+            return {
+                type: "knowledge",
+                items: [
+                    {
+                        product_id: resolvedProduct.productId,
+                        name: resolvedProduct.productName || null,
+                    },
+                ],
+                knowledge_items: knowledgeItems,
+                note: "Bound by currentProductId/lastProductId from chat context.",
+                reply: "",
+                confidence: 1,
+                failure_reason: null,
+                answer_source: "internal_knowledge",
+            };
+        }
+
+        return {
+            type: "knowledge",
+            items: [
+                {
+                    product_id: resolvedProduct.productId,
+                    name: resolvedProduct.productName || null,
+                },
+            ],
+            knowledge_items: [],
+            note: "Bound product exists, but no knowledge records yet.",
+            reply: "Mình đã xác định được sản phẩm bạn đang hỏi, nhưng hiện chưa có dữ liệu kiến thức nội bộ phù hợp để trả lời chi tiết.",
+            confidence: 0.45,
+            failure_reason: "no_internal_knowledge_records",
+            answer_source: "internal_knowledge",
+        };
+    }
+
+    // 3) Service follow-up chỉ dùng session service khi là contextual query
+    if (shouldUseSessionService && resolvedService.serviceId) {
         const serviceContext = await serviceRepo.findRelevantServices({
             message,
             currentUser,
@@ -282,21 +456,20 @@ const buildInternalKnowledgeContext = async ({
                 ...serviceContext,
                 type: "knowledge",
                 knowledge_items: [],
-                note: "Service matched, but service knowledge repository is not connected yet.",
+                note: "Contextual service matched, but service knowledge repository is not connected yet.",
                 reply: "Mình đã xác định được dịch vụ liên quan, nhưng hiện chưa có kho kiến thức nội bộ cho dịch vụ để trả lời chi tiết.",
                 confidence: Math.min(serviceContext?.confidence ?? 0, 0.45),
+                failure_reason: "no_internal_knowledge_records",
+                answer_source: "internal_knowledge",
             };
         }
     }
 
-    return {
-        type: "knowledge",
-        items: [],
-        knowledge_items: [],
-        note: "No strong concrete shop entity matched for internal knowledge mode.",
-        reply: "Mình chưa xác định được chính xác sản phẩm hoặc dịch vụ cụ thể trong shop để trả lời phần công dụng hoặc cách dùng.",
-        confidence: 0.2,
-    };
+    return buildClarifyContext({
+        message,
+        reply: "Mình chưa xác định được chính xác sản phẩm hoặc dịch vụ cụ thể trong shop. Bạn nói rõ tên giúp mình nhé.",
+        failure_reason: "no_entity_match_for_internal_knowledge",
+    });
 };
 
 const buildExternalReferenceContext = async ({
@@ -366,6 +539,8 @@ const buildExternalReferenceContext = async ({
             note: "External reference sources loaded successfully.",
             reply: "",
             confidence: 0.75,
+            failure_reason: null,
+            answer_source: "external_reference",
         };
     }
 
@@ -376,6 +551,8 @@ const buildExternalReferenceContext = async ({
         note: "External reference mode selected, but no outside sources were returned.",
         reply: "Câu hỏi này thuộc dạng kiến thức tham khảo ngoài hệ thống. Hiện chưa lấy được nguồn ngoài phù hợp để trả lời một cách đúng nhất.",
         confidence: 0.25,
+        failure_reason: "no_external_sources",
+        answer_source: "external_reference",
     };
 };
 
