@@ -187,14 +187,25 @@ const isGenericLlmFailure = (text = "") => {
     const value = String(text || "")
         .trim()
         .toLowerCase();
+
     if (!value) return true;
 
-    return (
-        value === "xin loi, toi chua the tra loi luc nay." ||
-        value === "sorry, i cannot answer that right now." ||
-        value === "xin lỗi, tôi chưa thể trả lời lúc này." ||
-        value === "sorry, i can't answer that right now."
-    );
+    const genericFailures = [
+        "xin loi, toi chua the tra loi luc nay.",
+        "xin lỗi, tôi chưa thể trả lời lúc này.",
+        "sorry, i cannot answer that right now.",
+        "sorry, i can't answer that right now.",
+        "xin lỗi, ai đang gặp lỗi hệ thống.",
+        "xin loi, ai dang gap loi he thong.",
+        "xin lỗi, ai chưa sẵn sàng.",
+        "xin loi, ai chua san sang.",
+        "xin lỗi, mình chưa có câu trả lời phù hợp.",
+        "xin loi, minh chua co cau tra loi phu hop.",
+        "sorry, the ai is having a system error.",
+        "sorry, ai is not ready yet.",
+    ];
+
+    return genericFailures.includes(value);
 };
 const pickBestKnowledgeItem = ({ knowledgeItems = [], userQuestion = "" }) => {
     const question = String(userQuestion || "").toLowerCase();

@@ -16,9 +16,14 @@ const normalize = (value = "") => normalizeText(String(value || ""));
 
 const uniqueSuggestions = (items = []) => {
     const seen = new Set();
+
     return items.filter((item) => {
+        if (!item || typeof item !== "object") return false;
+        if (!item.type) return false;
+
         const key = `${item.type}:${normalize(item.value || item.label)}`;
         if (!key || seen.has(key)) return false;
+
         seen.add(key);
         return true;
     });
@@ -205,9 +210,12 @@ const getDictionary = (language = "vi") => {
             recentOrders: q("My recent orders"),
             buyAgain: q("Buy again"),
             rebook: q("Book again"),
-            clarifyProduct: q("Tên sản phẩm cụ thể"),
-            clarifyPetType: q("Cho chó hay mèo?"),
-            clarifyBudget: q("Ngân sách khoảng bao nhiêu?"),
+            benefits: q("Benefits"),
+            warnings: q("Warnings"),
+            suitableFor: q("Suitable for"),
+            clarifyProduct: q("Specific product name"),
+            clarifyPetType: q("For dog or cat?"),
+            clarifyBudget: q("What budget range?"),
         };
     }
 
@@ -260,6 +268,9 @@ const getDictionary = (language = "vi") => {
         clarifyProduct: q("Tên sản phẩm cụ thể"),
         clarifyPetType: q("Cho chó hay mèo?"),
         clarifyBudget: q("Ngân sách khoảng bao nhiêu?"),
+        benefits: q("Công dụng"),
+        warnings: q("Lưu ý"),
+        suitableFor: q("Phù hợp cho ai"),
     };
 };
 
@@ -402,45 +413,26 @@ const getProductSuggestions = ({
         ? [S.buyNow, S.myOrders, S.recommended]
         : [S.dogProducts, S.catProducts, S.discounted];
 };
+const getKnowledgeSuggestions = ({ S, context }) => {
+    const requestedType = context?.requested_knowledge_type || null;
 
-const getKnowledgeSuggestions = ({ S, petType, productForm, context }) => {
     if (context?.failure_reason === "no_internal_knowledge_records") {
-        return [S.relatedProducts, S.ingredients, S.usageGuide];
+        return [S.relatedProducts, S.clarifyProduct, S.products];
     }
 
-    if (productForm === "pate") {
-        return petType === "cat"
-            ? [S.ingredients, S.catFood, S.relatedProducts]
-            : petType === "dog"
-              ? [S.ingredients, S.dogFood, S.relatedProducts]
-              : [S.usageGuide, S.relatedProducts, S.relatedServices];
+    const byType = {
+        ingredient: [S.usageGuide, S.benefits, S.warnings],
+        usage: [S.ingredients, S.benefits, S.warnings],
+        benefit: [S.ingredients, S.usageGuide, S.warnings],
+        warning: [S.ingredients, S.usageGuide, S.benefits],
+        suitable_for: [S.ingredients, S.usageGuide, S.benefits],
+    };
+
+    if (requestedType && byType[requestedType]) {
+        return [...byType[requestedType], S.relatedProducts];
     }
 
-    if (productForm === "shampoo") {
-        return [S.petWipes, S.groomingBrush, S.relatedProducts];
-    }
-
-    if (productForm === "wipes") {
-        return [S.petShampoo, S.groomingBrush, S.relatedProducts];
-    }
-
-    if (productForm === "litter") {
-        return [S.catProducts, S.discounted, S.relatedProducts];
-    }
-
-    if (productForm === "brush") {
-        return [S.grooming, S.petShampoo, S.relatedProducts];
-    }
-
-    if (petType === "cat") {
-        return [S.usageGuide, S.catFood, S.relatedProducts];
-    }
-
-    if (petType === "dog") {
-        return [S.usageGuide, S.dogFood, S.relatedProducts];
-    }
-
-    return [S.usageGuide, S.relatedProducts, S.relatedServices];
+    return [S.ingredients, S.usageGuide, S.benefits];
 };
 
 const getExternalSuggestions = ({ S, petType, context }) => {
@@ -471,7 +463,7 @@ const getSuggestionsByContext = ({
     const discountMode = analysis.discountMode || null;
     const productForm = analysis.productForm || null;
     const answerMode = context?.answer_mode || null;
-
+    const requestedKnowledgeType = context?.requested_knowledge_type || null;
     const S = getDictionary(language === "en" ? "en" : "vi");
 
     let suggestions = [];

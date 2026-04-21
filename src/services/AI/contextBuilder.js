@@ -6,6 +6,7 @@ const recommendationRepo = require("./repositories/recommendationChatRepository"
 const orderRepo = require("./repositories/orderChatRepository");
 const productKnowledgeRepo = require("./repositories/productKnowledgeRepository");
 const externalSearchService = require("./search/externalSearchService");
+const normalizeText = require("../../utils/normalizeText");
 
 const MIN_RELATED_ITEM_CONFIDENCE = 0.6;
 
@@ -34,10 +35,7 @@ const SERVICE_ENTITY_TERMS = new Set([
     "training",
 ]);
 
-const normalizeTerm = (value = "") =>
-    String(value || "")
-        .trim()
-        .toLowerCase();
+const normalizeTerm = (value = "") => normalizeText(String(value || ""));
 
 const hasAnyConcreteTerm = (terms = [], dictionary = new Set()) =>
     (Array.isArray(terms) ? terms : []).some((term) =>
@@ -55,9 +53,33 @@ const hasConcreteServiceEntity = (analysis = {}) =>
     hasAnyConcreteTerm(analysis?.categoryHints, SERVICE_ENTITY_TERMS) ||
     hasAnyConcreteTerm(analysis?.rawKeywords, SERVICE_ENTITY_TERMS);
 
-const shouldUseSessionProductContext = (analysis = {}) =>
-    Boolean(analysis?.contextualReference);
+// const shouldUseSessionProductContext = (analysis = {}) =>
+//     Boolean(analysis?.contextualReference);
+const shouldUseSessionProductContext = (analysis = {}, message = "") => {
+    const text = normalizeTerm(message);
 
+    const hasKnowledgeSignal =
+        text.includes("thanh phan") ||
+        text.includes("ingredient") ||
+        text.includes("ingredients") ||
+        text.includes("cong dung") ||
+        text.includes("tac dung") ||
+        text.includes("benefit") ||
+        text.includes("benefits") ||
+        text.includes("cach dung") ||
+        text.includes("su dung") ||
+        text.includes("huong dan") ||
+        text.includes("usage") ||
+        text.includes("luu y") ||
+        text.includes("canh bao") ||
+        text.includes("warning") ||
+        text.includes("an toan") ||
+        text.includes("safe") ||
+        text.includes("phu hop") ||
+        text.includes("dung cho");
+
+    return Boolean(analysis?.contextualReference || hasKnowledgeSignal);
+};
 const shouldResolveExplicitProductContext = (analysis = {}) =>
     Boolean(analysis?.explicitProductName);
 
@@ -364,7 +386,11 @@ const buildInternalKnowledgeContext = async ({
     });
 
     const asksContextual = Boolean(analysis?.contextualReference);
-    const shouldUseSessionProduct = shouldUseSessionProductContext(analysis);
+    // const shouldUseSessionProduct = shouldUseSessionProductContext(analysis);
+    const shouldUseSessionProduct = shouldUseSessionProductContext(
+        analysis,
+        message,
+    );
     const shouldResolveExplicitProduct =
         shouldResolveExplicitProductContext(analysis);
     const shouldUseSessionService = shouldUseSessionServiceContext(analysis);
@@ -441,11 +467,9 @@ const buildInternalKnowledgeContext = async ({
                     ...productContext,
                     type: "knowledge",
                     items: [bestMatch],
-                    knowledge_items: filteredKnowledgeItems.length
-                        ? filteredKnowledgeItems
-                        : knowledgeItems,
+                    knowledge_items: filteredKnowledgeItems,
                     requested_knowledge_type: requestedKnowledgeType,
-                    note: "Resolved product and filtered knowledge items by requested aspect.",
+                    note: "Resolved explicit product name to best match, then loaded filtered internal knowledge.",
                     reply: "",
                     confidence: Math.max(productContext?.confidence ?? 0, 0.78),
                     failure_reason: null,
@@ -487,6 +511,7 @@ const buildInternalKnowledgeContext = async ({
             knowledgeItems,
             requestedType: requestedKnowledgeType,
         });
+
         if (knowledgeItems.length > 0) {
             return {
                 type: "knowledge",
@@ -496,7 +521,8 @@ const buildInternalKnowledgeContext = async ({
                         name: resolvedProduct.productName || null,
                     },
                 ],
-                knowledge_items: knowledgeItems,
+                knowledge_items: filteredKnowledgeItems,
+                requested_knowledge_type: requestedKnowledgeType,
                 note: "Bound by currentProductId/lastProductId from chat context.",
                 reply: "",
                 confidence: 1,

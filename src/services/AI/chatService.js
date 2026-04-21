@@ -296,8 +296,24 @@ const handleChat = async ({ message, currentUser }) => {
                 mode: "general_fallback",
                 reason: "python analyze fallback",
             };
+            const localAnswerMode = detectAnswerMode({
+                intent,
+                message,
+                analysis,
+                currentUser: normalizedUser,
+            });
+
+            if (
+                answerModeResult?.mode === "general_fallback" &&
+                localAnswerMode?.mode !== "general_fallback"
+            ) {
+                answerModeResult = localAnswerMode;
+            }
         } catch (error) {
-            console.error("[AI] python analyze failed -> fallback LOCAL:", error.message);
+            console.error(
+                "[AI] python analyze failed -> fallback LOCAL:",
+                error.message,
+            );
 
             analysis = await analyzeMessage(message);
             intent = detectIntent({

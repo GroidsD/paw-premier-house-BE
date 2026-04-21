@@ -372,6 +372,16 @@ const detectAnswerMode = ({
     const hasResolvedProductContext =
         hasLastProductContext || Boolean(analysis?.explicitProductName);
 
+    const hasShortKnowledgeOnlyQuestion =
+        (hasInternalKnowledgeSignals || hasKnowledgeQuestionPattern) &&
+        hasResolvedProductContext;
+
+    if (hasShortKnowledgeOnlyQuestion) {
+        return {
+            mode: ANSWER_MODES.INTERNAL_KNOWLEDGE,
+            reason: "knowledge question with existing resolved product context",
+        };
+    }
     const hasResolvedServiceContext = hasLastServiceContext;
 
     if (isAuthIntent) {
