@@ -74,7 +74,7 @@ const asksForStock = (message = "") => {
 
 const formatPrice = (value = 0, language = "vi") => {
     const num = Number(value || 0);
-    if (!num) return language === "en" ? "0 VND" : "0 VND";
+    if (!num) return "0 VND";
     return `${num.toLocaleString("vi-VN")} VND`;
 };
 
@@ -86,32 +86,112 @@ const productHasFlavor = (product = {}, flavorTerm = "") => {
     return haystack.includes(normalizeText(flavorTerm));
 };
 
+const normalizeLooseText = (value = "") =>
+    String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+const detectBroadBrowsePetType = (question = "", analysis = {}) => {
+    if (analysis?.petType === "dog" || analysis?.petType === "cat") {
+        return analysis.petType;
+    }
+
+    const text = normalizeLooseText(question);
+
+    if (
+        text.includes("cho cho") ||
+        text.includes("cho con") ||
+        text.includes("cho nho") ||
+        text.includes("dog")
+    ) {
+        return "dog";
+    }
+
+    if (
+        text.includes("cho meo") ||
+        text.includes("meo con") ||
+        text.includes("meo nho") ||
+        text.includes("cat")
+    ) {
+        return "cat";
+    }
+
+    return null;
+};
+
+const isBroadBrowseQuestion = ({ question = "", analysis = {}, count = 0 }) => {
+    if (analysis?.productForm || analysis?.discountMode) return false;
+    if (count <= 0) return false;
+
+    const text = normalizeLooseText(question);
+
+    return (
+        text.includes("shop co") ||
+        text.includes("co ban") ||
+        text.includes("san pham nao") ||
+        text.includes("san pham gi") ||
+        text.includes("san pham cho") ||
+        text.includes("co gi cho") ||
+        text.includes("dog products") ||
+        text.includes("cat products") ||
+        text.includes("products for dog") ||
+        text.includes("products for cat") ||
+        text.includes("pet accessories") ||
+        text.includes("phu kien cho thu cung")
+    );
+};
+
 const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
     const first = items[0];
-    const count = items.length;
+    const visibleCount = items.length;
+    const count = Number(context?.total_matched || visibleCount || 0);
     const analysis = context?.analysis || {};
     const formLabel = getFormLabel(analysis.productForm, language);
     const userQuestion = context?.user_question || analysis?.raw || "";
-    const flavorTerm = extractFlavorTerm(
-        context?.user_question || analysis?.raw || "",
-    );
+    const flavorTerm = extractFlavorTerm(userQuestion);
     const budgetValue = extractBudgetValue(userQuestion);
     const isYesNo = isYesNoShopQuestion(userQuestion);
     const isPriceQuestion = asksForPrice(userQuestion);
     const isStockQuestion = asksForStock(userQuestion);
-    const isBroadBrowseQuestion =
-        !analysis?.productForm &&
-        !analysis?.discountMode &&
-        Boolean(analysis?.petType) &&
-        (userQuestion.includes("san pham") ||
-            userQuestion.includes("shop co") ||
-            userQuestion.includes("co gi cho"));
-    const petType = analysis?.petType || null;
-    if (language === "vi" && isBroadBrowseQuestion) {
-        return petType === "dog"
-            ? `Shop mình có một số sản phẩm cho chó nha. Mình gợi ý vài lựa chọn nổi bật bên dưới, bạn muốn xem thức ăn, đồ chơi hay phụ kiện trước?`
-            : `Shop mình có một số sản phẩm cho mèo nha. Mình gợi ý vài lựa chọn nổi bật bên dưới, bạn muốn xem thức ăn, đồ chơi hay phụ kiện trước?`;
+
+    const broadBrowse = isBroadBrowseQuestion({
+        question: userQuestion,
+        analysis,
+        count,
+    });
+
+    const browsePetType = detectBroadBrowsePetType(userQuestion, analysis);
+
+    if (!count) {
+        return getFallbackReply(language, "products");
     }
+
+    if (broadBrowse) {
+        if (language === "en") {
+            if (browsePetType === "dog") {
+                return `Yes, the shop has dog products. I'm showing ${visibleCount} highlighted options below, and you can also narrow it down to food, toys, or accessories.`;
+            }
+
+            if (browsePetType === "cat") {
+                return `Yes, the shop has cat products. I'm showing ${visibleCount} highlighted options below, and you can also narrow it down to food, toys, or accessories.`;
+            }
+
+            return `Yes, the shop has matching products. I'm showing ${visibleCount} highlighted options below, and you can narrow it down further if you want.`;
+        }
+
+        if (browsePetType === "dog") {
+            return `Dạ có nha, shop mình có sản phẩm cho chó. Mình đang hiển thị ${visibleCount} lựa chọn nổi bật bên dưới, bạn muốn xem thức ăn, đồ chơi hay phụ kiện trước?`;
+        }
+
+        if (browsePetType === "cat") {
+            return `Dạ có nha, shop mình có sản phẩm cho mèo. Mình đang hiển thị ${visibleCount} lựa chọn nổi bật bên dưới, bạn muốn xem thức ăn, đồ chơi hay phụ kiện trước?`;
+        }
+
+        return `Dạ có nha, shop mình có sản phẩm phù hợp. Mình đang hiển thị ${visibleCount} lựa chọn nổi bật bên dưới, bạn muốn lọc thêm theo danh mục nào không?`;
+    }
+
     const missingFlavorNote =
         flavorTerm && first && !productHasFlavor(first, flavorTerm)
             ? language === "en"
@@ -126,6 +206,19 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
                 : "Bạn có muốn xem các lựa chọn tương tự nếu không đúng vị đó không?"
             : "";
 
+    const productName =
+        first?.name || (language === "en" ? "the top option" : "món nổi bật");
+
+    const firstPrice = formatPrice(first?.price || 0, language);
+    const firstOriginalPrice = formatPrice(
+        first?.original_price || 0,
+        language,
+    );
+
+    const isDiscounted =
+        Number(first?.original_price || 0) > Number(first?.price || 0);
+    const inStock = Number(first?.quantity || 0) > 0;
+
     const selectorSeed =
         Number(first?.product_id || 0) +
         Number(first?.price || 0) +
@@ -136,6 +229,21 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
         const index = Math.abs(selectorSeed) % options.length;
         return options[index];
     };
+
+    const followUpsEn = [
+        "Want me to narrow it down by price or brand?",
+        "Do you want to filter by price range?",
+        "I can also show similar options if you want.",
+    ];
+
+    const followUpsVi = [
+        "Bạn muốn lọc thêm theo giá hay hãng không?",
+        "Muốn mình lọc theo khoảng giá không?",
+        "Mình cũng có thể gợi ý các lựa chọn tương tự nếu bạn muốn.",
+    ];
+
+    const askFilter =
+        language === "en" ? pickBySeed(followUpsEn) : pickBySeed(followUpsVi);
 
     const leadEnBudgetOptions = budgetValue
         ? [
@@ -160,37 +268,6 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
     const leadViYesNoOptions = isYesNo
         ? ["Shop mình có ", "Dạ có nhé, shop mình có ", "Có nha, shop mình có "]
         : [""];
-
-    if (!count) {
-        return getFallbackReply(language, "products");
-    }
-
-    const productName =
-        first?.name || (language === "en" ? "the top option" : "món nổi bật");
-
-    const firstPrice = formatPrice(first?.price || 0, language);
-    const firstOriginalPrice = formatPrice(
-        first?.original_price || 0,
-        language,
-    );
-    const isDiscounted =
-        Number(first?.original_price || 0) > Number(first?.price || 0);
-    const inStock = Number(first?.quantity || 0) > 0;
-
-    const followUpsEn = [
-        "Want me to narrow it down by price, size, or brand?",
-        "Do you want to filter by price range or size?",
-        "I can also show similar options if you want.",
-    ];
-
-    const followUpsVi = [
-        "Bạn muốn lọc thêm theo giá, size, hay hãng không?",
-        "Muốn mình lọc theo khoảng giá hoặc size không?",
-        "Mình cũng có thể gợi ý các lựa chọn tương tự nếu bạn muốn.",
-    ];
-
-    const askFilter =
-        language === "en" ? pickBySeed(followUpsEn) : pickBySeed(followUpsVi);
 
     if (language === "en") {
         const label = formLabel ? `${formLabel} ` : "";
@@ -231,14 +308,14 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
         }
 
         if (analysis.discountMode === "discounted") {
-            return `${budgetLead}${yesNoLead}I found ${count} discounted ${label}products. The best match is ${productName}. ${askFilter}`;
+            return `${budgetLead}${yesNoLead}I found ${count} discounted ${label}products in the shop. I'm showing ${visibleCount} top matches, and the best match is ${productName}. ${askFilter}`.trim();
         }
 
         if (analysis.discountMode === "non_discounted") {
-            return `${budgetLead}${yesNoLead}I found ${count} non-discounted ${label}products. The best match is ${productName}. ${askFilter}`;
+            return `${budgetLead}${yesNoLead}I found ${count} non-discounted ${label}products in the shop. I'm showing ${visibleCount} top matches, and the best match is ${productName}. ${askFilter}`.trim();
         }
 
-        return `${budgetLead}${yesNoLead}I found ${count} ${label}products. The best match is ${productName}. ${askFilter}`;
+        return `${budgetLead}${yesNoLead}I found ${count} ${label}products in the shop. I'm showing ${visibleCount} top matches, and the best match is ${productName}. ${askFilter}`.trim();
     }
 
     const labelVi = formLabel ? `${formLabel} ` : "";
@@ -270,23 +347,23 @@ const buildProductReply = ({ items = [], language = "vi", context = {} }) => {
 
     if (count === 1) {
         if (analysis.discountMode === "discounted") {
-            return `${budgetLeadVi}${yesNoLeadVi}Mình thấy 1 sản phẩm ${labelVi}đang giảm giá: ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
+            return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy 1 sản phẩm ${labelVi}đang giảm giá trong shop, nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
         }
         if (analysis.discountMode === "non_discounted") {
-            return `${budgetLeadVi}${yesNoLeadVi}Mình thấy 1 sản phẩm ${labelVi}không giảm giá: ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
+            return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy 1 sản phẩm ${labelVi}không giảm giá trong shop, nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
         }
-        return `${budgetLeadVi}${yesNoLeadVi}Mình thấy 1 sản phẩm ${labelVi}phù hợp: ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
+        return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy 1 sản phẩm ${labelVi}phù hợp trong shop, nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
     }
 
     if (analysis.discountMode === "discounted") {
-        return `${budgetLeadVi}${yesNoLeadVi}Mình thấy ${count} sản phẩm ${labelVi}đang giảm giá. Gợi ý nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
+        return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy ${count} sản phẩm ${labelVi}đang giảm giá trong shop. Hiện mình đang hiển thị ${visibleCount} lựa chọn nổi bật, gợi ý nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
     }
 
     if (analysis.discountMode === "non_discounted") {
-        return `${budgetLeadVi}${yesNoLeadVi}Mình thấy ${count} sản phẩm ${labelVi}không giảm giá. Gợi ý nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
+        return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy ${count} sản phẩm ${labelVi}không giảm giá trong shop. Hiện mình đang hiển thị ${visibleCount} lựa chọn nổi bật, gợi ý nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
     }
 
-    return `${budgetLeadVi}${yesNoLeadVi}Mình thấy ${count} sản phẩm ${labelVi}phù hợp. Gợi ý nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
+    return `${budgetLeadVi}${yesNoLeadVi}Mình tìm thấy ${count} sản phẩm ${labelVi}phù hợp trong shop. Hiện mình đang hiển thị ${visibleCount} lựa chọn nổi bật, gợi ý nổi bật là ${productName}. ${missingFlavorNote} ${clarifyNote} ${askFilter}`.trim();
 };
 
 const buildServiceReply = ({ items = [], language = "vi", intent }) => {

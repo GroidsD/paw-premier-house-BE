@@ -254,12 +254,7 @@ const hasCatSemanticSignal = (haystack = "") =>
     haystack.includes("do choi cho meo") ||
     haystack.includes("meo ken an");
 
-const GENERIC_FORMS = new Set([
-    "shampoo",
-    "wipes",
-    "brush",
-    "litter",
-]);
+const GENERIC_FORMS = new Set(["shampoo", "wipes", "brush", "litter"]);
 
 const belongsToPetType = (product = {}, petType = null) => {
     if (!petType) return true;
@@ -498,7 +493,7 @@ const calculateConfidence = (items = [], analysis = {}) => {
 
     if (analysis?.productForm) confidence += 0.06;
     if (analysis?.petType) confidence += 0.05;
-    if (analysis?.discountMode) confidence += 0.04;
+    if (analysis?.discountMode) confidence += 0.08;
 
     if (
         analysis?.petType &&

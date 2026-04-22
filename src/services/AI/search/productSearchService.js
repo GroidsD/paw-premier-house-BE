@@ -108,6 +108,14 @@ const findRelevantProducts = async ({ message, analysis }) => {
         finalItems = basePool.slice(0, 4);
     }
 
+    // NEW: tổng số item match thật trước khi slice card
+    const totalMatched =
+        ranked.length > 0
+            ? ranked.length
+            : !analysis?.productForm
+              ? basePool.length
+              : 0;
+
     const baseConfidence = hardFormConstraintFailed
         ? 0
         : ranker.calculateConfidence(finalItems, analysis);
@@ -118,9 +126,16 @@ const findRelevantProducts = async ({ message, analysis }) => {
         Boolean(analysis?.petType) &&
         finalItems.length > 0;
 
+    const isDiscountBrowseQuery =
+        !analysis?.productForm &&
+        analysis?.discountMode === "discounted" &&
+        finalItems.length > 0;  
+
     const adjustedConfidence = isBroadBrowsePetQuery
         ? Math.max(baseConfidence, finalItems.length >= 3 ? 0.68 : 0.58)
-        : baseConfidence;
+        : isDiscountBrowseQuery
+          ? Math.max(baseConfidence, finalItems.length >= 3 ? 0.66 : 0.56)
+          : baseConfidence;
 
     console.log("product search timing:", {
         total: Date.now() - startedAt,
@@ -131,6 +146,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
         productsFetched: products.length,
         mappedCount: mapped.length,
         finalCount: finalItems.length,
+        totalMatched,
         categoryIdsCount: categoryIds.length,
         hardFormConstraintFailed,
     });
@@ -138,6 +154,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
     return {
         type: "products",
         items: finalItems,
+        total_matched: totalMatched, // NEW
         user_question: message,
         analysis,
         matched_categories: matchedCategories.map((category) => category.type),
@@ -159,10 +176,13 @@ const findRelevantProducts = async ({ message, analysis }) => {
             "variant_level_matching",
             "post_ranked_search",
             analysis?.petType ? `pet_type:${analysis.petType}` : null,
-            analysis?.petSize ? `pet_size:${analysis.petSize}` : null,
-            isBroadBrowsePetQuery ? "broad_pet_browse" : null,
         ].filter(Boolean),
         confidence: adjustedConfidence,
+        failure_reason: hardFormConstraintFailed
+            ? "product_form_no_match"
+            : null,
+        answer_mode: "db_strict",
+        answer_mode_reason: "structured commerce intent",
     };
 };
 

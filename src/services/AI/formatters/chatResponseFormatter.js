@@ -18,6 +18,7 @@ const {
     buildOrderReply,
 } = require("./replyBuilders");
 const { getSuggestionsByContext } = require("./suggestionBuilder");
+
 const buildExternalFallbackReply = ({
     externalSources = [],
     language = "vi",
@@ -35,6 +36,7 @@ const buildExternalFallbackReply = ({
         ? "I found outside references for this question, but I could not generate a grounded summary right now."
         : "Mình đã tìm thấy nguồn tham khảo ngoài cho câu hỏi này, nhưng hiện chưa tạo được phần tóm tắt grounded.";
 };
+
 const normalizeLooseText = (value = "") =>
     String(value || "")
         .toLowerCase()
@@ -98,6 +100,7 @@ const buildGeneralFallbackReplyByMessage = ({
 
     return "Mình có thể hỗ trợ tìm sản phẩm, dịch vụ, booking hoặc đơn hàng. Bạn đang cần gì nhé?";
 };
+
 const limitReplySentences = (text = "", maxSentences = 3) => {
     const value = String(text || "").trim();
     if (!value) return "";
@@ -113,6 +116,7 @@ const limitReplySentences = (text = "", maxSentences = 3) => {
 
     return parts.slice(0, maxSentences).join(" ").trim();
 };
+
 const buildProductCard = (item, index, language) => {
     const matchedVariant = item.matched_variant || null;
     const displayPrice = Number(item.price || 0);
@@ -183,6 +187,7 @@ const buildProductCard = (item, index, language) => {
         action_label: getActionLabel(language, "product"),
     };
 };
+
 const isGenericLlmFailure = (text = "") => {
     const value = String(text || "")
         .trim()
@@ -207,6 +212,7 @@ const isGenericLlmFailure = (text = "") => {
 
     return genericFailures.includes(value);
 };
+
 const pickBestKnowledgeItem = ({ knowledgeItems = [], userQuestion = "" }) => {
     const question = String(userQuestion || "").toLowerCase();
 
@@ -275,6 +281,7 @@ const pickBestKnowledgeItem = ({ knowledgeItems = [], userQuestion = "" }) => {
     );
     return sorted[0] || null;
 };
+
 const buildKnowledgeFallbackReply = ({
     item,
     knowledgeItems = [],
@@ -318,60 +325,9 @@ const buildKnowledgeFallbackReply = ({
     const shortContent =
         content.length > 220 ? `${content.slice(0, 220).trim()}...` : content;
 
-    return language === "en"
-        ? `${productName}: ${shortContent}`
-        : `${productName}: ${shortContent}`;
+    return `${productName}: ${shortContent}`;
 };
-// const buildKnowledgeFallbackReply = ({
-//     item,
-//     knowledgeItems = [],
-//     userQuestion = "",
-//     language = "vi",
-// }) => {
-//     const bestKnowledge = pickBestKnowledgeItem({
-//         knowledgeItems,
-//         userQuestion,
-//     });
 
-//     const productName =
-//         item?.name || (language === "en" ? "this product" : "sản phẩm này");
-//     const pickKnowledgeByType = ({
-//         knowledgeItems = [],
-//         requestedType = null,
-//     }) => {
-//         if (!requestedType) return null;
-//         return (
-//             knowledgeItems.find(
-//                 (k) =>
-//                     normalizeLooseText(k.knowledge_type) ===
-//                     normalizeLooseText(requestedType),
-//             ) || null
-//         );
-//     };
-//     const exactKnowledge =
-//         pickKnowledgeByType({
-//             knowledgeItems,
-//             requestedType: context?.requested_knowledge_type,
-//         }) || pickBestKnowledgeItem({ knowledgeItems, userQuestion });
-
-//     const content = String(exactKnowledge?.content || "").trim();
-//     // const content = String(
-//     //     bestKnowledge?.content || bestKnowledge?.text || "",
-//     // ).trim();
-
-//     if (!content) {
-//         return language === "en"
-//             ? `I found the related product ${productName}, but I still do not have enough internal knowledge content to answer accurately.`
-//             : `Mình đã xác định được sản phẩm liên quan là ${productName}, nhưng hiện chưa đủ nội dung kiến thức nội bộ để trả lời chính xác.`;
-//     }
-
-//     const shortContent =
-//         content.length > 220 ? `${content.slice(0, 220).trim()}...` : content;
-
-//     return language === "en"
-//         ? `${productName}: ${shortContent}`
-//         : `${productName}: ${shortContent}`;
-// };
 const buildServiceCard = (item, index, language, intent) => ({
     type: "service",
     id: item.service_id,
@@ -438,6 +394,35 @@ const buildKnowledgeCards = ({
             : getActionLabel(language, "service"),
         knowledge_count: knowledgeItems.length || 0,
     }));
+};
+
+const isBroadBrowseProductQuestion = (context = {}) => {
+    const normalizedQuestion = normalizeLooseText(context?.user_question || "");
+    const totalMatched = Number(
+        context?.total_matched || (context?.items || []).length || 0,
+    );
+    const analysis = context?.analysis || {};
+
+    if (analysis?.productForm || analysis?.discountMode) return false;
+    if (totalMatched <= 0) return false;
+
+    const broadSignals = [
+        "shop co",
+        "co ban",
+        "san pham nao",
+        "san pham gi",
+        "san pham cho",
+        "co gi cho",
+        "dog products",
+        "cat products",
+        "products for dog",
+        "products for cat",
+        "pet products",
+        "pet accessories",
+        "phu kien cho thu cung",
+    ];
+
+    return broadSignals.some((signal) => normalizedQuestion.includes(signal));
 };
 
 const formatResponse = ({
@@ -510,11 +495,7 @@ const formatResponse = ({
             };
         }
 
-        const isBroadBrowseQuestion =
-            !context?.analysis?.productForm &&
-            !context?.analysis?.discountMode &&
-            Boolean(context?.analysis?.petType) &&
-            (context?.items || []).length > 0;
+        const isBroadBrowseQuestion = isBroadBrowseProductQuestion(context);
 
         if ((context?.confidence ?? 0) < 0.5 && !isBroadBrowseQuestion) {
             return {
@@ -691,10 +672,6 @@ const formatResponse = ({
             (isGenericLlmFailure(safeRawReply) || !safeRawReply)
         ) {
             reply = buildKnowledgeFallbackReply({
-                // item: firstItem,
-                // knowledgeItems,
-                // userQuestion: context?.user_question || "",
-                // language,
                 item: firstItem,
                 knowledgeItems,
                 userQuestion: context?.user_question || "",
