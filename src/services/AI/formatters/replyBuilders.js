@@ -16,8 +16,17 @@ const FLAVOR_TERMS = [
 const extractFlavorTerm = (message = "") => {
     const text = normalizeText(message);
     if (!text) return null;
+
+    const tokens = text.split(/\s+/);
+
     return (
-        FLAVOR_TERMS.find((term) => text.includes(normalizeText(term))) || null
+        FLAVOR_TERMS.find((term) => {
+            const normalizedTerm = normalizeText(term);
+            if (normalizedTerm.includes(" ")) {
+                return text.includes(normalizedTerm);
+            }
+            return tokens.includes(normalizedTerm);
+        }) || null
     );
 };
 
@@ -51,7 +60,7 @@ const asksForPrice = (message = "") => {
     return (
         text.includes("gia bao nhieu") ||
         text.includes("bao nhieu tien") ||
-        text.includes("gia") ||
+        /\bgia\b/.test(text) ||
         text.includes("price") ||
         text.includes("how much")
     );

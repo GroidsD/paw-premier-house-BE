@@ -330,6 +330,43 @@ const matchesProductForm = (product = {}, productForm = null) => {
     return matched;
 };
 
+const getComparablePrice = (product = {}) => {
+    const prices = [
+        Number(product.price || 0),
+        Number(product.price_min || 0),
+        Number(product.price_max || 0),
+    ].filter((x) => x > 0);
+
+    if (!prices.length) return 0;
+
+    return Number(product.price || prices[0]);
+};
+
+const getPriceDistance = (product = {}, priceFilter = null) => {
+    if (!priceFilter?.targetPrice) return 0;
+
+    const price = getComparablePrice(product);
+    if (!price) return Number.MAX_SAFE_INTEGER;
+
+    return Math.abs(price - Number(priceFilter.targetPrice));
+};
+
+const matchesPriceFilter = (product = {}, priceFilter = null) => {
+    if (!priceFilter) return true;
+
+    const price = getComparablePrice(product);
+    if (!price) return false;
+
+    if (priceFilter.priceMin && price < Number(priceFilter.priceMin)) {
+        return false;
+    }
+
+    if (priceFilter.priceMax && price > Number(priceFilter.priceMax)) {
+        return false;
+    }
+
+    return true;
+};
 const scoreProduct = (product = {}, analysis = {}, matchedCategories = []) => {
     let score = 0;
     const matchedReasons = [];
@@ -524,4 +561,7 @@ module.exports = {
     scoreProduct,
     calculateConfidence,
     shouldSkipPetTypeFilter,
+    getComparablePrice,
+    getPriceDistance,
+    matchesPriceFilter,
 };

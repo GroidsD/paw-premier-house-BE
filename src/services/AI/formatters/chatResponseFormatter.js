@@ -119,7 +119,32 @@ const limitReplySentences = (text = "", maxSentences = 3) => {
 
 const buildDisambiguationCards = ({ groupedMatches = {}, language = "vi" }) => {
     const cards = [];
+    const buildGroupCard = ({
+        key,
+        items,
+        title,
+        description,
+        shortDescription,
+        badge,
+        query,
+    }) => {
+        if (!Array.isArray(items) || items.length === 0) return;
 
+        cards.push({
+            type: "disambiguation_group",
+            id: `group_${key}`,
+            title,
+            description,
+            short_description: shortDescription,
+            badge,
+            action_label:
+                language === "en" ? "View this group" : "Xem nhóm này",
+            action_value: key,
+            query,
+            items,
+            item_count: items.length,
+        });
+    };
     const milkItems = Array.isArray(groupedMatches.milk_food)
         ? groupedMatches.milk_food
         : [];
@@ -131,6 +156,70 @@ const buildDisambiguationCards = ({ groupedMatches = {}, language = "vi" }) => {
     const relatedFoodItems = Array.isArray(groupedMatches.related_food)
         ? groupedMatches.related_food
         : [];
+    const dogFoodItems = Array.isArray(groupedMatches.dog_food)
+        ? groupedMatches.dog_food
+        : [];
+
+    const catFoodItems = Array.isArray(groupedMatches.cat_food)
+        ? groupedMatches.cat_food
+        : [];
+    const accessoryItems = Array.isArray(groupedMatches.pet_accessories)
+        ? groupedMatches.pet_accessories
+        : [];
+
+    const toyItems = Array.isArray(groupedMatches.pet_toys)
+        ? groupedMatches.pet_toys
+        : [];
+
+    buildGroupCard({
+        key: "dog_food",
+        items: dogFoodItems,
+        title: "Thức ăn cho chó",
+        description: `Có ${dogFoodItems.length} sản phẩm thức ăn cho chó đang giảm giá.`,
+        shortDescription: "Nhóm thức ăn cho chó",
+        badge: "Dog Food",
+        query: "thức ăn cho chó đang giảm giá",
+    });
+
+    buildGroupCard({
+        key: "cat_food",
+        items: catFoodItems,
+        title: "Thức ăn cho mèo",
+        description: `Có ${catFoodItems.length} sản phẩm thức ăn cho mèo đang giảm giá.`,
+        shortDescription: "Nhóm thức ăn cho mèo",
+        badge: "Cat Food",
+        query: "thức ăn cho mèo đang giảm giá",
+    });
+
+    // buildGroupCard({
+    //     key: "hygiene_care",
+    //     items: hygieneItems,
+    //     title: "Vệ sinh & chăm sóc",
+    //     description: `Có ${hygieneItems.length} sản phẩm vệ sinh & chăm sóc đang giảm giá.`,
+    //     shortDescription: "Nhóm vệ sinh & chăm sóc",
+    //     badge: "Care",
+    //     query: "sản phẩm vệ sinh chăm sóc đang giảm giá",
+    // });
+
+    buildGroupCard({
+        key: "pet_accessories",
+        items: accessoryItems,
+        title: "Phụ kiện thú cưng",
+        description: `Có ${accessoryItems.length} sản phẩm phụ kiện đang giảm giá.`,
+        shortDescription: "Nhóm phụ kiện thú cưng",
+        badge: "Accessories",
+        query: "phụ kiện thú cưng đang giảm giá",
+    });
+
+    buildGroupCard({
+        key: "pet_toys",
+        items: toyItems,
+        title: "Đồ chơi thú cưng",
+        description: `Có ${toyItems.length} sản phẩm đồ chơi đang giảm giá.`,
+        shortDescription: "Nhóm đồ chơi thú cưng",
+        badge: "Toys",
+        query: "đồ chơi thú cưng đang giảm giá",
+    });
 
     if (milkItems.length > 0) {
         cards.push({

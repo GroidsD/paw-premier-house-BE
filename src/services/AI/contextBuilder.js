@@ -380,30 +380,88 @@ const filterKnowledgeItemsByRequestedType = ({
 
     return matched.length > 0 ? matched : knowledgeItems;
 };
+// const buildDisambiguationContext = ({ message, analysis }) => {
+//     const grouped = analysis?.semanticGroupedMatches || {};
+//     const hasMilkFood =
+//         Array.isArray(grouped.milk_food) && grouped.milk_food.length > 0;
+//     const hasHygiene =
+//         Array.isArray(grouped.hygiene_care) && grouped.hygiene_care.length > 0;
+//     const hasRelatedFood =
+//         Array.isArray(grouped.related_food) && grouped.related_food.length > 0;
+//     const hasDogFood =
+//         grouped.dog_food || analysis?.categoryHints?.includes("dog food");
+//     const hasCatFood =
+//         grouped.cat_food || analysis?.categoryHints?.includes("cat food");
+
+//     let reply =
+//         "Mình thấy có vài nhóm sản phẩm liên quan. Bạn muốn xem nhóm nào trước?";
+//     if (hasDogFood && hasCatFood) {
+//         reply =
+//             "Mình thấy có thức ăn cho chó và thức ăn cho mèo đang giảm giá. Bạn muốn xem nhóm nào trước?";
+//     }
+//     if (hasMilkFood && hasHygiene) {
+//         reply =
+//             "Mình thấy có 2 nhóm liên quan: sữa dinh dưỡng và sữa tắm. Bạn muốn xem nhóm nào trước?";
+//     } else if (hasMilkFood) {
+//         reply =
+//             "Mình thấy nhóm sữa dinh dưỡng phù hợp. Bạn muốn xem thử không?";
+//     } else if (hasHygiene) {
+//         reply =
+//             "Mình thấy nhóm sữa tắm và vệ sinh phù hợp. Bạn muốn xem thử không?";
+//     } else if (hasRelatedFood) {
+//         reply =
+//             "Mình thấy một vài nhóm thức ăn liên quan. Bạn muốn xem nhóm nào trước?";
+//     }
+
+//     return {
+//         type: "disambiguation",
+//         items: [],
+//         grouped_matches: grouped,
+//         reply,
+//         confidence: analysis?.semanticConfidence || 0.6,
+//         failure_reason: "needs_disambiguation",
+//         answer_source: "semantic_grouped",
+//         user_question: message,
+//     };
+// };
+
 const buildDisambiguationContext = ({ message, analysis }) => {
     const grouped = analysis?.semanticGroupedMatches || {};
-    const hasMilkFood =
-        Array.isArray(grouped.milk_food) && grouped.milk_food.length > 0;
-    const hasHygiene =
-        Array.isArray(grouped.hygiene_care) && grouped.hygiene_care.length > 0;
-    const hasRelatedFood =
-        Array.isArray(grouped.related_food) && grouped.related_food.length > 0;
+
+    const hasGroup = (key) =>
+        Array.isArray(grouped[key]) && grouped[key].length > 0;
+
+    const activeGroups = [
+        hasGroup("dog_food") ? "dog_food" : null,
+        hasGroup("cat_food") ? "cat_food" : null,
+        hasGroup("hygiene_care") ? "hygiene_care" : null,
+        hasGroup("pet_accessories") ? "pet_accessories" : null,
+        hasGroup("pet_toys") ? "pet_toys" : null,
+        hasGroup("milk_food") ? "milk_food" : null,
+        hasGroup("related_food") ? "related_food" : null,
+    ].filter(Boolean);
 
     let reply =
         "Mình thấy có vài nhóm sản phẩm liên quan. Bạn muốn xem nhóm nào trước?";
 
-    if (hasMilkFood && hasHygiene) {
+    if (activeGroups.length >= 2 && analysis?.discountMode === "discounted") {
+        reply =
+            "Mình thấy có vài nhóm sản phẩm đang giảm giá. Bạn muốn xem nhóm nào trước?";
+    } else if (hasGroup("dog_food") && hasGroup("cat_food")) {
+        reply =
+            "Mình thấy có thức ăn cho chó và thức ăn cho mèo đang giảm giá. Bạn muốn xem nhóm nào trước?";
+    } else if (hasGroup("milk_food") && hasGroup("hygiene_care")) {
         reply =
             "Mình thấy có 2 nhóm liên quan: sữa dinh dưỡng và sữa tắm. Bạn muốn xem nhóm nào trước?";
-    } else if (hasMilkFood) {
+    } else if (hasGroup("hygiene_care")) {
         reply =
-            "Mình thấy nhóm sữa dinh dưỡng phù hợp. Bạn muốn xem thử không?";
-    } else if (hasHygiene) {
+            "Mình thấy nhóm vệ sinh & chăm sóc phù hợp. Bạn muốn xem thử không?";
+    } else if (hasGroup("pet_accessories")) {
         reply =
-            "Mình thấy nhóm sữa tắm và vệ sinh phù hợp. Bạn muốn xem thử không?";
-    } else if (hasRelatedFood) {
+            "Mình thấy nhóm phụ kiện thú cưng phù hợp. Bạn muốn xem thử không?";
+    } else if (hasGroup("pet_toys")) {
         reply =
-            "Mình thấy một vài nhóm thức ăn liên quan. Bạn muốn xem nhóm nào trước?";
+            "Mình thấy nhóm đồ chơi thú cưng phù hợp. Bạn muốn xem thử không?";
     }
 
     return {

@@ -126,20 +126,55 @@ const findRelevantProducts = async ({ message, analysis }) => {
                     : mapped;
     }
 
-    const ranked = basePool
+    const priceFilter = analysis?.priceFilter || null;
+
+    const priceFiltered = priceFilter
+        ? basePool.filter((item) =>
+              ranker.matchesPriceFilter(item, priceFilter),
+          )
+        : basePool;
+
+    const rankingPool =
+        priceFilter && priceFiltered.length > 0 ? priceFiltered : basePool;
+
+    const priceFilterFallbackUsed =
+        Boolean(priceFilter) &&
+        priceFiltered.length === 0 &&
+        basePool.length > 0;
+
+    const ranked = rankingPool
         .map((item) => {
             const result = ranker.scoreProduct(
                 item,
                 analysis,
                 matchedCategories,
             );
+
+            const priceDistance = ranker.getPriceDistance(
+                item,
+                analysis?.priceFilter || null,
+            );
+
             return {
                 ...item,
                 _score: result.score,
-                _matched_reasons: result.matchedReasons,
+                _price_distance: priceDistance,
+                _matched_reasons: [
+                    ...result.matchedReasons,
+                    analysis?.priceFilter
+                        ? priceFilterFallbackUsed
+                            ? "price_nearest_fallback"
+                            : "price_filter"
+                        : null,
+                ].filter(Boolean),
             };
         })
-        .sort((a, b) => b._score - a._score || b.quantity - a.quantity)
+        .sort(
+            (a, b) =>
+                b._score - a._score ||
+                a._price_distance - b._price_distance ||
+                b.quantity - a.quantity,
+        )
         .filter((item) => item._score > 0);
 
     const rankingTime = Date.now() - t4;
