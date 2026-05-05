@@ -219,6 +219,17 @@ const buildDbStrictContext = async ({
 }) => {
     switch (intent) {
         case "product_search":
+            if (
+                analysis?.needsDisambiguation &&
+                analysis?.semanticIsAmbiguous &&
+                analysis?.semanticGroupedMatches
+            ) {
+                return buildDisambiguationContext({
+                    message,
+                    analysis,
+                });
+            }
+
             return productSearchService.findRelevantProducts({
                 message,
                 currentUser,
@@ -368,6 +379,43 @@ const filterKnowledgeItemsByRequestedType = ({
     );
 
     return matched.length > 0 ? matched : knowledgeItems;
+};
+const buildDisambiguationContext = ({ message, analysis }) => {
+    const grouped = analysis?.semanticGroupedMatches || {};
+    const hasMilkFood =
+        Array.isArray(grouped.milk_food) && grouped.milk_food.length > 0;
+    const hasHygiene =
+        Array.isArray(grouped.hygiene_care) && grouped.hygiene_care.length > 0;
+    const hasRelatedFood =
+        Array.isArray(grouped.related_food) && grouped.related_food.length > 0;
+
+    let reply =
+        "Mình thấy có vài nhóm sản phẩm liên quan. Bạn muốn xem nhóm nào trước?";
+
+    if (hasMilkFood && hasHygiene) {
+        reply =
+            "Mình thấy có 2 nhóm liên quan: sữa dinh dưỡng và sữa tắm. Bạn muốn xem nhóm nào trước?";
+    } else if (hasMilkFood) {
+        reply =
+            "Mình thấy nhóm sữa dinh dưỡng phù hợp. Bạn muốn xem thử không?";
+    } else if (hasHygiene) {
+        reply =
+            "Mình thấy nhóm sữa tắm và vệ sinh phù hợp. Bạn muốn xem thử không?";
+    } else if (hasRelatedFood) {
+        reply =
+            "Mình thấy một vài nhóm thức ăn liên quan. Bạn muốn xem nhóm nào trước?";
+    }
+
+    return {
+        type: "disambiguation",
+        items: [],
+        grouped_matches: grouped,
+        reply,
+        confidence: analysis?.semanticConfidence || 0.6,
+        failure_reason: "needs_disambiguation",
+        answer_source: "semantic_grouped",
+        user_question: message,
+    };
 };
 const buildInternalKnowledgeContext = async ({
     intent,

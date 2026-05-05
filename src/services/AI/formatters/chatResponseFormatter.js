@@ -117,6 +117,90 @@ const limitReplySentences = (text = "", maxSentences = 3) => {
     return parts.slice(0, maxSentences).join(" ").trim();
 };
 
+const buildDisambiguationCards = ({ groupedMatches = {}, language = "vi" }) => {
+    const cards = [];
+
+    const milkItems = Array.isArray(groupedMatches.milk_food)
+        ? groupedMatches.milk_food
+        : [];
+
+    const hygieneItems = Array.isArray(groupedMatches.hygiene_care)
+        ? groupedMatches.hygiene_care
+        : [];
+
+    const relatedFoodItems = Array.isArray(groupedMatches.related_food)
+        ? groupedMatches.related_food
+        : [];
+
+    if (milkItems.length > 0) {
+        cards.push({
+            type: "disambiguation_group",
+            id: "group_milk_food",
+            title: language === "en" ? "Nutritional milk" : "Sữa dinh dưỡng",
+            description:
+                language === "en"
+                    ? `I found ${milkItems.length} milk-related item(s).`
+                    : `Mình thấy ${milkItems.length} sản phẩm thuộc nhóm sữa dinh dưỡng.`,
+            short_description:
+                language === "en"
+                    ? "Milk-related nutrition products"
+                    : "Nhóm sản phẩm sữa dinh dưỡng",
+            badge: language === "en" ? "Milk" : "Dinh dưỡng",
+            action_label:
+                language === "en" ? "View this group" : "Xem nhóm này",
+            action_value: "milk_food",
+            items: milkItems.slice(0, 3),
+        });
+    }
+
+    if (hygieneItems.length > 0) {
+        cards.push({
+            type: "disambiguation_group",
+            id: "group_hygiene_care",
+            title:
+                language === "en"
+                    ? "Shampoo / Hygiene & Care"
+                    : "Sữa tắm / Vệ sinh",
+            description:
+                language === "en"
+                    ? `I found ${hygieneItems.length} related hygiene item(s).`
+                    : `Mình thấy ${hygieneItems.length} sản phẩm thuộc nhóm vệ sinh.`,
+            short_description:
+                language === "en"
+                    ? "Hygiene & care products"
+                    : "Nhóm sản phẩm vệ sinh & chăm sóc",
+            badge: language === "en" ? "Care" : "Vệ sinh",
+            action_label:
+                language === "en" ? "View this group" : "Xem nhóm này",
+            action_value: "hygiene_care",
+            items: hygieneItems.slice(0, 3),
+        });
+    }
+
+    if (relatedFoodItems.length > 0) {
+        cards.push({
+            type: "disambiguation_group",
+            id: "group_related_food",
+            title: language === "en" ? "Related food" : "Thức ăn liên quan",
+            description:
+                language === "en"
+                    ? `I also found ${relatedFoodItems.length} related food item(s).`
+                    : `Mình cũng thấy ${relatedFoodItems.length} sản phẩm thức ăn liên quan.`,
+            short_description:
+                language === "en"
+                    ? "Related food products"
+                    : "Nhóm sản phẩm thức ăn liên quan",
+            badge: language === "en" ? "Related" : "Liên quan",
+            action_label:
+                language === "en" ? "View this group" : "Xem nhóm này",
+            action_value: "related_food",
+            items: relatedFoodItems.slice(0, 2),
+        });
+    }
+
+    return cards;
+};
+
 const buildProductCard = (item, index, language) => {
     const matchedVariant = item.matched_variant || null;
     const displayPrice = Number(item.price || 0);
@@ -451,6 +535,42 @@ const formatResponse = ({
         intent,
         context,
     });
+    if (context?.type === "disambiguation") {
+        cards = buildDisambiguationCards({
+            groupedMatches: context?.grouped_matches || {},
+            language,
+        });
+
+        reply =
+            context?.reply ||
+            (language === "en"
+                ? "I found a few related groups. Which one do you want to see first?"
+                : "Mình thấy có vài nhóm liên quan. Bạn muốn xem nhóm nào trước?");
+
+        return {
+            intent,
+            reply,
+            cards,
+            suggestions,
+            meta: {
+                language,
+                isLoggedIn,
+                confidence: context?.confidence ?? 0,
+                matched_categories: context?.matched_categories || [],
+                applied_filters: context?.applied_filters || [],
+                context_type: context?.type || "general",
+                product_form: context?.analysis?.productForm || null,
+                discount_mode: context?.analysis?.discountMode || null,
+                answer_mode: answerMode,
+                answer_mode_reason: context?.answer_mode_reason || null,
+                answer_source: context?.answer_source || "semantic_grouped",
+                failure_reason: context?.failure_reason || null,
+                knowledge_count: (context?.knowledge_items || []).length || 0,
+                external_source_count:
+                    (context?.external_sources || []).length || 0,
+            },
+        };
+    }
 
     if (context?.type === "products") {
         const appliedFilters = context?.applied_filters || [];

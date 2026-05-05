@@ -213,9 +213,6 @@ const getDictionary = (language = "vi") => {
             benefits: q("Benefits"),
             warnings: q("Warnings"),
             suitableFor: q("Suitable for"),
-            clarifyProduct: q("Specific product name"),
-            clarifyPetType: q("For dog or cat?"),
-            clarifyBudget: q("What budget range?"),
         };
     }
 
@@ -265,9 +262,7 @@ const getDictionary = (language = "vi") => {
         recentOrders: q("Đơn hàng gần nhất"),
         buyAgain: q("Mua lại"),
         rebook: q("Đặt lại"),
-        clarifyProduct: q("Tên sản phẩm cụ thể"),
-        clarifyPetType: q("Cho chó hay mèo?"),
-        clarifyBudget: q("Ngân sách khoảng bao nhiêu?"),
+
         benefits: q("Công dụng"),
         warnings: q("Lưu ý"),
         suitableFor: q("Phù hợp cho ai"),
@@ -463,12 +458,32 @@ const getSuggestionsByContext = ({
     const discountMode = analysis.discountMode || null;
     const productForm = analysis.productForm || null;
     const answerMode = context?.answer_mode || null;
-    const requestedKnowledgeType = context?.requested_knowledge_type || null;
     const S = getDictionary(language === "en" ? "en" : "vi");
 
     let suggestions = [];
 
-    if (contextType === "auth_required") {
+    if (contextType === "disambiguation") {
+        const grouped = context?.grouped_matches || {};
+
+        const hasMilkFood =
+            Array.isArray(grouped.milk_food) && grouped.milk_food.length > 0;
+        const hasHygiene =
+            Array.isArray(grouped.hygiene_care) &&
+            grouped.hygiene_care.length > 0;
+
+        suggestions =
+            language === "en"
+                ? [
+                      hasMilkFood ? q("Kitten milk") : null,
+                      hasHygiene ? q("Pet shampoo") : null,
+                      q("Cat food"),
+                  ].filter(Boolean)
+                : [
+                      hasMilkFood ? q("Sữa cho mèo con") : null,
+                      hasHygiene ? q("Sữa tắm thú cưng") : null,
+                      q("Thức ăn cho mèo"),
+                  ].filter(Boolean);
+    } else if (contextType === "auth_required") {
         suggestions = [
             S.login,
             petType === "cat" ? S.catProducts : S.dogProducts,
@@ -485,7 +500,9 @@ const getSuggestionsByContext = ({
         suggestions = getExternalSuggestions({ S, petType, context });
     } else if (contextType === "products") {
         if ((context?.confidence ?? 0) < 0.5) {
-            suggestions = [S.clarifyPetType, S.clarifyBudget, S.clarifyProduct];
+            suggestions = isLoggedIn
+                ? [S.products, S.services, S.myOrders]
+                : [S.dogProducts, S.catProducts, S.login];
         } else {
             suggestions = getProductSuggestions({
                 S,
@@ -524,12 +541,9 @@ const getSuggestionsByContext = ({
             : [S.dogProducts, S.services, S.login];
     }
 
-    const fallback =
-        (context?.confidence ?? 1) < 0.5
-            ? [S.clarifyPetType, S.clarifyBudget, S.clarifyProduct]
-            : isLoggedIn
-              ? [S.products, S.services, S.myOrders]
-              : [S.dogProducts, S.catProducts, S.login];
+    const fallback = isLoggedIn
+        ? [S.products, S.services, S.myOrders]
+        : [S.dogProducts, S.catProducts, S.login];
 
     return fillSuggestions(
         removeRedundantSuggestions({

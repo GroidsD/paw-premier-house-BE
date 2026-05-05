@@ -5,6 +5,49 @@ const ranker = require("./productRanker");
 const findRelevantProducts = async ({ message, analysis }) => {
     const startedAt = Date.now();
 
+    if (
+        analysis?.needsDisambiguation &&
+        analysis?.semanticIsAmbiguous &&
+        analysis?.semanticGroupedMatches
+    ) {
+        const foodIds = (analysis.semanticGroupedMatches.food || [])
+            .map((x) => x.product_id)
+            .filter(Boolean);
+
+        const hygieneIds = (analysis.semanticGroupedMatches.hygiene_care || [])
+            .map((x) => x.product_id)
+            .filter(Boolean);
+
+        const groupedIds = [...new Set([...foodIds, ...hygieneIds])];
+
+        const categories = await productRepo.findActiveCategories();
+        const products = await productRepo.findProductCandidates({
+            categoryIds: [],
+            limit: 24,
+        });
+
+        const mapped = products
+            .map((product) => mapProductRecord(product, analysis, ranker))
+            .filter(Boolean);
+
+        const groupedItems = mapped.filter((item) =>
+            groupedIds.includes(item.product_id),
+        );
+
+        return {
+            type: "products",
+            items: groupedItems.slice(0, 6),
+            total_matched: groupedItems.length,
+            user_question: message,
+            analysis,
+            matched_categories: [],
+            applied_filters: ["semantic_ambiguous_grouped"],
+            confidence: analysis?.semanticConfidence || 0.6,
+            failure_reason: "needs_disambiguation",
+            answer_mode: "db_strict",
+            answer_mode_reason: "semantic ambiguous grouped intent",
+        };
+    }
     const t1 = Date.now();
     const categories = await productRepo.findActiveCategories();
     const matchedCategories = ranker.getMatchedCategories(analysis, categories);
@@ -129,7 +172,7 @@ const findRelevantProducts = async ({ message, analysis }) => {
     const isDiscountBrowseQuery =
         !analysis?.productForm &&
         analysis?.discountMode === "discounted" &&
-        finalItems.length > 0;  
+        finalItems.length > 0;
 
     const adjustedConfidence = isBroadBrowsePetQuery
         ? Math.max(baseConfidence, finalItems.length >= 3 ? 0.68 : 0.58)

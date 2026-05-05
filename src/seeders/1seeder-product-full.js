@@ -1224,7 +1224,7 @@ module.exports = {
             {
                 entity_type: "product",
                 entity_id: "20",
-                url: "https://images.unsplash.com/photo-1525253086316-d0c936c814f8?auto=format&fit=crop&w=800&q=80",
+                url: "https://s.alicdn.com/@sc04/kf/Hc645c1f37a254248a67db78bbffdee40N.png_960x960q80.jpg",
                 is_main: true,
                 alt_text: "Double-Sided Grooming Brush",
                 created_at: now,
