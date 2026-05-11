@@ -1,0 +1,118 @@
+[
+  {
+    "name": "product commerce search",
+    "message": "shop có sữa tắm nào không",
+    "intent": "product_search",
+    "analysis": {
+      "productForm": "shampoo",
+      "contextualReference": false,
+      "explicitProductName": false,
+      "searchTerms": ["sua tam", "shampoo"],
+      "categoryHints": ["shampoo"],
+      "rawKeywords": ["sua tam"]
+    },
+    "currentUser": {},
+    "expectedMode": "db_strict"
+  },
+  {
+    "name": "contextual price question",
+    "message": "loại này giá bao nhiêu",
+    "intent": "general_support",
+    "analysis": {
+      "contextualReference": true,
+      "searchTerms": [],
+      "categoryHints": [],
+      "rawKeywords": []
+    },
+    "currentUser": {
+      "lastProductId": 101,
+      "lastProductName": "Deodorizing Pet Shampoo"
+    },
+    "expectedMode": "db_strict"
+  },
+  {
+    "name": "contextual ingredient question",
+    "message": "loại này có thành phần gì",
+    "intent": "general_support",
+    "analysis": {
+      "contextualReference": true,
+      "searchTerms": [],
+      "categoryHints": [],
+      "rawKeywords": []
+    },
+    "currentUser": {
+      "lastProductId": 101,
+      "lastProductName": "Deodorizing Pet Shampoo"
+    },
+    "expectedMode": "internal_knowledge"
+  },
+  {
+    "name": "contextual good or not with no context",
+    "message": "cái này có tốt không",
+    "intent": "general_support",
+    "analysis": {
+      "contextualReference": true,
+      "searchTerms": [],
+      "categoryHints": [],
+      "rawKeywords": []
+    },
+    "currentUser": {},
+    "expectedMode": "general_fallback"
+  },
+  {
+    "name": "general external nutrition question",
+    "message": "omega 3 có tốt cho mèo không",
+    "intent": "general_support",
+    "analysis": {
+      "petType": "cat",
+      "contextualReference": false,
+      "searchTerms": ["omega 3"],
+      "categoryHints": ["nutrition"],
+      "rawKeywords": ["omega"]
+    },
+    "currentUser": {},
+    "expectedMode": "external_reference"
+  },
+  {
+    "name": "feeding guide question",
+    "message": "mèo con nên ăn gì",
+    "intent": "general_support",
+    "analysis": {
+      "petType": "cat",
+      "contextualReference": false,
+      "searchTerms": ["meo con", "nen an gi"],
+      "categoryHints": ["feeding guide"],
+      "rawKeywords": ["meo con"]
+    },
+    "currentUser": {},
+    "expectedMode": "external_reference"
+  },
+  {
+    "name": "explicit product knowledge question",
+    "message": "deodorizing pet shampoo có thành phần gì",
+    "intent": "product_search",
+    "analysis": {
+      "productForm": "shampoo",
+      "explicitProductName": true,
+      "contextualReference": false,
+      "searchTerms": ["deodorizing pet shampoo", "ingredients"],
+      "categoryHints": ["shampoo"],
+      "rawKeywords": ["deodorizing", "shampoo"]
+    },
+    "currentUser": {},
+    "expectedMode": "internal_knowledge"
+  },
+  {
+    "name": "small talk",
+    "message": "hello shop",
+    "intent": "general_support",
+    "analysis": {
+      "contextualReference": false,
+      "searchTerms": [],
+      "categoryHints": [],
+      "rawKeywords": []
+    },
+    "currentUser": {},
+    "expectedMode": "general_fallback"
+  }
+]

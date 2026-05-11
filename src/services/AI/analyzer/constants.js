@@ -15,7 +15,6 @@ const VI_STOPWORDS = new Set([
     "nay",
     "kia",
     "cua",
-    "de",
     "mot",
     "nhung",
     "loai",
@@ -44,9 +43,17 @@ const EN_STOPWORDS = new Set([
     "search",
     "some",
     "any",
+    "do",
+    "you",
+    "have",
+    "does",
+    "is",
+    "are",
+    "can",
 ]);
 
 const VI_DOMAIN_KEYWORDS = new Set([
+    "cho",
     "meo",
     "cun",
     "thuc",
@@ -54,18 +61,12 @@ const VI_DOMAIN_KEYWORDS = new Set([
     "hat",
     "pate",
     "sua",
-    "tam",
-    "do",
     "choi",
     "phu",
     "kien",
-    "san",
-    "pham",
     "dich",
     "vu",
     "goi",
-    "y",
-    "de",
     "xuat",
     "dat",
     "lich",
@@ -80,6 +81,13 @@ const VI_DOMAIN_KEYWORDS = new Set([
     "khuyen",
     "mai",
     "sale",
+    "omega",
+    "vitamin",
+    "protein",
+    "dinh duong",
+    "khau phan",
+    "che do an",
+    "thanh phan",
     "ve sinh",
     "lau",
     "khu mui",
@@ -119,10 +127,24 @@ const EN_DOMAIN_KEYWORDS = new Set([
     "promotion",
     "milk",
     "wet",
+    "omega",
+    "vitamin",
+    "protein",
+    "nutrition",
+    "feeding",
+    "diet",
+    "meal",
+    "ingredient",
+    "ingredients",
+    "wipes",
+    "litter",
+    "brush",
 ]);
 
 const PET_TYPE_PATTERNS = {
     dog: [
+        "cho",
+        "cho nho",
         "cho con",
         "cun",
         "cun con",
@@ -130,6 +152,7 @@ const PET_TYPE_PATTERNS = {
         "dogs",
         "puppy",
         "puppies",
+        "small dog",
         "dog food",
         "dog snack",
         "dog toy",
@@ -149,7 +172,7 @@ const PET_TYPE_PATTERNS = {
     cat: [
         "meo",
         "meo con",
-        "boss",
+        "meo nho",
         "cat",
         "cats",
         "kitten",
@@ -193,19 +216,47 @@ const PRODUCT_FORM_KEYWORDS = {
         "sua cho meo",
         "sua cho cho",
     ],
-    toy: ["do choi", "toy", "toys", "cat toy", "dog toy"],
+    toy: [
+        "do choi",
+        "toy",
+        "toys",
+        "cat toy",
+        "dog toy",
+        "do choi gam",
+        "do choi nhai",
+    ],
     snack: ["snack", "treat", "treats", "banh thuong", "thuong"],
     shampoo: [
         "sua tam",
+        "dau tam",
+        "tam rua",
+        "tam cho",
+        "tam cho thu cung",
         "shampoo",
-        "bath",
-        "cleaning",
-        "lam sach",
-        "ve sinh",
-        "khu mui",
-        "lau",
+        "pet shampoo",
+        "deodorizing pet shampoo",
+    ],
+    wipes: [
         "wipes",
         "cleaning wipes",
+        "wet wipes",
+        "pet wipes",
+        "khan lau",
+        "khan lau ve sinh",
+        "lau ve sinh",
+    ],
+    litter: [
+        "litter",
+        "cat litter",
+        "bentonite",
+        "cat ve sinh",
+        "cát vệ sinh",
+    ],
+    brush: [
+        "brush",
+        "grooming brush",
+        "luoc chai long",
+        "lược chải lông",
     ],
 };
 
@@ -242,6 +293,7 @@ const DOMAIN_SYNONYMS = {
     "san pham cho meo": ["cat products", "cat accessories", "phu kien cho meo"],
     "phu kien cho cho": ["dog accessories", "dog products"],
     "phu kien cho meo": ["cat accessories", "cat products"],
+
     "thuc an": ["food", "kibble", "meal", "nutrition"],
     "thuc an cho meo": [
         "cat food",
@@ -275,14 +327,32 @@ const DOMAIN_SYNONYMS = {
     "cat toy": ["do choi cho meo"],
     "dog toy": ["do choi cho cho"],
 
-    "phu kien": ["accessory", "accessories", "gear"],
-    accessory: ["phu kien", "do dung"],
+    "phu kien": ["accessory", "accessories", "gear", "pet accessories"],
+    accessory: ["accessories", "phu kien", "do dung", "pet accessories"],
+    accessories: ["accessory", "phu kien", "do dung", "pet accessories"],
+    "pet accessories": ["accessory", "accessories", "phu kien"],
+
+    product: ["products", "san pham"],
+    products: ["product", "san pham"],
+    service: ["services", "dich vu"],
+    services: ["service", "dich vu"],
 
     "quan ao": ["clothes", "clothing", "apparel", "outfit"],
     clothes: ["quan ao", "trang phuc"],
 
-    shampoo: ["sua tam", "tam", "ve sinh"],
-    "sua tam": ["shampoo", "bath", "cleaning"],
+    shampoo: ["sua tam", "pet shampoo"],
+    "sua tam": ["shampoo", "pet shampoo"],
+
+    wipes: ["cleaning wipes", "wet wipes", "pet wipes", "khan lau ve sinh"],
+    "cleaning wipes": ["wipes", "pet wipes", "khan lau ve sinh"],
+    "wet wipes": ["wipes", "cleaning wipes", "pet wipes"],
+
+    litter: ["cat litter", "bentonite", "cat sand"],
+    "cat litter": ["litter", "bentonite", "cat sand"],
+    bentonite: ["litter", "cat litter"],
+
+    brush: ["grooming brush", "luoc chai long"],
+    "grooming brush": ["brush", "luoc chai long"],
 
     "dental care": ["cham soc rang mieng", "ve sinh rang mieng", "oral care"],
     "oral care": ["dental care", "cham soc rang mieng", "ve sinh rang mieng"],
@@ -297,11 +367,16 @@ const DOMAIN_SYNONYMS = {
     "cho dang moc rang": ["dog teething", "chew toy", "dental treat"],
     "do choi phu hop cho cho": ["dog toy", "do choi cho cho", "dog toys"],
     "do choi cho cho nho": ["small dog toy", "dog toy", "toy for small dog"],
-    "lam sach cho thu cung": ["cleaning", "shampoo", "wipes", "ve sinh"],
-    "ve sinh cho thu cung": ["cleaning", "shampoo", "wipes", "lam sach"],
-};
 
-const KEEP_IN_PHRASES = new Set(["meo", "dog", "cat", "cun"]);
+    "lam sach cho thu cung": ["cleaning", "wipes", "ve sinh"],
+    "ve sinh cho thu cung": ["cleaning", "wipes", "lam sach"],
+
+    "dinh duong cho meo": ["cat nutrition", "omega 3 for cats", "cat diet"],
+    "dinh duong cho cho": ["dog nutrition", "omega 3 for dogs", "dog diet"],
+    "che do an cho cho nho": ["diet for small dogs", "small dog feeding"],
+    "che do an cho meo con": ["feeding guide for kittens", "kitten diet"],
+};
+const KEEP_IN_PHRASES = new Set(["meo", "cho", "dog", "cat", "cun"]);
 
 const STRONG_PHRASES = [
     "thuc an cho meo",
@@ -334,11 +409,18 @@ const STRONG_PHRASES = [
     "meo ken an",
     "cho moc rang",
     "cho dang moc rang",
+    "cho nho",
+    "cho con",
+    "meo con",
+    "meo nho",
     "do choi phu hop cho cho",
     "do choi cho cho nho",
     "lam sach cho thu cung",
     "ve sinh cho thu cung",
+    "che do an cho cho nho",
+    "che do an cho meo con",
 ];
+
 const SEMANTIC_INTENT_HINTS = [
     "phu hop",
     "nen chon",
@@ -350,14 +432,25 @@ const SEMANTIC_INTENT_HINTS = [
     "moc rang",
     "de nhai",
     "de tieu",
+    "dinh duong",
+    "khau phan",
+    "che do an",
 ];
+
 const BROAD_BROWSE_HINTS = [
     "san pham",
     "shop co gi",
     "co gi",
     "mat hang",
     "do cho",
+    "thuc an",
+    "do an",
+    "phu kien",
+    "dich vu",
+    "grooming",
+    "spa",
 ];
+
 module.exports = {
     VI_STOPWORDS,
     EN_STOPWORDS,

@@ -7,7 +7,6 @@ const USER_SEED_DATA = [
         fullname: "staff",
         gender: "male",
         avatar: null,
-        language: "vi",
         auth_provider: "firebase",
         isActive: 1,
     },
@@ -17,7 +16,7 @@ const USER_SEED_DATA = [
         fullname: "Thiên Sơn",
         gender: "male",
         avatar: null,
-        language: "vi",
+
         auth_provider: "firebase",
         isActive: 1,
     },
@@ -27,7 +26,7 @@ const USER_SEED_DATA = [
         fullname: "Admin",
         gender: "male",
         avatar: "/uploadImageUsers/user-VnWvx8YUM2Z4WbMJYgaDqbw64cQ2-1773129359271.jpg",
-        language: "vi",
+
         auth_provider: "firebase",
         isActive: 1,
     },
@@ -37,7 +36,7 @@ const USER_SEED_DATA = [
         fullname: "Duy",
         gender: "male",
         avatar: null,
-        language: "vi",
+
         auth_provider: "firebase",
         isActive: 1,
     },

@@ -2,6 +2,7 @@ import db from "../models/index.js";
 import { generateSlug } from "../utils/slug.js";
 import mediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
+import { extractLocalImageUrls } from "../utils/mediaUtils.js";
 
 const hasMultiValueField = (variant) => {
     return [variant.size, variant.color, variant.pet_weight].some((field) =>
@@ -111,6 +112,34 @@ const calcProductSummaryFromVariants = (variants = []) => {
     };
 };
 
+/**
+ * Helper to identify and delete image files that are no longer used by the product.
+ * @param {string[]} oldUrls - URLs extracted from old text fields.
+ * @param {string[]} newUrls - URLs extracted from new text fields + current gallery.
+ */
+const cleanupOrphanedFiles = async (oldUrls = [], newUrls = []) => {
+    const newUrlsSet = new Set(newUrls);
+    const orphaned = oldUrls.filter(url => url && !newUrlsSet.has(url));
+    
+    for (const url of orphaned) {
+        await safeUnlinkByUrl(url);
+    }
+};
+
+/**
+ * Extracts and cleans up all local images used in a product's description/summary.
+ */
+const cleanupAllProductDescriptionImages = async (product) => {
+    if (!product) return;
+    const urls = [
+        ...extractLocalImageUrls(product.description),
+        ...extractLocalImageUrls(product.summary)
+    ];
+    for (const url of [...new Set(urls)]) {
+        await safeUnlinkByUrl(url);
+    }
+};
+
 let createProduct = async (data) => {
     const t = await db.sequelize.transaction();
 
@@ -119,6 +148,8 @@ let createProduct = async (data) => {
             productCategories_id,
             name,
             description,
+            summary,
+            thumbnail_url,
             original_price,
             discount = 0,
             discount_type = "percent",
@@ -202,6 +233,8 @@ let createProduct = async (data) => {
                 name,
                 slug,
                 description,
+                summary,
+                thumbnail_url: Array.isArray(media) ? (media.find(m => m.is_main)?.url || (media[0]?.url || null)) : null,
                 has_variants,
                 original_price: has_variants ? 0 : basePrice,
                 discount: has_variants ? 0 : newDiscount,
@@ -249,6 +282,7 @@ let createProduct = async (data) => {
                                 Number(variant.discount || 0),
                                 variant.discount_type || "fixed",
                             ),
+                            thumbnail_url: null, // Skipping per user request
                             isActive:
                                 variant.isActive !== undefined
                                     ? !!variant.isActive
@@ -312,6 +346,8 @@ let getAllProducts = () => {
                     "name",
                     "slug",
                     "description",
+                    "summary",
+                    "thumbnail_url",
                     "price",
                     "original_price",
                     "discount",
@@ -363,6 +399,8 @@ let getProductById = (product_id) => {
                     "isActive",
                     "has_variants",
                     "description",
+                    "summary",
+                    "thumbnail_url",
                     "created_at",
                 ],
                 include: [
@@ -413,6 +451,8 @@ let updateProduct = async (product_id, data, files) => {
             productCategories_id,
             name,
             description,
+            summary,
+            thumbnail_url,
             original_price,
             discount,
             discount_type,
@@ -441,6 +481,11 @@ let updateProduct = async (product_id, data, files) => {
             };
         }
 
+        // Track images before update for cleanup
+        const oldDescriptionImages = extractLocalImageUrls(product.description);
+        const oldSummaryImages = extractLocalImageUrls(product.summary);
+        const oldImages = [...new Set([...oldDescriptionImages, ...oldSummaryImages])];
+
         const nextHasVariants =
             has_variants !== undefined
                 ? !!has_variants
@@ -452,6 +497,7 @@ let updateProduct = async (product_id, data, files) => {
                     productCategories_id ?? product.productCategories_id,
                 name: name ?? product.name,
                 description: description ?? product.description,
+                summary: summary ?? product.summary,
                 isActive: isActive ?? product.isActive,
                 isDelete: isDelete ?? product.isDelete,
                 has_variants: nextHasVariants,
@@ -504,6 +550,7 @@ let updateProduct = async (product_id, data, files) => {
                         Number(variant.discount || 0),
                         variant.discount_type || "fixed",
                     ),
+                    thumbnail_url: null, // Skipping per user request
                     quantity: Number(variant.quantity || 0),
                     reserved_quantity: Number(variant.reserved_quantity || 0),
                     isActive:
@@ -780,6 +827,39 @@ let updateProduct = async (product_id, data, files) => {
             }
         }
 
+        // Sync thumbnail_url with the main image
+        const finalMainMedia = await db.Media.findOne({
+            where: {
+                entity_type: "product",
+                entity_id: String(product_id),
+                is_main: true
+            },
+            transaction: t
+        });
+
+        await product.update({
+            thumbnail_url: finalMainMedia ? finalMainMedia.url : null
+        }, { transaction: t });
+
+        // Asset Cleanup for Description/Summary images
+        const newDescriptionImages = extractLocalImageUrls(product.description);
+        const newSummaryImages = extractLocalImageUrls(product.summary);
+        
+        // Also get all images currently in the gallery (Media table) to avoid deletion if still used there
+        const currentGalleryMedia = await db.Media.findAll({
+            where: { entity_type: "product", entity_id: String(product_id) },
+            transaction: t
+        });
+        const galleryUrls = currentGalleryMedia.map(m => m.url);
+
+        const newImages = [...new Set([
+            ...newDescriptionImages, 
+            ...newSummaryImages, 
+            ...galleryUrls
+        ])];
+
+        await cleanupOrphanedFiles(oldImages, newImages);
+
         await t.commit();
 
         const updatedProduct = await db.Product.findByPk(product_id, {
@@ -810,6 +890,17 @@ let deleteProduct = async (id) => {
     if (!product) throw "Product not found";
 
     await db.ProductTranslate.destroy({ where: { product_id: id } });
+    
+    // Clean up all images from disk before deleting records
+    await cleanupAllProductDescriptionImages(product);
+    
+    const mediaList = await db.Media.findAll({
+        where: { entity_type: "product", entity_id: String(id) },
+    });
+    for (const m of mediaList) {
+        await safeUnlinkByUrl(m.url);
+    }
+
     await mediaService.deleteMediaByEntity("product", id);
     await product.destroy();
 
@@ -835,6 +926,9 @@ let hardDeleteProduct = async (id) => {
     for (const m of mediaList) {
         await safeUnlinkByUrl(m.url);
     }
+
+    // Clean up all images from disk for description/summary
+    await cleanupAllProductDescriptionImages(product);
 
     await db.Media.destroy({
         where: { entity_type: "product", entity_id: String(id) },

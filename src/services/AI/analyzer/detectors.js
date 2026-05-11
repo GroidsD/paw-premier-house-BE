@@ -47,17 +47,66 @@ const hasWholePhrase = (text = "", phrase = "") => {
 
 const detectPetType = (text = "") => {
     const raw = String(text || "");
+    const normalized = normalizeText(raw);
 
+    // 1) Ưu tiên bắt từ có dấu trong câu gốc
     if (/\bmèo\b/i.test(raw)) return "cat";
     if (/\bchó\b/i.test(raw)) return "dog";
     if (/\bcún\b/i.test(raw)) return "dog";
 
-    const catMatches = PET_TYPE_PATTERNS.cat.filter((keyword) =>
-        hasWholePhrase(raw, keyword),
+    // 1b) Tránh hiểu nhầm "cho" (không dấu) thành chó
+    if (/\bcho\b/i.test(raw) && !/\bchó\b/i.test(raw)) {
+        // Không kết luận petType chỉ từ "cho"
+    }
+
+    // 2) Ưu tiên các cụm rõ nghĩa sau normalize
+    if (
+        normalized.includes("cho nho") ||
+        normalized.includes("cho con") ||
+        normalized.includes("cho truong thanh") ||
+        normalized.includes("small dog") ||
+        normalized.includes("puppy")
+    ) {
+        return "dog";
+    }
+
+    if (
+        normalized.includes("meo con") ||
+        normalized.includes("meo nho") ||
+        normalized.includes("meo truong thanh") ||
+        normalized.includes("kitten")
+    ) {
+        return "cat";
+    }
+
+    // Fix: "meo" standalone không dấu — an toàn vì "meo" không có nghĩa khác trong tiếng Việt
+    // Phải check trước guard "cho" bên dưới để tránh "cho meo" bị null
+    if (/\bmeo\b/i.test(normalized)) return "cat";
+
+    // Fix: "ban oi cho minh hoi" — "cho" ở đây là "cho phép/giúp", KHÔNG phải con chó
+    // Chỉ kết luận dog từ "cho" không dấu khi có thêm tín hiệu rõ ràng
+    if (/\bcho\b/i.test(normalized)) {
+        const hasExtraDogSignal =
+            normalized.includes("cho con") ||
+            normalized.includes("cho nho") ||
+            normalized.includes("dog") ||
+            normalized.includes("puppy") ||
+            normalized.includes("cun");
+        if (!hasExtraDogSignal) {
+            // "cho" đứng một mình hoặc trong "cho mình", "cho tôi" → không phải chó
+            return null;
+        }
+    }
+
+    // 3) Fallback bằng dictionary patterns
+    const catMatches = PET_TYPE_PATTERNS.cat.filter(
+        (keyword) =>
+            hasWholePhrase(raw, keyword) || hasWholePhrase(normalized, keyword),
     );
 
-    const dogMatches = PET_TYPE_PATTERNS.dog.filter((keyword) =>
-        hasWholePhrase(raw, keyword),
+    const dogMatches = PET_TYPE_PATTERNS.dog.filter(
+        (keyword) =>
+            hasWholePhrase(raw, keyword) || hasWholePhrase(normalized, keyword),
     );
 
     if (catMatches.length > 0 && dogMatches.length === 0) return "cat";
@@ -66,12 +115,11 @@ const detectPetType = (text = "") => {
     const longestCat = Math.max(0, ...catMatches.map((item) => item.length));
     const longestDog = Math.max(0, ...dogMatches.map((item) => item.length));
 
-    if (longestCat > longestDog && longestCat >= 6) return "cat";
-    if (longestDog > longestCat && longestDog >= 6) return "dog";
+    if (longestCat > longestDog && longestCat >= 4) return "cat";
+    if (longestDog > longestCat && longestDog >= 4) return "dog";
 
     return null;
 };
-
 const detectPetSize = (text = "") => {
     const hasAnyWholePhrase = (keywords = []) =>
         keywords.some((keyword) => hasWholePhrase(text, keyword));
@@ -108,6 +156,12 @@ const detectDiscountMode = (text = "") => {
 const detectProductForm = (text = "") => {
     const normalized = normalizeText(text);
 
+    // Disambiguation: "sữa tắm" is shampoo, not milk.
+    // Because normalizeText removes diacritics, we check normalized phrases.
+    if (normalized.includes("sua tam") || normalized.includes("pet shampoo")) {
+        return "shampoo";
+    }
+
     const containsKeyword = (keyword = "") => {
         const normalizedKeyword = normalizeText(keyword);
 
@@ -128,7 +182,17 @@ const detectProductForm = (text = "") => {
 
     if (!matchedForms.length) return null;
 
-    const priority = ["pate", "kibble", "milk", "toy", "snack", "shampoo"];
+    const priority = [
+        "pate",
+        "kibble",
+        "shampoo",
+        "toy",
+        "snack",
+        "milk",
+        "wipes",
+        "litter",
+        "brush",
+    ];
     return (
         priority.find((item) => matchedForms.includes(item)) || matchedForms[0]
     );

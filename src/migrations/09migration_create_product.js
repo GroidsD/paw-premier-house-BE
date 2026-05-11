@@ -30,6 +30,14 @@ module.exports = {
                 type: Sequelize.TEXT,
                 allowNull: true,
             },
+            summary: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+            thumbnail_url: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
             slug: {
                 type: Sequelize.STRING,
                 allowNull: false,

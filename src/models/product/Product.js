@@ -31,6 +31,12 @@ module.exports = (sequelize, DataTypes) => {
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
             });
+            Product.hasMany(models.ProductKnowledge, {
+                foreignKey: "product_id",
+                as: "knowledgeItems",
+                onUpdate: "CASCADE",
+                onDelete: "CASCADE",
+            });
         }
     }
 
@@ -59,6 +65,14 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             description: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            summary: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            thumbnail_url: {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
