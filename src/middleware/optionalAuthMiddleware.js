@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import User from "../models/user/User.js";
 
 const extractToken = (req) => {
     const authHeader = req.headers.authorization;
@@ -8,14 +7,14 @@ const extractToken = (req) => {
         return authHeader.split(" ")[1];
     }
 
-    if (req.cookies?.token) {
-        return req.cookies.token;
+    if (req.cookies?.access_token) {
+        return req.cookies.access_token;
     }
 
     return null;
 };
 
-const optionalAuth = async (req, res, next) => {
+const optionalAuth = (req, res, next) => {
     try {
         const token = extractToken(req);
 
@@ -26,18 +25,18 @@ const optionalAuth = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Nếu muốn nhanh thì gán luôn decoded
-        // req.user = decoded;
+        if (!decoded || !decoded.user_id) {
+            req.user = null;
+            return next();
+        }
 
-        // Nếu muốn chắc chắn user còn tồn tại trong DB:
-        const user = await User.findByPk(decoded.user_id, {
-            attributes: ["user_id", "fullname", "email"],
-        });
+        req.user = decoded;
 
-        req.user = user || null;
+        console.log("[optionalAuth] userId:", req.user.user_id);
+
         return next();
     } catch (error) {
-        // optional auth nên fail-soft
+        console.error("[optionalAuth] error:", error.message);
         req.user = null;
         return next();
     }

@@ -14,7 +14,7 @@ let router = express.Router();
 let initWebRoutes = (app) => {
     router.post("/api/login", userController.login);
     router.post("/api/auth/firebase-login", userController.firebaseLogin);
-    router.post("/api/logout", userController.logout);
+    router.post("/api/logout", authMiddleware, userController.logout);
 
     router.post(
         "/api/change-password",

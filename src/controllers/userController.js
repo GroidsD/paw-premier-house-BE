@@ -92,16 +92,43 @@ let login = async (req, res) => {
     }
 };
 
+// let logout = async (req, res) => {
+//     try {
+//         if (req.user?.user_id) {
+//             await userService.setOffline(req.user.user_id);
+//         }
+
+//         res.clearCookie("access_token", {
+//             httpOnly: true,
+//             secure: true,
+//             sameSite: "none",
+//         });
+
+//         return res.status(200).json({ message: "Logged out successfully" });
+//     } catch (e) {
+//         return res.status(500).json({ error: e.message || "Server error" });
+//     }
+// };
 let logout = async (req, res) => {
     try {
         if (req.user?.user_id) {
             await userService.setOffline(req.user.user_id);
         }
 
-        res.clearCookie("access_token", {
+        const cookieOptions = {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            path: "/",
+        };
+
+        res.clearCookie("access_token", cookieOptions);
+
+        // Clear mạnh thêm một lần nữa
+        res.cookie("access_token", "", {
+            ...cookieOptions,
+            expires: new Date(0),
+            maxAge: 0,
         });
 
         return res.status(200).json({ message: "Logged out successfully" });
