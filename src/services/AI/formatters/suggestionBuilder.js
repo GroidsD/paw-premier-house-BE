@@ -149,6 +149,7 @@ const removeRedundantSuggestions = ({
     }
 
     return suggestions.filter((item) => {
+        if (!item || typeof item !== "object") return false;
         const normalizedValue = normalize(item.value || item.label);
         if (!normalizedValue) return false;
         if (blocked.has(normalizedValue)) return false;
