@@ -23,7 +23,9 @@ import rbacRoutes from "./routes/rbacRoutes.js";
 import revenueRoutes from "./routes/revenueRoutes.js";
 import featuresRoutes from "./routes/FeatureRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import { initRedis } from "./config/redis.js";
+const scheduleOrderTimeoutCheck = require("./cron/orderTimeoutJob");
 
 require("dotenv").config();
 const multer = require("multer");
@@ -138,7 +140,11 @@ app.use("/", notificationRoutes);
 app.use("/", voucherRoutes);
 app.use("/", rbacRoutes);
 app.use("/", revenueRoutes);
+app.use("/", paymentRoutes);
 connectDB();
+
+// Start cron jobs
+scheduleOrderTimeoutCheck();
 
 let port = process.env.PORT || 5059;
 server.listen(port, () => {
