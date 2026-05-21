@@ -45,11 +45,28 @@ class MoMoService {
     async createPayment(paymentData) {
         try {
             const {
-                amount,
                 orderInfo = "Thanh toán MoMo",
                 extraData = "",
                 orderId: originalOrderId,
+                returnUrl,
+                notifyUrl,
             } = paymentData;
+
+            // Fetch order from database to get the amount
+            const OrderServiceModule = require("./OrderService");
+            const OrderService = OrderServiceModule.default;
+
+            const orderResult = await OrderService.getOrderById(originalOrderId);
+
+            if (orderResult.errCode !== 0 || !orderResult.order) {
+                return {
+                    errCode: 2,
+                    message: "Order not found",
+                    data: null,
+                };
+            }
+
+            const amount = Math.round(Number(orderResult.order.total_price));
 
             const momoOrderId = this.generateRequestId();
             const requestId = momoOrderId;
@@ -62,8 +79,8 @@ class MoMoService {
                 amount: amount.toString(),
                 orderId: momoOrderId,
                 orderInfo: orderInfo,
-                redirectUrl: this.returnUrl,
-                ipnUrl: this.notifyUrl,
+                redirectUrl: returnUrl || this.returnUrl,
+                ipnUrl: notifyUrl || this.notifyUrl,
                 lang: "vi",
                 requestType: "payWithMethod",
                 autoCapture: true,

@@ -1,0 +1,325 @@
+<div style="
+    margin:0;
+    padding:0;
+    background-color:#f3f4f6;
+    font-family:Arial, Helvetica, sans-serif;
+    color:#111827;
+">
+    <table
+        role="presentation"
+        width="100%"
+        cellspacing="0"
+        cellpadding="0"
+        border="0"
+        style="
+            background-color:#f3f4f6;
+            margin:0;
+            padding:28px 0;
+        "
+    >
+        <tr>
+            <td align="center">
+
+                <table
+                    role="presentation"
+                    width="100%"
+                    cellspacing="0"
+                    cellpadding="0"
+                    border="0"
+                    style="
+                        max-width:680px;
+                        background:#ffffff;
+                        border-radius:24px;
+                        overflow:hidden;
+                        border:1px solid #e5e7eb;
+                    "
+                >
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="
+                            background:#f59e0b;
+                            padding:36px 24px 32px;
+                            text-align:center;
+                        ">
+
+                            <div style="
+                                width:72px;
+                                height:72px;
+                                line-height:72px;
+                                margin:0 auto 18px;
+                                background:#d97706;
+                                border-radius:50%;
+                                font-size:34px;
+                                text-align:center;
+                            ">
+                                ⏰
+                            </div>
+
+                            <h1 style="
+                                margin:0;
+                                font-size:30px;
+                                line-height:38px;
+                                color:#ffffff;
+                                font-weight:800;
+                            ">
+                                Payment Expired
+                            </h1>
+
+                            <p style="
+                                margin:14px 0 0;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#fef3c7;
+                            ">
+                                Your payment session has expired.
+                                The reserved stock has been released.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- BODY -->
+                    <tr>
+                        <td style="padding:32px 24px 12px;">
+
+                            <p style="
+                                margin:0 0 14px;
+                                font-size:16px;
+                                line-height:26px;
+                                color:#111827;
+                            ">
+                                Hello
+                                <strong>
+                                    {{userFullname}}
+                                </strong>,
+                            </p>
+
+                            <p style="
+                                margin:0 0 24px;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#4b5563;
+                            ">
+                                Your payment session has expired because the payment was not
+                                completed within the time limit. Your order is still pending and
+                                you can try to pay again.
+                            </p>
+
+                            <!-- ORDER INFO -->
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="
+                                    background:#fffbeb;
+                                    border:1px solid #fcd34d;
+                                    border-radius:18px;
+                                    margin-bottom:24px;
+                                "
+                            >
+                                <tr>
+                                    <td style="padding:20px;">
+
+                                        <h2 style="
+                                            margin:0 0 16px;
+                                            font-size:18px;
+                                            line-height:26px;
+                                            color:#b45309;
+                                            font-weight:800;
+                                        ">
+                                            Order Information
+                                        </h2>
+
+                                        <table
+                                            role="presentation"
+                                            width="100%"
+                                            cellspacing="0"
+                                            cellpadding="0"
+                                            border="0"
+                                        >
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Order ID
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    #{{orderId}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Order Code
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#2563eb;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{orderCode}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Payment Status
+                                                </td>
+
+                                                <td align="right">
+                                                    <span style="
+                                                        display:inline-block;
+                                                        padding:7px 12px;
+                                                        background:#fef3c7;
+                                                        color:#b45309;
+                                                        border-radius:999px;
+                                                        font-size:12px;
+                                                        font-weight:800;
+                                                        text-transform:uppercase;
+                                                    ">
+                                                        Expired
+                                                    </span>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Order Status
+                                                </td>
+
+                                                <td align="right">
+                                                    <span style="
+                                                        display:inline-block;
+                                                        padding:7px 12px;
+                                                        background:#fef3c7;
+                                                        color:#b45309;
+                                                        border-radius:999px;
+                                                        font-size:12px;
+                                                        font-weight:800;
+                                                        text-transform:uppercase;
+                                                    ">
+                                                        Expired
+                                                    </span>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:10px 0 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Total Payment
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:10px 0 0;
+                                                        font-size:22px;
+                                                        color:#b45309;
+                                                        font-weight:800;
+                                                    "
+                                                >
+                                                    {{totalPrice}}
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="
+                                margin:0 0 16px;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#4b5563;
+                            ">
+                                Please try to complete your payment again within 15 minutes
+                                to avoid expiration.
+                            </p>
+
+                            <p style="
+                                margin:0;
+                                text-align:center;
+                                font-size:14px;
+                                line-height:22px;
+                                color:#4b5563;
+                            ">
+                                Thank you for your understanding.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="
+                            padding:22px 24px 26px;
+                            border-top:1px solid #e5e7eb;
+                            text-align:center;
+                            background:#f9fafb;
+                        ">
+
+                            <p style="
+                                margin:0 0 6px;
+                                font-size:14px;
+                                color:#111827;
+                                font-weight:700;
+                            ">
+                                Paw Premier House
+                            </p>
+
+                            <p style="
+                                margin:0;
+                                font-size:12px;
+                                line-height:18px;
+                                color:#9ca3af;
+                            ">
+                                This is an automated email. Please do not reply
+                                directly to this message.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</div>

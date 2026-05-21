@@ -1,0 +1,436 @@
+<div style="
+    margin:0;
+    padding:0;
+    background-color:#f3f4f6;
+    font-family:Arial, Helvetica, sans-serif;
+    color:#111827;
+">
+    <table
+        role="presentation"
+        width="100%"
+        cellspacing="0"
+        cellpadding="0"
+        border="0"
+        style="
+            background-color:#f3f4f6;
+            margin:0;
+            padding:28px 0;
+        "
+    >
+        <tr>
+            <td align="center">
+
+                <table
+                    role="presentation"
+                    width="100%"
+                    cellspacing="0"
+                    cellpadding="0"
+                    border="0"
+                    style="
+                        max-width:680px;
+                        background:#ffffff;
+                        border-radius:24px;
+                        overflow:hidden;
+                        border:1px solid #e5e7eb;
+                    "
+                >
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="
+                            background:#2563eb;
+                            padding:36px 24px 32px;
+                            text-align:center;
+                        ">
+
+                            <div style="
+                                width:72px;
+                                height:72px;
+                                line-height:72px;
+                                margin:0 auto 18px;
+                                background:#1d4ed8;
+                                border-radius:50%;
+                                font-size:34px;
+                                text-align:center;
+                            ">
+                                🚚
+                            </div>
+
+                            <h1 style="
+                                margin:0;
+                                font-size:30px;
+                                line-height:38px;
+                                color:#ffffff;
+                                font-weight:800;
+                            ">
+                                Order Shipped!
+                            </h1>
+
+                            <p style="
+                                margin:14px 0 0;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#dbeafe;
+                            ">
+                                Great news! Your order has been shipped and is on its way to you.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- BODY -->
+                    <tr>
+                        <td style="padding:32px 24px 12px;">
+
+                            <p style="
+                                margin:0 0 14px;
+                                font-size:16px;
+                                line-height:26px;
+                                color:#111827;
+                            ">
+                                Hello
+                                <strong>
+                                    {{userFullname}}
+                                </strong>,
+                            </p>
+
+                            <p style="
+                                margin:0 0 24px;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#4b5563;
+                            ">
+                                Your order is now being shipped and will arrive soon.
+                                Below are the details of your order.
+                            </p>
+
+                            <!-- ORDER INFO -->
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="
+                                    background:#eff6ff;
+                                    border:1px solid #bfdbfe;
+                                    border-radius:18px;
+                                    margin-bottom:24px;
+                                "
+                            >
+                                <tr>
+                                    <td style="padding:20px;">
+
+                                        <h2 style="
+                                            margin:0 0 16px;
+                                            font-size:18px;
+                                            line-height:26px;
+                                            color:#1e40af;
+                                            font-weight:800;
+                                        ">
+                                            Order Information
+                                        </h2>
+
+                                        <table
+                                            role="presentation"
+                                            width="100%"
+                                            cellspacing="0"
+                                            cellpadding="0"
+                                            border="0"
+                                        >
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Order ID
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    #{{orderId}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Order Code
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#2563eb;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{orderCode}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Order Status
+                                                </td>
+
+                                                <td align="right">
+                                                    <span style="
+                                                        display:inline-block;
+                                                        padding:7px 12px;
+                                                        background:#dbeafe;
+                                                        color:#1d4ed8;
+                                                        border-radius:999px;
+                                                        font-size:12px;
+                                                        font-weight:800;
+                                                        text-transform:uppercase;
+                                                    ">
+                                                        Shipping
+                                                    </span>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:10px 0 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Total Payment
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:10px 0 0;
+                                                        font-size:22px;
+                                                        color:#1e40af;
+                                                        font-weight:800;
+                                                    "
+                                                >
+                                                    {{totalPrice}}
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- PRODUCT TABLE -->
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="
+                                    border:1px solid #e5e7eb;
+                                    border-radius:18px;
+                                    overflow:hidden;
+                                    margin-bottom:24px;
+                                    background:#ffffff;
+                                "
+                            >
+
+                                <tr style="background:#f9fafb;">
+                                    <th align="center" style="padding:12px 8px; font-size:13px; color:#6b7280;">
+                                        Image
+                                    </th>
+
+                                    <th align="left" style="padding:12px 8px; font-size:13px; color:#6b7280;">
+                                        Product
+                                    </th>
+
+                                    <th align="center" style="padding:12px 8px; font-size:13px; color:#6b7280;">
+                                        Qty
+                                    </th>
+
+                                    <th align="right" style="padding:12px 8px; font-size:13px; color:#6b7280;">
+                                        Price
+                                    </th>
+
+                                    <th align="right" style="padding:12px 8px; font-size:13px; color:#6b7280;">
+                                        Total
+                                    </th>
+                                </tr>
+
+                                {{orderItems}}
+
+                            </table>
+
+                            <!-- SHIPPING INFO -->
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="
+                                    margin-bottom:28px;
+                                    background:#eff6ff;
+                                    border:1px solid #bfdbfe;
+                                    border-radius:18px;
+                                "
+                            >
+                                <tr>
+                                    <td style="padding:18px;">
+
+                                        <h2 style="
+                                            margin:0 0 16px;
+                                            font-size:18px;
+                                            line-height:26px;
+                                            color:#1e40af;
+                                            font-weight:800;
+                                        ">
+                                            Shipping Information
+                                        </h2>
+
+                                        <table
+                                            role="presentation"
+                                            width="100%"
+                                            cellspacing="0"
+                                            cellpadding="0"
+                                            border="0"
+                                        >
+
+                                            <tr>
+                                                <td style="
+                                                    padding:6px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Receiver Name
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:6px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{receiverName}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:6px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Phone
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:6px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                    "
+                                                >
+                                                    {{receiverPhone}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:6px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Address
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:6px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                    "
+                                                >
+                                                    {{receiverAddress}}
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="
+                                margin:0;
+                                text-align:center;
+                                font-size:14px;
+                                line-height:22px;
+                                color:#4b5563;
+                            ">
+                                You can track your order status on our website.
+                                Thank you for shopping with Paw Premier House!
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="
+                            padding:22px 24px 26px;
+                            border-top:1px solid #e5e7eb;
+                            text-align:center;
+                            background:#f9fafb;
+                        ">
+
+                            <p style="
+                                margin:0 0 6px;
+                                font-size:14px;
+                                color:#111827;
+                                font-weight:700;
+                            ">
+                                Paw Premier House
+                            </p>
+
+                            <p style="
+                                margin:0;
+                                font-size:12px;
+                                line-height:18px;
+                                color:#9ca3af;
+                            ">
+                                This is an automated email. Please do not reply
+                                directly to this message.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</div>

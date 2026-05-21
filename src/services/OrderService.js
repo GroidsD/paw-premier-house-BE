@@ -633,7 +633,9 @@ let createOrder = async (userId, data) => {
                 shipping_fee: shippingFee,
                 total_price: totalPrice,
                 status: isCodPayment ? "confirmed" : "pending",
-                reserved_until: isCodPayment ? null : dayjs().add(15, "minute").toDate(),
+                reserved_until: isCodPayment
+                    ? null
+                    : dayjs().add(15, "minute").toDate(),
             },
             { transaction },
         );
@@ -667,7 +669,10 @@ let createOrder = async (userId, data) => {
                     }
 
                     const currentQty = toNumber(variant.quantity, 0);
-                    const currentReserved = toNumber(variant.reserved_quantity, 0);
+                    const currentReserved = toNumber(
+                        variant.reserved_quantity,
+                        0,
+                    );
 
                     if (currentQty < qty) {
                         throw new Error(
@@ -741,13 +746,18 @@ let createOrder = async (userId, data) => {
 
             if (isCodPayment && user && newOrder) {
                 try {
-                    const { sendPaymentSuccessEmail } = require("./OrderEmailService");
+                    const {
+                        sendPaymentSuccessEmail,
+                    } = require("./OrderEmailService");
                     await sendPaymentSuccessEmail({
                         user,
                         order: newOrder,
                     });
                 } catch (emailError) {
-                    console.error("Failed to send COD order email:", emailError);
+                    console.error(
+                        "Failed to send COD order email:",
+                        emailError,
+                    );
                 }
             }
         } catch (afterCommitError) {
@@ -977,6 +987,41 @@ let updateOrderStatus = async (order_id, newStatus) => {
                 fullIncludeError,
             );
             updatedOrder = await getOrderWithRelations(order_id, null, true);
+        }
+
+        // Send email notifications for status changes
+        try {
+            if (newStatus === "shipping" || newStatus === "completed") {
+                const {
+                    sendOrderShippingEmail,
+                    sendOrderCompletedEmail,
+                } = require("./OrderEmailService");
+
+                if (updatedOrder?.customer) {
+                    const user = {
+                        user_id: updatedOrder.customer.user_id,
+                        fullname: updatedOrder.customer.fullname,
+                        email: updatedOrder.customer.email,
+                    };
+
+                    if (newStatus === "shipping") {
+                        await sendOrderShippingEmail({
+                            user,
+                            order: updatedOrder,
+                        });
+                    } else if (newStatus === "completed") {
+                        await sendOrderCompletedEmail({
+                            user,
+                            order: updatedOrder,
+                        });
+                    }
+                }
+            }
+        } catch (emailError) {
+            console.error(
+                `❌ [OrderService] Failed to send ${newStatus} email:`,
+                emailError,
+            );
         }
 
         return {

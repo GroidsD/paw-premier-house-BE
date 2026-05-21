@@ -3,27 +3,21 @@ const moMoService = require("../services/MoMoService");
 // Create payment
 let createMoMoPayment = async (req, res) => {
     try {
-        const { amount, orderInfo, orderId, extraData } = req.body;
+        const { orderInfo, orderId, extraData, returnUrl, notifyUrl } = req.body;
 
-        if (!amount || !orderId) {
+        if (!orderId) {
             return res.status(400).json({
                 errCode: 1,
-                message: "Missing required fields",
-            });
-        }
-
-        if (isNaN(amount) || amount < 1000) {
-            return res.status(400).json({
-                errCode: 1,
-                message: "Amount must be at least 1000 VND",
+                message: "Missing required field: orderId",
             });
         }
 
         const result = await moMoService.createPayment({
-            amount: parseInt(amount),
             orderInfo: orderInfo || `Thanh toán đơn hàng ${orderId}`,
             orderId,
             extraData,
+            returnUrl,
+            notifyUrl,
         });
 
         return res.status(200).json(result);
