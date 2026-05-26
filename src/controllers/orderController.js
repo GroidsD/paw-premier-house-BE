@@ -2,6 +2,15 @@ import OrderService from "../services/OrderService.js";
 const { sendOrderEmail } = require("../services/OrderEmailService");
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
 
+const handleServerError = (res, error) => {
+    console.error(error);
+
+    return res.status(500).json({
+        errCode: -1,
+        errMessage: "Server error",
+    });
+};
+
 const verifyOrder = async (req, res) => {
     try {
         const { token, orderId } = req.body;
@@ -91,7 +100,6 @@ const verifyOrder = async (req, res) => {
 };
 
 let createOrder = async (req, res) => {
-    // console.log(req.body.customer_id);
     try {
         const userId = req.body.customer_id || req.user?.user_id;
 
@@ -107,22 +115,10 @@ let createOrder = async (req, res) => {
         }
 
         const { order, user } = result;
-        // console.log(user, order);
-
-        const token = generateVerifyToken(userId, order.order_id);
-        try {
-            await sendOrderEmail({ user, order, token });
-        } catch (emailError) {
-            console.error("Order email send failed:", emailError);
-        }
-
+        
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -130,12 +126,8 @@ let getAllOrders = async (req, res) => {
     try {
         const result = await OrderService.getAllOrders();
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -154,12 +146,8 @@ let getOrderById = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -178,12 +166,8 @@ let confirmOrder = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -202,12 +186,8 @@ let cancelOrder = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -228,12 +208,8 @@ let updateStatus = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -252,12 +228,8 @@ let softDeleteOrder = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
@@ -276,19 +248,20 @@ let hardDeleteOrder = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 
 let getAllOrdersByUserId = async (req, res) => {
     try {
         const { customer_id, limit, cursor, status } = req.query;
-        const result = await OrderService.getAllOrdersByUserId(customer_id, limit, cursor, status);
+        const result = await OrderService.getAllOrdersByUserId(
+            customer_id,
+            limit,
+            cursor,
+            status,
+        );
 
         if (!result || result.errCode !== 0) {
             return res.status(400).json(
@@ -300,12 +273,8 @@ let getAllOrdersByUserId = async (req, res) => {
         }
 
         return res.status(200).json(result);
-    } catch (e) {
-        console.error(e);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: "Server error",
-        });
+    } catch (error) {
+        return handleServerError(res, error);
     }
 };
 

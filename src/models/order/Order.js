@@ -93,9 +93,27 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             payment_status: {
-                type: DataTypes.ENUM("unpaid", "paid", "failed", "refunded"),
+                type: DataTypes.ENUM(
+                    "unpaid",
+                    "paid",
+                    "failed",
+                    "expired",
+                    "refunded",
+                ),
                 allowNull: false,
                 defaultValue: "unpaid",
+            },
+
+            expires_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
+                comment: "Payment expiration time",
+            },
+
+            reserved_until: {
+                type: DataTypes.DATE,
+                allowNull: true,
+                comment: "Time limit for pending payment orders",
             },
 
             voucher_code: {
@@ -146,11 +164,12 @@ module.exports = (sequelize, DataTypes) => {
                     "completed",
                     "cancelled",
                     "deleted",
+                    "expired",
                 ),
                 allowNull: false,
                 defaultValue: "pending",
                 comment:
-                    "Trạng thái đơn: pending, confirmed, shipping, completed, cancelled, deleted",
+                    "Trạng thái đơn: pending, confirmed, shipping, completed, cancelled, deleted, expired",
             },
 
             cancel_reason: {
@@ -166,6 +185,31 @@ module.exports = (sequelize, DataTypes) => {
             updated_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
+            },
+
+            // MoMo payment information fields
+            momo_order_id: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "MoMo order ID from payment gateway",
+            },
+
+            momo_trans_id: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "MoMo transaction ID",
+            },
+
+            momo_result_code: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                comment: "MoMo result code (0 = success)",
+            },
+
+            momo_message: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+                comment: "MoMo response message",
             },
         },
         {

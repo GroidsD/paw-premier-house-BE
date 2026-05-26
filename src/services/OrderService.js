@@ -1,4 +1,5 @@
 import db from "../models";
+const dayjs = require("dayjs");
 
 const VALID_STATUSES = [
     "pending",
@@ -7,9 +8,10 @@ const VALID_STATUSES = [
     "completed",
     "cancelled",
     "deleted",
+    "expired",
 ];
 
-const PAYMENT_STATUSES = ["unpaid", "paid", "failed", "refunded"];
+const PAYMENT_STATUSES = ["unpaid", "paid", "failed", "expired", "refunded"];
 
 const ORDER_INCLUDE_SAFE = [
     {
@@ -578,15 +580,6 @@ let createOrder = async (userId, data) => {
                 price: finalUnitPrice,
                 total_price: lineTotal,
             });
-            console.log("PRODUCT MEDIA DEBUG:", {
-                productId: product.product_id,
-                media: product.media?.map((m) => ({
-                    media_id: m.media_id,
-                    url: m.url,
-                    is_main: m.is_main,
-                })),
-                finalImage: buildImage(variant, product),
-            });
         }
 
         subtotalOriginal = Number(subtotalOriginal.toFixed(2));
@@ -621,6 +614,7 @@ let createOrder = async (userId, data) => {
             ),
         );
 
+        const isCodPayment = payment_method === "COD";
         const order = await db.Order.create(
             {
                 customer_id,
@@ -638,7 +632,10 @@ let createOrder = async (userId, data) => {
                 discount_type: "fixed",
                 shipping_fee: shippingFee,
                 total_price: totalPrice,
-                status: "pending",
+                status: isCodPayment ? "confirmed" : "pending",
+                reserved_until: isCodPayment
+                    ? null
+                    : dayjs().add(15, "minute").toDate(),
             },
             { transaction },
         );
@@ -651,7 +648,75 @@ let createOrder = async (userId, data) => {
             { transaction },
         );
 
-        await reserveStockForItems(orderItemsData, transaction);
+        if (isCodPayment) {
+            for (const item of orderItemsData) {
+                const qty = toNumber(item.quantity, 0);
+                if (qty <= 0) continue;
+
+                if (item.productVariant_id) {
+                    const variant = await db.ProductVariant.findByPk(
+                        item.productVariant_id,
+                        {
+                            transaction,
+                            lock: transaction.LOCK.UPDATE,
+                        },
+                    );
+
+                    if (!variant) {
+                        throw new Error(
+                            `Variant ${item.productVariant_id} not found during confirm`,
+                        );
+                    }
+
+                    const currentQty = toNumber(variant.quantity, 0);
+                    const currentReserved = toNumber(
+                        variant.reserved_quantity,
+                        0,
+                    );
+
+                    if (currentQty < qty) {
+                        throw new Error(
+                            `Actual stock is insufficient for variant ${item.productVariant_id}`,
+                        );
+                    }
+
+                    await variant.update(
+                        {
+                            quantity: currentQty - qty,
+                        },
+                        { transaction },
+                    );
+                } else if (item.product_id) {
+                    const product = await db.Product.findByPk(item.product_id, {
+                        transaction,
+                        lock: transaction.LOCK.UPDATE,
+                    });
+
+                    if (!product) {
+                        throw new Error(
+                            `Product ${item.product_id} not found during confirm`,
+                        );
+                    }
+
+                    const currentQty = toNumber(product.quantity, 0);
+
+                    if (currentQty < qty) {
+                        throw new Error(
+                            `Actual stock is insufficient for product ${item.product_id}`,
+                        );
+                    }
+
+                    await product.update(
+                        {
+                            quantity: currentQty - qty,
+                        },
+                        { transaction },
+                    );
+                }
+            }
+        } else {
+            await reserveStockForItems(orderItemsData, transaction);
+        }
 
         await transaction.commit();
 
@@ -677,6 +742,23 @@ let createOrder = async (userId, data) => {
                     null,
                     true,
                 );
+            }
+
+            if (isCodPayment && user && newOrder) {
+                try {
+                    const {
+                        sendPaymentSuccessEmail,
+                    } = require("./OrderEmailService");
+                    await sendPaymentSuccessEmail({
+                        user,
+                        order: newOrder,
+                    });
+                } catch (emailError) {
+                    console.error(
+                        "Failed to send COD order email:",
+                        emailError,
+                    );
+                }
             }
         } catch (afterCommitError) {
             console.error("Post-commit fetch error:", afterCommitError);
@@ -907,6 +989,41 @@ let updateOrderStatus = async (order_id, newStatus) => {
             updatedOrder = await getOrderWithRelations(order_id, null, true);
         }
 
+        // Send email notifications for status changes
+        try {
+            if (newStatus === "shipping" || newStatus === "completed") {
+                const {
+                    sendOrderShippingEmail,
+                    sendOrderCompletedEmail,
+                } = require("./OrderEmailService");
+
+                if (updatedOrder?.customer) {
+                    const user = {
+                        user_id: updatedOrder.customer.user_id,
+                        fullname: updatedOrder.customer.fullname,
+                        email: updatedOrder.customer.email,
+                    };
+
+                    if (newStatus === "shipping") {
+                        await sendOrderShippingEmail({
+                            user,
+                            order: updatedOrder,
+                        });
+                    } else if (newStatus === "completed") {
+                        await sendOrderCompletedEmail({
+                            user,
+                            order: updatedOrder,
+                        });
+                    }
+                }
+            }
+        } catch (emailError) {
+            console.error(
+                `❌ [OrderService] Failed to send ${newStatus} email:`,
+                emailError,
+            );
+        }
+
         return {
             errCode: 0,
             errMessage: `Order status updated to ${newStatus}`,
@@ -990,7 +1107,106 @@ let hardDeleteOrder = async (order_id) => {
     }
 };
 
-let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status = "all") => {
+let updateOrderPaymentStatus = async (
+    order_id,
+    payment_status,
+    additionalData = {},
+) => {
+    const transaction = await db.sequelize.transaction();
+
+    try {
+        if (!order_id || !payment_status) {
+            if (!transaction.finished) await transaction.rollback();
+            return {
+                errCode: 1,
+                errMessage: "Missing order_id or payment_status",
+            };
+        }
+
+        if (!PAYMENT_STATUSES.includes(payment_status)) {
+            if (!transaction.finished) await transaction.rollback();
+            return {
+                errCode: 2,
+                errMessage: `Invalid payment_status: ${payment_status}`,
+            };
+        }
+
+        const order = await db.Order.findByPk(order_id, {
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+        });
+
+        if (!order) {
+            if (!transaction.finished) await transaction.rollback();
+            return {
+                errCode: 3,
+                errMessage: "Order not found",
+            };
+        }
+
+        if (order.status === "deleted") {
+            if (!transaction.finished) await transaction.rollback();
+            return {
+                errCode: 4,
+                errMessage: "Cannot update payment for deleted order",
+            };
+        }
+
+        // Prepare update data
+        const updateData = {
+            payment_status,
+            ...additionalData,
+        };
+
+        if (payment_status === "paid" && order.status === "pending") {
+            if (order.payment_method !== "COD") {
+                updateData.status = "confirmed";
+                const orderWithItems = await db.Order.findByPk(order_id, {
+                    include: [{ model: db.OrderItem, as: "orderItems" }],
+                    transaction,
+                });
+
+                if (orderWithItems?.orderItems?.length) {
+                    await confirmReservedStockForOrder(
+                        orderWithItems,
+                        transaction,
+                    );
+                }
+            }
+        }
+
+        await order.update(updateData, { transaction });
+
+        await transaction.commit();
+
+        let updatedOrder = null;
+        try {
+            updatedOrder = await getOrderWithRelations(order_id, null, false);
+        } catch (fullIncludeError) {
+            updatedOrder = await getOrderWithRelations(order_id, null, true);
+        }
+
+        const result = {
+            errCode: 0,
+            errMessage: `Payment status updated to ${payment_status}`,
+            order: updatedOrder || order,
+        };
+
+        return result;
+    } catch (e) {
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
+        throw e;
+    }
+};
+
+let getAllOrdersByUserId = async (
+    customer_id,
+    limit = 10,
+    cursor = null,
+    status = "all",
+) => {
     try {
         if (!customer_id) {
             return {
@@ -1001,7 +1217,7 @@ let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status
 
         const pageSize = parseInt(limit) || 10;
         const whereClause = { customer_id };
-        
+
         if (status && status !== "all") {
             whereClause.status = status;
         }
@@ -1010,7 +1226,7 @@ let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status
             // Cursor-based: fetch items older than the cursor
             // We use [Op.lt] because we sort DESC (newest first)
             whereClause.created_at = {
-                [db.Sequelize.Op.lt]: cursor
+                [db.Sequelize.Op.lt]: cursor,
             };
         }
 
@@ -1018,7 +1234,10 @@ let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status
             return db.Order.findAll({
                 where: whereClause,
                 include: includeType,
-                order: [["created_at", "DESC"], ["order_id", "DESC"]],
+                order: [
+                    ["created_at", "DESC"],
+                    ["order_id", "DESC"],
+                ],
                 limit: pageSize + 1, // Fetch one extra to check if there's more
             });
         };
@@ -1027,7 +1246,10 @@ let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status
         try {
             orders = await fetchOrders(ORDER_INCLUDE_FULL);
         } catch (fullIncludeError) {
-            console.error("getAllOrdersByUserId FULL include failed, fallback SAFE:", fullIncludeError);
+            console.error(
+                "getAllOrdersByUserId FULL include failed, fallback SAFE:",
+                fullIncludeError,
+            );
             orders = await fetchOrders(ORDER_INCLUDE_SAFE);
         }
 
@@ -1036,7 +1258,8 @@ let getAllOrdersByUserId = async (customer_id, limit = 10, cursor = null, status
             orders.pop(); // Remove the extra item
         }
 
-        const nextCursor = orders.length > 0 ? orders[orders.length - 1].created_at : null;
+        const nextCursor =
+            orders.length > 0 ? orders[orders.length - 1].created_at : null;
 
         return {
             errCode: 0,
@@ -1060,4 +1283,5 @@ export default {
     softDeleteOrder,
     hardDeleteOrder,
     getAllOrdersByUserId,
+    updateOrderPaymentStatus,
 };

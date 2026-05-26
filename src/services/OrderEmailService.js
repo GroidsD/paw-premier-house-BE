@@ -1,5 +1,7 @@
 const { sendEmail } = require("./EmailService");
-const buildUrlEmail = require("../utils/buildUrlEmail");
+const fs = require("fs");
+const path = require("path");
+// const buildUrlEmail = require("../utils/buildUrlEmail");
 
 const formatPrice = (value) => {
     const number = Number(value || 0);
@@ -17,6 +19,20 @@ const buildImageUrl = (image) => {
         process.env.BACKEND_URL || "http://localhost:5050"
     ).replace(/\/$/, "");
     return `${baseUrl}${image.startsWith("/") ? image : `/${image}`}`;
+};
+
+const loadTemplate = (templateName) => {
+    const templatePath = path.join(__dirname, "../templates/emails", `${templateName}.html`);
+    return fs.readFileSync(templatePath, "utf8");
+};
+
+const renderTemplate = (template, data) => {
+    let rendered = template;
+    for (const [key, value] of Object.entries(data)) {
+        const regex = new RegExp(`{{${key}}}`, "g");
+        rendered = rendered.replace(regex, value);
+    }
+    return rendered;
 };
 
 const renderOrderItems = (orderItems = []) => {
@@ -96,287 +112,86 @@ const renderOrderItems = (orderItems = []) => {
         .join("");
 };
 
-const sendOrderEmail = async ({ user, order, token }) => {
-    const url = buildUrlEmail("order", order.order_id, token);
+const sendPaymentSuccessEmail = async ({ user, order }) => {
+    const template = loadTemplate("payment-success");
+    const html = renderTemplate(template, {
+        userFullname: user?.fullname || "Customer",
+        orderId: order?.order_id || "",
+        orderCode: order?.order_code || "---",
+        orderStatus: order?.status || "confirmed",
+        totalPrice: formatPrice(order?.total_price),
+        orderItems: renderOrderItems(order?.orderItems || []),
+        originalPrice: formatPrice(order?.original_price),
+        shippingFee: formatPrice(order?.shipping_fee),
+        discount: formatPrice(order?.discount),
+    });
 
     return sendEmail({
         to: user.email,
-        subject: "Order Confirmation",
-        html: `
-            <div style="
-                margin:0;
-                padding:0;
-                background-color:#f3f4f6;
-                font-family:Arial, Helvetica, sans-serif;
-                color:#111827;
-            ">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; margin:0; padding:28px 0;">
-                    <tr>
-                        <td align="center">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px; background:#ffffff; border-radius:24px; overflow:hidden; border:1px solid #e5e7eb;">
-                                
-                                <tr>
-                                    <td style="
-                                        background:#1f2937;
-                                        padding:34px 24px 30px;
-                                        text-align:center;
-                                    ">
-                                        <div style="
-                                            width:68px;
-                                            height:68px;
-                                            line-height:68px;
-                                            margin:0 auto 16px;
-                                            background:#374151;
-                                            border-radius:50%;
-                                            font-size:30px;
-                                            text-align:center;
-                                        ">🐾</div>
+        subject: "Payment Successful - Paw Premier House",
+        html,
+    });
+};
 
-                                        <h1 style="
-                                            margin:0;
-                                            font-size:28px;
-                                            line-height:36px;
-                                            color:#ffffff;
-                                            font-weight:800;
-                                        ">
-                                            Order placed successfully!
-                                        </h1>
+const sendOrderTimeoutEmail = async ({ user, order }) => {
+    const template = loadTemplate("order-timeout");
+    const html = renderTemplate(template, {
+        userFullname: user?.fullname || "Customer",
+        orderId: order?.order_id || "",
+        orderCode: order?.order_code || "---",
+        totalPrice: formatPrice(order?.total_price),
+    });
 
-                                        <p style="
-                                            margin:12px 0 0;
-                                            font-size:15px;
-                                            line-height:24px;
-                                            color:#d1d5db;
-                                        ">
-                                            Thank you for shopping at Paw Premier House. Please confirm your order so we can begin processing it.
-                                        </p>
-                                    </td>
-                                </tr>
+    return sendEmail({
+        to: user.email,
+        subject: "Payment Expired - Paw Premier House",
+        html,
+    });
+};
 
-                                <tr>
-                                    <td style="padding:30px 24px 10px;">
-                                        <p style="
-                                            margin:0 0 14px;
-                                            font-size:16px;
-                                            line-height:26px;
-                                            color:#111827;
-                                        ">
-                                            Hello <strong>${user?.fullname || "Customer"}</strong>,
-                                        </p>
+const sendOrderShippingEmail = async ({ user, order }) => {
+    const template = loadTemplate("order-shipping");
+    const html = renderTemplate(template, {
+        userFullname: user?.fullname || "Customer",
+        orderId: order?.order_id || "",
+        orderCode: order?.order_code || "---",
+        totalPrice: formatPrice(order?.total_price),
+        orderItems: renderOrderItems(order?.orderItems || []),
+        receiverName: order?.receiver_name || "",
+        receiverPhone: order?.receiver_phone || "",
+        receiverAddress: `${order?.receiver_address || ""}, ${order?.receiver_district || ""}, ${order?.receiver_province || ""}`,
+    });
 
-                                        <p style="
-                                            margin:0 0 22px;
-                                            font-size:15px;
-                                            line-height:24px;
-                                            color:#4b5563;
-                                        ">
-                                            Your order has been created successfully in our system. Below are the details of your order:
-                                        </p>
+    return sendEmail({
+        to: user.email,
+        subject: "Order Shipped - Paw Premier House",
+        html,
+    });
+};
 
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            background:#f9fafb;
-                                            border:1px solid #e5e7eb;
-                                            border-radius:18px;
-                                            margin-bottom:22px;
-                                        ">
-                                            <tr>
-                                                <td style="padding:20px;">
-                                                    <h2 style="
-                                                        margin:0 0 14px;
-                                                        font-size:18px;
-                                                        line-height:26px;
-                                                        color:#111827;
-                                                        font-weight:800;
-                                                    ">
-                                                        Order information
-                                                    </h2>
+const sendOrderCompletedEmail = async ({ user, order }) => {
+    const template = loadTemplate("order-completed");
+    const html = renderTemplate(template, {
+        userFullname: user?.fullname || "Customer",
+        orderId: order?.order_id || "",
+        orderCode: order?.order_code || "---",
+        totalPrice: formatPrice(order?.total_price),
+        orderItems: renderOrderItems(order?.orderItems || []),
+        originalPrice: formatPrice(order?.original_price),
+        shippingFee: formatPrice(order?.shipping_fee),
+        discount: formatPrice(order?.discount),
+    });
 
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Order ID</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
-                                                                #${order?.order_id || ""}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Order code</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#2563eb; font-weight:700;" align="right">
-                                                                ${order?.order_code || "---"}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Total payment</td>
-                                                            <td style="padding:8px 0; font-size:18px; color:#0f766e; font-weight:800;" align="right">
-                                                                ${formatPrice(order?.total_price)}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Status</td>
-                                                            <td style="padding:8px 0;" align="right">
-                                                                <span style="
-                                                                    display:inline-block;
-                                                                    padding:7px 12px;
-                                                                    background:#e5e7eb;
-                                                                    color:#374151;
-                                                                    border-radius:999px;
-                                                                    font-size:12px;
-                                                                    font-weight:800;
-                                                                    text-transform:uppercase;
-                                                                    letter-spacing:0.3px;
-                                                                ">
-                                                                    ${order?.status || ""}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            border:1px solid #e5e7eb;
-                                            border-radius:18px;
-                                            overflow:hidden;
-                                            margin-bottom:22px;
-                                            background:#ffffff;
-                                        ">
-                                            <tr style="background:#f9fafb;">
-                                                <th align="center" style="padding:12px 8px; font-size:13px; color:#6b7280;">Image</th>
-                                                <th align="left" style="padding:12px 8px; font-size:13px; color:#6b7280;">Product</th>
-                                                <th align="center" style="padding:12px 8px; font-size:13px; color:#6b7280;">Qty</th>
-                                                <th align="right" style="padding:12px 8px; font-size:13px; color:#6b7280;">Price</th>
-                                                <th align="right" style="padding:12px 8px; font-size:13px; color:#6b7280;">Total</th>
-                                            </tr>
-                                            ${renderOrderItems(order?.orderItems || [])}
-                                        </table>
-
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            margin-bottom:24px;
-                                            background:#f9fafb;
-                                            border:1px solid #e5e7eb;
-                                            border-radius:18px;
-                                            padding:0;
-                                        ">
-                                            <tr>
-                                                <td style="padding:16px 18px;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Subtotal</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#111827;">
-                                                                ${formatPrice(order?.original_price)}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Shipping fee</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#111827;">
-                                                                ${formatPrice(order?.shipping_fee)}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Discount</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#dc2626; font-weight:700;">
-                                                                - ${formatPrice(order?.discount)}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="padding:10px 0 0; font-size:16px; color:#111827; font-weight:800;">Grand total</td>
-                                                            <td align="right" style="padding:10px 0 0; font-size:20px; color:#0f766e; font-weight:800;">
-                                                                ${formatPrice(order?.total_price)}
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-
-                                        <div style="text-align:center; margin:28px 0 18px;">
-                                            <a href="${url}"
-                                                style="
-                                                    display:inline-block;
-                                                    background:#2563eb;
-                                                    color:#ffffff;
-                                                    text-decoration:none;
-                                                    font-size:16px;
-                                                    font-weight:800;
-                                                    padding:14px 30px;
-                                                    border-radius:14px;
-                                                ">
-                                                Confirm your order
-                                            </a>
-                                        </div>
-
-                                        <p style="
-                                            margin:0 0 10px;
-                                            text-align:center;
-                                            font-size:13px;
-                                            line-height:20px;
-                                            color:#4b5563;
-                                        ">
-                                            Please confirm your order so we can process and deliver it as soon as possible.
-                                        </p>
-
-                                        <p style="
-                                            margin:0;
-                                            text-align:center;
-                                            font-size:13px;
-                                            line-height:20px;
-                                            color:#9ca3af;
-                                        ">
-                                            If the button does not work, please copy and paste the following link into your browser:
-                                        </p>
-
-                                        <p style="
-                                            margin:8px 0 0;
-                                            text-align:center;
-                                            font-size:13px;
-                                            line-height:20px;
-                                            word-break:break-all;
-                                        ">
-                                            <a href="${url}" style="color:#2563eb; text-decoration:none;">
-                                                ${url}
-                                            </a>
-                                        </p>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="
-                                        padding:22px 24px 26px;
-                                        border-top:1px solid #e5e7eb;
-                                        text-align:center;
-                                        background:#f9fafb;
-                                    ">
-                                        <p style="
-                                            margin:0 0 6px;
-                                            font-size:14px;
-                                            color:#111827;
-                                            font-weight:700;
-                                        ">
-                                            Paw Premier House
-                                        </p>
-                                        <p style="
-                                            margin:0;
-                                            font-size:12px;
-                                            line-height:18px;
-                                            color:#9ca3af;
-                                        ">
-                                            This is an automated email. Please do not reply directly to this message.
-                                        </p>
-                                    </td>
-                                </tr>
-
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        `,
+    return sendEmail({
+        to: user.email,
+        subject: "Order Completed - Paw Premier House",
+        html,
     });
 };
 
 module.exports = {
-    sendOrderEmail,
+    sendPaymentSuccessEmail,
+    sendOrderTimeoutEmail,
+    sendOrderShippingEmail,
+    sendOrderCompletedEmail,
 };
