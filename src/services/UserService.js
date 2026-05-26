@@ -600,11 +600,13 @@ let firebaseLogin = async (idToken) => {
          */
         const decoded = await admin.auth().verifyIdToken(idToken);
 
+        const userRecord = await admin.auth().getUser(decoded.uid);
+
         const firebaseUser = {
             uid: decoded.uid,
             email: decoded.email,
-            fullname: decoded.name || "",
-            avatar: decoded.picture || "",
+            fullname: userRecord.displayName || "",
+            avatar: userRecord.photoURL || "",
         };
 
         /**
@@ -627,6 +629,15 @@ let firebaseLogin = async (idToken) => {
             });
 
             user = instance;
+
+            if (!user.fullname && firebaseUser.fullname) {
+                await user.update(
+                    {
+                        fullname: firebaseUser.fullname,
+                    },
+                    { transaction: t },
+                );
+            }
         } catch (err) {
             if (err.name === "SequelizeUniqueConstraintError") {
                 // 🔥 fallback đọc ngoài transaction
