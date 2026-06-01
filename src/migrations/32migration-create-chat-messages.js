@@ -50,6 +50,10 @@ module.exports = {
                 type: Sequelize.JSON,
                 allowNull: true,
             },
+            metadata_json: {
+                type: Sequelize.JSON,
+                allowNull: true,
+            },
 
             created_at: {
                 allowNull: false,

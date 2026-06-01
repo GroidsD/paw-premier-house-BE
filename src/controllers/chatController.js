@@ -59,6 +59,18 @@ let chatWithBot = async (req, res) => {
             });
         }
 
+        const recentMessages = await ChatMessage.findAll({
+            where: {
+                chat_session_id: chatSession.chat_session_id,
+            },
+            order: [["created_at", "DESC"]],
+            limit: 8,
+        });
+
+        const history = recentMessages.reverse().map((m) => ({
+            role: m.sender === "assistant" ? "assistant" : "user",
+            content: m.message,
+        }));
         await ChatMessage.create({
             chat_session_id: chatSession.chat_session_id,
             sender: "user",
@@ -66,13 +78,32 @@ let chatWithBot = async (req, res) => {
         });
 
         const currentUser = {
-            userId: userId,
+            userId,
             guestId: finalGuestId,
             sessionId: chatSession.chat_session_id,
 
+            // Product context
+            currentProductId: chatSession.last_product_id,
             lastProductId: chatSession.last_product_id,
-            lastProductVariantId: chatSession.last_productVariant_id,
+            currentProductName: chatSession.last_product_name,
+            lastProductName: chatSession.last_product_name,
 
+            // Variant context - đặt đúng tên Python đang đọc
+            selectedVariantId: chatSession.last_productVariant_id,
+            currentVariantId: chatSession.last_productVariant_id,
+            lastVariantId: chatSession.last_productVariant_id,
+
+            // Service context
+            currentServiceId: chatSession.last_service_id,
+            lastServiceId: chatSession.last_service_id,
+            currentServiceName: chatSession.last_service_name,
+            lastServiceName: chatSession.last_service_name,
+
+            // Last shown list
+            lastShownProductIds: chatSession.last_shown_product_ids || [],
+            lastShownServiceIds: chatSession.last_shown_service_ids || [],
+
+            // Search / preference context
             lastPetType: chatSession.last_pet_type,
             lastProductCategory: chatSession.last_product_category,
             lastProductForm: chatSession.last_product_form,
@@ -83,14 +114,29 @@ let chatWithBot = async (req, res) => {
         const aiResult = await AIServices.callPythonChat({
             message,
             currentUser,
+            history,
         });
 
         const analysis = aiResult.analysis || {};
         const retrieval = aiResult.retrieval || {};
+        const retrievalItems = Array.isArray(retrieval.items)
+            ? retrieval.items
+            : [];
 
-        const firstItem = Array.isArray(retrieval.items)
-            ? retrieval.items[0]
-            : null;
+        const firstItem = retrievalItems[0] || null;
+
+        const firstProductItem = retrievalItems.find((item) => item.product_id);
+        const firstServiceItem = retrievalItems.find((item) => item.service_id);
+
+        const shownProductIds = retrievalItems
+            .filter((item) => item.product_id)
+            .map((item) => item.product_id);
+
+        const shownServiceIds = retrievalItems
+            .filter((item) => item.service_id)
+            .map((item) => item.service_id);
+
+     
 
         let finalIntent = aiResult.intent || analysis.intent || null;
 
@@ -225,6 +271,25 @@ let chatWithBot = async (req, res) => {
 
             const finalReply = `Mình tìm thấy đơn gần đây của bạn:\n${orderLines.join("\n")}`;
 
+            await ChatMessage.create({
+                chat_session_id: chatSession.chat_session_id,
+                sender: "assistant",
+                message: finalReply,
+                intent: finalIntent,
+                analysis_json: aiResult.analysis || null,
+                retrieval_json: {
+                    type: "orders",
+                    items: plainOrders,
+                },
+                next_action_json: {
+                    type: "show_order_status",
+                },
+            });
+
+            await chatSession.update({
+                last_intent: finalIntent,
+            });
+
             return res.status(200).json({
                 success: true,
                 sessionId: chatSession.chat_session_id,
@@ -235,6 +300,38 @@ let chatWithBot = async (req, res) => {
                 action: null,
             });
         }
+        if (aiResult.nextAction?.type === "ask_variant_selection") {
+            const finalReply =
+                aiResult.reply ||
+                aiResult.nextAction.message ||
+                "Sản phẩm này có nhiều phân loại. Bạn muốn chọn phân loại nào ạ?";
+
+            await ChatMessage.create({
+                chat_session_id: chatSession.chat_session_id,
+                sender: "assistant",
+                message: finalReply,
+                intent: finalIntent,
+                analysis_json: aiResult.analysis || null,
+                retrieval_json: aiResult.retrieval || null,
+                next_action_json: aiResult.nextAction,
+            });
+
+            await chatSession.update({
+                last_intent: finalIntent || chatSession.last_intent,
+            });
+
+            return res.status(200).json({
+                success: true,
+                sessionId: chatSession.chat_session_id,
+                guestId: finalGuestId,
+                reply: finalReply,
+                intent: finalIntent,
+                analysis: aiResult.analysis || null,
+                retrieval: aiResult.retrieval || null,
+                nextAction: aiResult.nextAction,
+                action: null,
+            });
+        }
         if (
             finalIntent === "cart_add" ||
             aiResult.nextAction?.type === "add_to_cart" ||
@@ -242,21 +339,42 @@ let chatWithBot = async (req, res) => {
         ) {
             finalIntent = "cart_add";
 
+            const nextAction = aiResult.nextAction || {};
+
             const productId =
+                nextAction.product_id ||
+                nextAction.payload?.product_id ||
+                retrieval.product_id ||
+                firstProductItem?.product_id ||
                 firstItem?.product_id ||
                 analysis.product_id ||
                 chatSession.last_product_id;
 
             const productVariantId =
-                firstItem?.productVariant_id ||
-                firstItem?.product_variant_id ||
+                nextAction.variant_id ||
+                nextAction.payload?.variant_id ||
+                nextAction.payload?.productVariant_id ||
+                retrieval.variant_id ||
+                firstProductItem?.matched_variant_id ||
+                firstProductItem?.selected_variant_id ||
+                firstProductItem?.default_variant_id ||
+                firstProductItem?.productVariant_id ||
+                firstProductItem?.product_variant_id ||
+                analysis.variant_id ||
                 analysis.productVariantId ||
                 analysis.productVariant_id ||
                 analysis.product_variant_id ||
                 chatSession.last_productVariant_id ||
                 null;
 
-            const quantity = Number(analysis.quantity || detectedQuantity || 1);
+            const quantity = Number(
+                nextAction.quantity ||
+                    nextAction.payload?.quantity ||
+                    retrieval.quantity ||
+                    analysis.quantity ||
+                    (isContextualAddToCart ? detectedQuantity : null) ||
+                    1,
+            );
 
             if (!productId) {
                 await ChatMessage.create({
@@ -297,16 +415,6 @@ let chatWithBot = async (req, res) => {
                 ? "Mình đã thêm sản phẩm này vào giỏ hàng cho bạn nha."
                 : aiResult.reply;
 
-        await ChatMessage.create({
-            chat_session_id: chatSession.chat_session_id,
-            sender: "assistant",
-            message: finalReply || "",
-            intent: finalIntent,
-            analysis_json: aiResult.analysis || null,
-            retrieval_json: aiResult.retrieval || null,
-            next_action_json: frontendAction || aiResult.nextAction || null,
-        });
-
         await chatSession.update({
             last_pet_type: analysis.pet_type || chatSession.last_pet_type,
 
@@ -321,21 +429,70 @@ let chatWithBot = async (req, res) => {
                 chatSession.last_recommendation_goal,
 
             last_product_id:
-                firstItem?.product_id ||
+                firstProductItem?.product_id ||
                 analysis.product_id ||
                 chatSession.last_product_id,
 
+            last_product_name:
+                firstProductItem?.name || chatSession.last_product_name,
+
             last_productVariant_id:
-                firstItem?.productVariant_id ||
-                firstItem?.product_variant_id ||
+                firstProductItem?.matched_variant_id ||
+                firstProductItem?.selected_variant_id ||
+                firstProductItem?.default_variant_id ||
+                firstProductItem?.productVariant_id ||
+                firstProductItem?.product_variant_id ||
+                analysis.variant_id ||
                 analysis.productVariantId ||
                 analysis.productVariant_id ||
                 analysis.product_variant_id ||
                 chatSession.last_productVariant_id,
 
+            last_service_id:
+                firstServiceItem?.service_id ||
+                analysis.service_id ||
+                chatSession.last_service_id,
+
+            last_service_name:
+                firstServiceItem?.name || chatSession.last_service_name,
+
+            last_shown_product_ids: shownProductIds.length
+                ? shownProductIds
+                : chatSession.last_shown_product_ids,
+
+            last_shown_service_ids: shownServiceIds.length
+                ? shownServiceIds
+                : chatSession.last_shown_service_ids,
+
+            last_search_filters: {
+                pet_type: analysis.pet_type || null,
+                product_category: analysis.product_category || null,
+                product_form: analysis.product_form || null,
+                service_category: analysis.service_category || null,
+                service_type: analysis.service_type || null,
+                price_min: analysis.price_min || null,
+                price_max: analysis.price_max || null,
+                discount_mode: analysis.discount_mode || null,
+                recommendation_goal: analysis.recommendation_goal || null,
+            },
+
             last_intent: finalIntent || chatSession.last_intent,
         });
 
+        await ChatMessage.create({
+            chat_session_id: chatSession.chat_session_id,
+            sender: "assistant",
+            message: finalReply || "",
+            intent: finalIntent,
+            analysis_json: aiResult.analysis || null,
+            retrieval_json: aiResult.retrieval || null,
+            next_action_json: frontendAction || aiResult.nextAction || null,
+            metadata_json: {
+                source: "python_ai",
+                action:
+                    frontendAction?.type || aiResult.nextAction?.type || null,
+            },
+        });
         return res.status(200).json({
             success: true,
             sessionId: chatSession.chat_session_id,
@@ -352,6 +509,11 @@ let chatWithBot = async (req, res) => {
                       }
                     : aiResult.nextAction || null,
             action: frontendAction,
+            metadata: {
+                source: "python_ai",
+                action:
+                    frontendAction?.type || aiResult.nextAction?.type || null,
+            },
         });
     } catch (e) {
         console.error("[CHAT CONTROLLER] Error:", e);

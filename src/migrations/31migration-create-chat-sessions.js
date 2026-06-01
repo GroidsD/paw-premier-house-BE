@@ -66,7 +66,41 @@ module.exports = {
                 onUpdate: "CASCADE",
                 onDelete: "SET NULL",
             },
+            last_product_name: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
 
+            last_service_id: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "services",
+                    key: "service_id",
+                },
+                onUpdate: "CASCADE",
+                onDelete: "SET NULL",
+            },
+
+            last_service_name: {
+                type: Sequelize.STRING,
+                allowNull: true,
+            },
+
+            last_shown_product_ids: {
+                type: Sequelize.JSON,
+                allowNull: true,
+            },
+
+            last_shown_service_ids: {
+                type: Sequelize.JSON,
+                allowNull: true,
+            },
+
+            last_search_filters: {
+                type: Sequelize.JSON,
+                allowNull: true,
+            },
             last_intent: {
                 type: Sequelize.STRING,
                 allowNull: true,
