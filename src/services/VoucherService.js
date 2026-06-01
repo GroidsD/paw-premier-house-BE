@@ -24,6 +24,7 @@ const calculateDiscount = (voucher, totalPrice) => {
 const findAndValidateVoucher = async ({
     code,
     totalPrice,
+    userId,
     applyFor = "order",
     transaction = null,
     lock = false,
@@ -41,7 +42,9 @@ const findAndValidateVoucher = async ({
         ...(lock ? { lock: transaction.LOCK.UPDATE } : {}),
     });
 
-    if (!voucher) throw new Error("Voucher không hợp lệ");
+    if (!voucher) {
+        throw new Error("Voucher không hợp lệ");
+    }
 
     // check loại áp dụng
     if (voucher.apply_for !== "all" && voucher.apply_for !== applyFor) {
@@ -61,16 +64,40 @@ const findAndValidateVoucher = async ({
         throw new Error("Đơn hàng chưa đủ điều kiện áp voucher");
     }
 
+    // check user đã dùng voucher chưa
+    if (userId) {
+        const existingUsage = await db.VoucherUsage.findOne({
+            where: {
+                voucher_id: voucher.voucher_id,
+                user_id: userId,
+                status: "used",
+            },
+            transaction,
+        });
+
+        if (existingUsage) {
+            throw new Error("Bạn đã sử dụng voucher này rồi");
+        }
+    }
+
     return voucher;
 };
 
 // 1) validate trước ở cart/checkout
-const validateVoucher = async ({ code, totalPrice, applyFor = "order" }) => {
+const validateVoucher = async ({
+    code,
+    totalPrice,
+    userId,
+    applyFor = "order",
+}) => {
     const voucher = await findAndValidateVoucher({
         code,
         totalPrice,
+        userId,
         applyFor,
     });
+
+    console.log("voucher =", voucher);
 
     const discountAmount = calculateDiscount(voucher, totalPrice);
 
@@ -100,6 +127,7 @@ const redeemVoucher = async ({
             code,
             totalPrice,
             applyFor,
+            userId,
             transaction: t,
             lock: true,
         });
@@ -285,7 +313,6 @@ const updateVoucher = async (id, data) => {
         throw new Error("start_date phải trước end_date");
     }
 
-    
     await voucher.update({
         code: data.code ?? voucher.code,
         discount_type: data.discount_type ?? voucher.discount_type,
