@@ -4,9 +4,12 @@ const validateVoucher = async (req, res) => {
     try {
         const { code, totalPrice, applyFor } = req.body;
 
+        const userId = req.user.user_id;
+
         const result = await VoucherService.validateVoucher({
             code,
             totalPrice,
+            userId,
             applyFor: applyFor || "order",
         });
 
@@ -16,7 +19,7 @@ const validateVoucher = async (req, res) => {
             data: result,
         });
     } catch (error) {
-        return res.status(400).json({
+        return res.json({
             errCode: 1,
             errMessage: error.message,
         });
