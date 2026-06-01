@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             ChatMessage.belongsTo(models.ChatSession, {
                 foreignKey: "chat_session_id",
+                targetKey: "chat_session_id",
                 as: "session",
                 onUpdate: "CASCADE",
                 onDelete: "CASCADE",
@@ -55,7 +56,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.JSON,
                 allowNull: true,
             },
-
+            metadata_json: {
+                type: DataTypes.JSON,
+                allowNull: true,
+            },
             created_at: DataTypes.DATE,
             updated_at: DataTypes.DATE,
         },
