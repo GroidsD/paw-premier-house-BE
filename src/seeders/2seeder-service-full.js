@@ -208,7 +208,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Standard Pet Hotel Room",
                 description:
-                    "A clean and comfortable standard room for short-term pet stays.",
+                    "Designed for pets staying away from home, this room provides a safe, clean, and comfortable environment where your companion can relax with confidence.\n\n" +
+                    "**What's Included**\n" +
+                    "- Climate-controlled accommodation\n" +
+                    "- Cozy sleeping area\n" +
+                    "- Daily wellness monitoring\n" +
+                    "- Scheduled feeding support\n" +
+                    "- 24/7 staff supervision\n\n" +
+                    "Perfect for short-term stays while ensuring your pet feels secure, comfortable, and well cared for throughout their visit.",
                 price: 250000,
                 duration: 1440,
             },
@@ -217,7 +224,15 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Deluxe Pet Hotel Room",
                 description:
-                    "A spacious deluxe room with enhanced comfort for pets.",
+                    "Designed for pets who enjoy extra comfort during their stay, the Deluxe Pet Hotel Room offers a spacious climate-controlled environment, premium bedding, and enhanced daily care.\n\n" +
+                    "**What's Included**\n" +
+                    "- Air Conditioning\n" +
+                    "- Premium Pet Bed\n" +
+                    "- 24/7 Professional Supervision\n" +
+                    "- Live Camera Monitoring\n" +
+                    "- Personalized Wellness Checks\n\n" +
+                    "Pet owners can stay connected through live camera monitoring while our experienced caregivers provide attentive support throughout the stay.\n\n" +
+                    "Perfect for pets that benefit from additional space, comfort, and peace of mind during overnight or extended stays.",
                 price: 320000,
                 duration: 1440,
             },
@@ -226,7 +241,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "VIP Pet Suite",
                 description:
-                    "Premium suite with extra space, soft bedding, and dedicated care.",
+                    "Our most luxurious accommodation option, designed to provide exceptional comfort and personalized attention for your pet.\n\n" +
+                    "**Premium Amenities**\n" +
+                    "- Spacious Private Suite\n" +
+                    "- Premium Bedding\n" +
+                    "- Climate-Controlled Comfort\n" +
+                    "- 24/7 Supervision\n" +
+                    "- Live Camera Monitoring\n\n" +
+                    "Ideal for pets accustomed to premium care and owners seeking complete peace of mind during extended stays.",
                 price: 450000,
                 duration: 1440,
             },
@@ -235,7 +257,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Overnight Boarding Care",
                 description:
-                    "Safe overnight boarding service for pets with monitoring.",
+                    "A safe and reliable overnight accommodation service for pets requiring short-term care.\n\n" +
+                    "**Included Services**\n" +
+                    "- Overnight Supervision\n" +
+                    "- Comfortable Sleeping Arrangements\n" +
+                    "- Feeding Assistance\n" +
+                    "- Evening Wellness Checks\n" +
+                    "- Secure Boarding Environment\n\n" +
+                    "Whether you're traveling, working late, or away for the night, your pet will receive attentive care until pickup.",
                 price: 280000,
                 duration: 1440,
             },
@@ -244,7 +273,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Weekend Pet Stay",
                 description:
-                    "Weekend hotel package for pets with full-day supervision.",
+                    "A complete weekend boarding package designed for pets whose owners are away for several days.\n\n" +
+                    "**Package Features**\n" +
+                    "- Weekend Accommodation\n" +
+                    "- Scheduled Feeding\n" +
+                    "- Wellness Monitoring\n" +
+                    "- 24/7 Supervision\n" +
+                    "- Camera Monitoring Access\n\n" +
+                    "Our caregivers ensure your pet remains comfortable, active, and stress-free throughout the weekend.",
                 price: 600000,
                 duration: 2880,
             },
@@ -253,7 +289,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Luxury Cat Hotel Room",
                 description:
-                    "A quiet and cozy hotel room specially designed for cats.",
+                    "Specially designed for feline guests, this quiet accommodation provides a calm environment away from noisy activity areas.\n\n" +
+                    "**Cat-Friendly Features**\n" +
+                    "- Air-Conditioned Comfort\n" +
+                    "- Soft Bedding\n" +
+                    "- Private Resting Spaces\n" +
+                    "- Low-Stress Environment\n" +
+                    "- Daily Care and Monitoring\n\n" +
+                    "Perfect for cats who prefer privacy, relaxation, and a peaceful boarding experience.",
                 price: 300000,
                 duration: 1440,
             },
@@ -262,7 +305,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Luxury Dog Boarding",
                 description:
-                    "Comfortable dog boarding with premium bedding and care.",
+                    "Premium boarding tailored specifically for dogs requiring extra attention and comfort.\n\n" +
+                    "**Included Amenities**\n" +
+                    "- Comfortable Sleeping Area\n" +
+                    "- Personalized Daily Care\n" +
+                    "- Wellness Monitoring\n" +
+                    "- Camera Monitoring Access\n" +
+                    "- 24/7 Supervision\n\n" +
+                    "An excellent choice for dogs that thrive with regular interaction and attentive support.",
                 price: 350000,
                 duration: 1440,
             },
@@ -271,7 +321,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Family Multi-Pet Room",
                 description:
-                    "Shared room for pets from the same household staying together.",
+                    "A spacious shared accommodation designed for pets from the same household.\n\n" +
+                    "**Room Benefits**\n" +
+                    "- Shared Family Environment\n" +
+                    "- Climate-Controlled Comfort\n" +
+                    "- Comfortable Bedding\n" +
+                    "- Reduced Separation Anxiety\n" +
+                    "- Professional Supervision\n\n" +
+                    "Allows familiar companions to stay together while receiving attentive care from our team.",
                 price: 500000,
                 duration: 1440,
             },
@@ -280,7 +337,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Daycare Hotel Package",
                 description:
-                    "Daily care package with rest area, feeding, and supervision.",
+                    "A convenient daytime care solution for busy pet owners who need professional supervision during working hours.\n\n" +
+                    "**Daycare Includes**\n" +
+                    "- Comfortable Rest Area\n" +
+                    "- Feeding Support\n" +
+                    "- Wellness Monitoring\n" +
+                    "- Staff Supervision\n" +
+                    "- Structured Daily Routine\n\n" +
+                    "Pets enjoy a safe and engaging environment before returning home in the evening.",
                 price: 220000,
                 duration: 720,
             },
@@ -289,7 +353,14 @@ module.exports = {
                 serviceCategories_id: 2,
                 name: "Premium Recovery Stay",
                 description:
-                    "Quiet recovery stay for pets needing extra attention and comfort.",
+                    "A specialized accommodation option for pets recovering from medical procedures, grooming treatments, or stressful experiences.\n\n" +
+                    "**Recovery Support**\n" +
+                    "- Quiet Recovery Environment\n" +
+                    "- Continuous Supervision\n" +
+                    "- Climate-Controlled Comfort\n" +
+                    "- Wellness Monitoring\n" +
+                    "- Additional Caregiver Attention\n\n" +
+                    "Designed to promote relaxation, comfort, and a smooth recovery process.",
                 price: 400000,
                 duration: 1440,
             },

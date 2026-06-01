@@ -7,7 +7,8 @@
         "start": "nodemon --exec ./node_modules/.bin/babel-node src/server.js",
         "embed": "babel-node src/scripts/embedProducts.js",
         "embed:services": "babel-node src/scripts/embedServices.js",
-        "embed:all": "npm run embed && npm run embed:services"
+        "embed:all": "npm run embed && npm run embed:services",
+        "db:fresh": "npx sequelize-cli db:drop && npx sequelize-cli db:create && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all"
     },
     "author": "",
     "license": "ISC",

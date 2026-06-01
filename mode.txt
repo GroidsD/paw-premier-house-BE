@@ -4,6 +4,8 @@ npx sequelize-cli db:migrate:undo:all
 
 check seeder :npx sequelize-cli db:seed:all
 
+reset database : npm run db:fresh
+
  CRUD : create ,read , update ,delete 
  API: dung de giao tiep giua backend va fontend
  BackEnd:Node.js(Database) Database=> data object-> json object(key , value)
