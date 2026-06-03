@@ -27,6 +27,16 @@ router.post(
     bookingController.createBooking,
 );
 
+router.post(
+    "/api/booking/:bookingId/payment/create",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["booking:create"],
+    }),
+    bookingController.createBookingPayment,
+);
+
 router.get(
     "/api/booking/my-bookings",
     authMiddleware,

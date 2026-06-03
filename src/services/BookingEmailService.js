@@ -1,4 +1,6 @@
 const { sendEmail } = require("./EmailService");
+const fs = require("fs");
+const path = require("path");
 const buildUrlEmail = require("../utils/buildUrlEmail");
 
 const formatPrice = (value) => {
@@ -48,7 +50,9 @@ const getBookingStatusLabel = (status) => {
 };
 
 const getBookingStatusStyle = (status) => {
-    const normalized = String(status || "").toLowerCase();
+    const normalized = String(status || "")
+        .trim()
+        .toLowerCase();
 
     switch (normalized) {
         case "confirmed":
@@ -95,7 +99,9 @@ const getBookingType = (booking) => {
     if (!Array.isArray(items) || !items.length) return "service";
 
     const firstType = items?.[0]?.service?.category?.type;
-    return String(firstType || "service").toLowerCase();
+    return String(firstType || "service")
+        .trim()
+        .toLowerCase();
 };
 
 const getBookingMeta = (booking) => {
@@ -142,6 +148,24 @@ const getServiceImage = (item) => {
     );
 };
 
+const loadTemplate = (templateName) => {
+    const templatePath = path.join(
+        __dirname,
+        "../templates/emails",
+        `${templateName}.html`,
+    );
+    return fs.readFileSync(templatePath, "utf8");
+};
+
+const renderTemplate = (template, data) => {
+    let rendered = template;
+    for (const [key, value] of Object.entries(data)) {
+        const regex = new RegExp(`{{${key}}}`, "g");
+        rendered = rendered.replace(regex, value);
+    }
+    return rendered;
+};
+
 const renderBookingScheduleRows = (booking) => {
     const bookingType = getBookingType(booking);
 
@@ -179,7 +203,9 @@ const renderBookingScheduleRows = (booking) => {
 };
 
 const renderServiceTypeBadge = (type) => {
-    const normalized = String(type || "service").toLowerCase();
+    const normalized = String(type || "service")
+        .trim()
+        .toLowerCase();
 
     if (normalized === "hotel") {
         return `
@@ -398,352 +424,214 @@ const renderBookingItems = (booking) => {
         .join("");
 };
 
-const sendBookingEmail = async ({ user, booking, token }) => {
+const sendBookingEmail = async ({ user, booking, token, paymentUrl }) => {
     const url = buildUrlEmail("booking", booking.booking_id, token);
     const meta = getBookingMeta(booking);
+    const paymentMethodLabel = String(
+        booking?.payment_method || "SHOP",
+    ).toUpperCase();
+    const paymentStatusLabel = String(
+        booking?.payment_status || "unpaid",
+    ).toUpperCase();
+
+    const actionSection = paymentUrl
+        ? `
+            <div style="text-align:center; margin:28px 0 18px;">
+                <a
+                    href="${paymentUrl}"
+                    style="
+                        display:inline-block;
+                        background:#10b981;
+                        color:#ffffff;
+                        text-decoration:none;
+                        font-size:16px;
+                        font-weight:800;
+                        padding:14px 30px;
+                        border-radius:14px;
+                    "
+                >
+                    Thanh toán qua MoMo
+                </a>
+            </div>
+            <p style="
+                margin:0 0 20px;
+                text-align:center;
+                font-size:14px;
+                color:#4b5563;
+                line-height:22px;
+            ">
+                Vui lòng hoàn tất thanh toán bằng MoMo để xác nhận booking.
+            </p>
+            <p style="
+                margin:0;
+                text-align:center;
+                font-size:13px;
+                line-height:20px;
+                color:#9ca3af;
+            ">
+                Nếu nút không hoạt động, hãy sao chép đường dẫn bên dưới và dán vào trình duyệt:
+            </p>
+            <p style="
+                margin:8px 0 0;
+                text-align:center;
+                font-size:13px;
+                line-height:20px;
+                word-break:break-all;
+            ">
+                <a href="${paymentUrl}" style="color:#2563eb; text-decoration:none;">${paymentUrl}</a>
+            </p>
+        `
+        : booking?.payment_method === "MOMO" &&
+            booking?.payment_status === "paid"
+          ? `
+                <p style="
+                    margin:0 0 20px;
+                    text-align:center;
+                    font-size:15px;
+                    color:#111827;
+                    line-height:24px;
+                ">
+                    Thanh toán MoMo đã hoàn tất và booking của bạn đã được xác nhận thành công.
+                </p>
+            `
+          : `
+                <div style="text-align:center; margin:28px 0 18px;">
+                    <a
+                        href="${url}"
+                        style="
+                            display:inline-block;
+                            background:#2563eb;
+                            color:#ffffff;
+                            text-decoration:none;
+                            font-size:16px;
+                            font-weight:800;
+                            padding:14px 30px;
+                            border-radius:14px;
+                        "
+                    >
+                        Confirm booking
+                    </a>
+                </div>
+            `;
+
+    const voucherSection = booking?.voucher
+        ? `
+            <tr>
+                <td style="padding:6px 0; font-size:14px; color:#6b7280;">Voucher</td>
+                <td align="right" style="padding:6px 0; font-size:14px; color:#111827; font-weight:700;">
+                    ${booking?.voucher?.code || booking?.voucher?.name || "---"}
+                </td>
+            </tr>
+        `
+        : "";
+
+    const bookingType = getBookingType(booking);
+    let templateName = "booking-confirmation";
+    if (bookingType === "spa") templateName = "booking-spa";
+    else if (bookingType === "hotel") templateName = "booking-hotel";
+
+    const html = renderTemplate(loadTemplate(templateName), {
+        userFullname: user?.fullname || "Customer",
+        title: meta.title,
+        intro: meta.intro,
+        badgeLabel: meta.badgeLabel,
+        bookingId: booking?.booking_id || "---",
+        bookingCode: booking?.booking_code || "---",
+        paymentMethod: paymentMethodLabel,
+        paymentStatus: paymentStatusLabel,
+        petName: booking?.pet?.name || "---",
+        petSpecies: booking?.pet?.species || "---",
+        petBreed: booking?.pet?.breed || "---",
+        bookingDate: formatDateOnly(booking?.date || booking?.created_at),
+        totalPrice: formatPrice(booking?.total_price),
+        bookingStatus: getBookingStatusLabel(booking?.status),
+        bookingStatusStyle: getBookingStatusStyle(booking?.status),
+        scheduleRows: renderBookingScheduleRows(booking),
+        bookingItems: renderBookingItems(booking),
+        originalPrice: formatPrice(
+            booking?.original_price ||
+                booking?.subtotal ||
+                booking?.total_price,
+        ),
+        discount: formatPrice(booking?.discount || 0),
+        voucherSection,
+        grandTotal: formatPrice(booking?.total_price),
+        actionSection,
+    });
 
     return sendEmail({
         to: user.email,
         subject: meta.subject,
-        html: `
-            <div style="
-                margin:0;
-                padding:0;
-                background-color:#f3f4f6;
-                font-family:Arial, Helvetica, sans-serif;
-                color:#111827;
-            ">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                    width:100%;
-                    background-color:#f3f4f6;
-                    margin:0;
-                    padding:24px 0;
-                ">
-                    <tr>
-                        <td align="center" style="padding:0 12px;">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                max-width:680px;
-                                background:#ffffff;
-                                border-radius:24px;
-                                overflow:hidden;
-                                border:1px solid #e5e7eb;
-                            ">
-                                <tr>
-                                    <td style="
-                                        background:#1f2937;
-                                        padding:32px 24px;
-                                        text-align:center;
-                                    ">
-                                        <div style="
-                                            display:inline-block;
-                                            padding:6px 12px;
-                                            border-radius:999px;
-                                            background:#374151;
-                                            color:#e5e7eb;
-                                            font-size:12px;
-                                            font-weight:700;
-                                            letter-spacing:0.4px;
-                                            margin-bottom:14px;
-                                        ">
-                                            ${meta.badgeLabel}
-                                        </div>
+        html,
+    });
+};
 
-                                        <div style="
-                                            font-size:32px;
-                                            line-height:32px;
-                                            margin-bottom:14px;
-                                        ">
-                                            🐾
-                                        </div>
+const sendBookingTimeoutEmail = async ({ user, booking }) => {
+    const bookingType = getBookingType(booking);
+    const checkInValue =
+        booking?.check_in_date ||
+        booking?.check_in ||
+        booking?.start_date ||
+        "";
+    const checkOutValue =
+        booking?.check_out_date ||
+        booking?.check_out ||
+        booking?.end_date ||
+        "";
 
-                                        <h1 style="
-                                            margin:0;
-                                            font-size:28px;
-                                            line-height:36px;
-                                            color:#ffffff;
-                                            font-weight:800;
-                                        ">
-                                            ${meta.title}
-                                        </h1>
+    const html = renderTemplate(loadTemplate("booking-timeout"), {
+        userFullname: user?.fullname || "Customer",
+        bookingId: booking?.booking_id || "---",
+        bookingCode: booking?.booking_code || "---",
+        bookingType: String(bookingType || "service").replace(/^./, (c) =>
+            c.toUpperCase(),
+        ),
+        petName: booking?.pet?.name || booking?.pet_name || "---",
+        bookingDate: formatDateOnly(
+            booking?.created_at || booking?.date || booking?.booking_date,
+        ),
+        checkInDate: checkInValue ? formatDateTime(checkInValue) : "---",
+        checkOutDate: checkOutValue ? formatDateTime(checkOutValue) : "---",
+        paymentStatus: String(
+            booking?.payment_status || "expired",
+        ).toUpperCase(),
+        totalPrice: formatPrice(booking?.total_price),
+    });
 
-                                        <p style="
-                                            margin:12px 0 0;
-                                            font-size:15px;
-                                            line-height:24px;
-                                            color:#d1d5db;
-                                        ">
-                                            ${meta.intro}
-                                        </p>
-                                    </td>
-                                </tr>
+    return sendEmail({
+        to: user.email,
+        subject: "Booking payment expired",
+        html,
+    });
+};
 
-                                <tr>
-                                    <td style="padding:28px 24px 10px;">
-                                        <p style="
-                                            margin:0 0 12px;
-                                            font-size:16px;
-                                            line-height:26px;
-                                            color:#111827;
-                                        ">
-                                            Hello <strong>${user?.fullname || "Customer"}</strong>,
-                                        </p>
+const sendBookingReminderEmail = async ({ user, booking }) => {
+    const bookingType = getBookingType(booking);
+    const checkInValue =
+        booking?.check_in || booking?.check_in_date || booking?.date || "";
+    const checkOutValue = booking?.check_out || booking?.check_out_date || "";
 
-                                        <p style="
-                                            margin:0 0 22px;
-                                            font-size:15px;
-                                            line-height:24px;
-                                            color:#4b5563;
-                                        ">
-                                            Your booking has been successfully created in our system. Please review the details below.
-                                        </p>
+    const html = renderTemplate(loadTemplate("booking-reminder"), {
+        userFullname: user?.fullname || "Customer",
+        bookingCode: booking?.booking_code || "---",
+        bookingType: String(bookingType || "service").replace(/^./, (c) =>
+            c.toUpperCase(),
+        ),
+        petName: booking?.pet?.name || booking?.pet_name || "---",
+        checkInDate: checkInValue ? formatDateTime(checkInValue) : "---",
+        checkOutDate: checkOutValue ? formatDateTime(checkOutValue) : "---",
+        totalPrice: formatPrice(booking?.total_price),
+    });
 
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            background:#f9fafb;
-                                            border:1px solid #e5e7eb;
-                                            border-radius:18px;
-                                            margin-bottom:22px;
-                                        ">
-                                            <tr>
-                                                <td style="padding:20px;">
-                                                    <h2 style="
-                                                        margin:0 0 14px;
-                                                        font-size:18px;
-                                                        line-height:26px;
-                                                        color:#111827;
-                                                        font-weight:800;
-                                                    ">
-                                                        Booking information
-                                                    </h2>
-
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Booking ID</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
-                                                                #${booking?.booking_id || "---"}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Booking code</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#2563eb; font-weight:700;" align="right">
-                                                                ${booking?.booking_code || "---"}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Pet name</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
-                                                                ${booking?.pet?.name || "---"}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Species</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
-                                                                ${booking?.pet?.species || "---"}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Breed</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
-                                                                ${booking?.pet?.breed || "---"}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Booking date</td>
-                                                            <td style="padding:8px 0; font-size:14px; color:#111827; font-weight:700;" align="right">
-                                                                ${formatDateOnly(
-                                                                    booking?.date ||
-                                                                        booking?.created_at,
-                                                                )}
-                                                            </td>
-                                                        </tr>
-
-                                                        ${renderBookingScheduleRows(booking)}
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Total payment</td>
-                                                            <td style="padding:8px 0; font-size:18px; color:#0f766e; font-weight:800;" align="right">
-                                                                ${formatPrice(booking?.total_price)}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:8px 0; font-size:14px; color:#6b7280;">Status</td>
-                                                            <td style="padding:8px 0;" align="right">
-                                                                <span style="
-                                                                    display:inline-block;
-                                                                    padding:7px 12px;
-                                                                    border-radius:999px;
-                                                                    font-size:12px;
-                                                                    font-weight:800;
-                                                                    text-transform:uppercase;
-                                                                    letter-spacing:0.3px;
-                                                                    ${getBookingStatusStyle(booking?.status)}
-                                                                ">
-                                                                    ${getBookingStatusLabel(booking?.status)}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-
-                                        <div style="
-                                            margin:0 0 12px;
-                                            font-size:18px;
-                                            line-height:26px;
-                                            color:#111827;
-                                            font-weight:800;
-                                        ">
-                                            Service details
-                                        </div>
-
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:22px;">
-                                            ${renderBookingItems(booking)}
-                                        </table>
-
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
-                                            margin-bottom:24px;
-                                            background:#f9fafb;
-                                            border:1px solid #e5e7eb;
-                                            border-radius:18px;
-                                        ">
-                                            <tr>
-                                                <td style="padding:16px 18px;">
-                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Subtotal</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#111827;">
-                                                                ${formatPrice(
-                                                                    booking?.original_price ||
-                                                                        booking?.subtotal ||
-                                                                        booking?.total_price,
-                                                                )}
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <td style="padding:6px 0; font-size:14px; color:#6b7280;">Discount</td>
-                                                            <td align="right" style="padding:6px 0; font-size:14px; color:#dc2626; font-weight:700;">
-                                                                - ${formatPrice(booking?.discount || 0)}
-                                                            </td>
-                                                        </tr>
-
-                                                        ${
-                                                            booking?.voucher
-                                                                ? `
-                                                            <tr>
-                                                                <td style="padding:6px 0; font-size:14px; color:#6b7280;">Voucher</td>
-                                                                <td align="right" style="padding:6px 0; font-size:14px; color:#111827; font-weight:700;">
-                                                                    ${booking?.voucher?.code || booking?.voucher?.name || "---"}
-                                                                </td>
-                                                            </tr>
-                                                        `
-                                                                : ""
-                                                        }
-
-                                                        <tr>
-                                                            <td style="padding:10px 0 0; font-size:16px; color:#111827; font-weight:800;">Grand total</td>
-                                                            <td align="right" style="padding:10px 0 0; font-size:20px; color:#0f766e; font-weight:800;">
-                                                                ${formatPrice(booking?.total_price)}
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-
-                                        <div style="text-align:center; margin:28px 0 18px;">
-                                            <a
-                                                href="${url}"
-                                                style="
-                                                    display:inline-block;
-                                                    background:#2563eb;
-                                                    color:#ffffff;
-                                                    text-decoration:none;
-                                                    font-size:16px;
-                                                    font-weight:800;
-                                                    padding:14px 30px;
-                                                    border-radius:14px;
-                                                "
-                                            >
-                                                Confirm booking
-                                            </a>
-                                        </div>
-
-                                        <p style="
-                                            margin:0 0 10px;
-                                            text-align:center;
-                                            font-size:13px;
-                                            line-height:20px;
-                                            color:#4b5563;
-                                        ">
-                                           Please confirm your booking so we can process it as soon as possible.
-                                        </p>
-
-                                        <p style="
-                                            margin:0;
-                                            text-align:center;
-                                            font-size:13px;
-                                            line-height:20px;
-                                            color:#9ca3af;
-                                        ">
-                                            If the button does not work, please copy and paste the following link into your browser:
-                                        </p>
-
-                                        <p style="
-                                            margin:8px 0 0;
-                                            text-align:center;
-                                            font-size:13px;
-                                            line-height:20px;
-                                            word-break:break-all;
-                                        ">
-                                            <a href="${url}" style="color:#2563eb; text-decoration:none;">
-                                                ${url}
-                                            </a>
-                                        </p>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="
-                                        padding:22px 24px 26px;
-                                        border-top:1px solid #e5e7eb;
-                                        text-align:center;
-                                        background:#f9fafb;
-                                    ">
-                                        <p style="
-                                            margin:0 0 6px;
-                                            font-size:14px;
-                                            color:#111827;
-                                            font-weight:700;
-                                        ">
-                                            Paw Premier House
-                                        </p>
-
-                                        <p style="
-                                            margin:0;
-                                            font-size:12px;
-                                            line-height:18px;
-                                            color:#9ca3af;
-                                        ">
-                                            This is an automated email. Please do not reply directly to this message.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        `,
+    return sendEmail({
+        to: user.email,
+        subject: "Reminder: your booking starts in 15 minutes",
+        html,
     });
 };
 
 module.exports = {
     sendBookingEmail,
+    sendBookingTimeoutEmail,
+    sendBookingReminderEmail,
 };

@@ -278,6 +278,8 @@ const getVoucherStats = async () => {
 };
 
 const updateVoucher = async (id, data) => {
+    console.log("param id =", id);
+    console.log("voucher =", voucher?.toJSON());
     const voucher = await db.Voucher.findByPk(id);
     if (!voucher) throw new Error("Voucher không tồn tại");
 
@@ -333,6 +335,17 @@ const updateVoucher = async (id, data) => {
     return voucher;
 };
 
+const getUserVoucherUsages = async (userId) => {
+    const voucherUsages = await db.VoucherUsage.findAll({
+        where: {
+            user_id: userId,
+        },
+        order: [["used_at", "DESC"]],
+    });
+
+    return voucherUsages;
+};
+
 export default {
     validateVoucher,
     redeemVoucher,
@@ -340,4 +353,5 @@ export default {
     listVouchers,
     getVoucherStats,
     updateVoucher,
+    getUserVoucherUsages,
 };

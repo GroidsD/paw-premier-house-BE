@@ -5,13 +5,23 @@ import {
 } from "../helper/voucher.js";
 import generateBookingCode from "../utils/generateBookingCode.js";
 import { includes } from "lodash";
+
 const createBooking = async (user_id, data) => {
+    console.log("CREATE BOOKING DATA:", JSON.stringify(data, null, 2));
     const t = await db.sequelize.transaction();
 
     try {
         const bookingCode = await generateBookingCode();
 
         const totalPrice = data.total_price || 0;
+        const paymentMethodInput = String(
+            data.payment_method || "SHOP",
+        ).toUpperCase();
+        const paymentMethod = ["SHOP", "MOMO"].includes(paymentMethodInput)
+            ? paymentMethodInput
+            : "SHOP";
+        const bookingStatus =
+            paymentMethod === "SHOP" ? "confirmed" : "pending";
 
         const booking = await db.Booking.create(
             {
@@ -21,7 +31,9 @@ const createBooking = async (user_id, data) => {
                 date: data.date,
                 original_price: totalPrice,
                 total_price: totalPrice, // Initial total, will be updated after voucher
-                status: "pending",
+                payment_method: paymentMethod,
+                payment_status: "unpaid",
+                status: bookingStatus,
                 check_in: data.check_in || null,
                 check_out: data.check_out || null,
                 note: data.note || null,
@@ -167,6 +179,27 @@ const createBooking = async (user_id, data) => {
                 : null,
         };
     } catch (error) {
+        console.error("=== CREATE BOOKING ERROR ===");
+        console.error("NAME:", error.name);
+        console.error("MESSAGE:", error.message);
+
+        if (error.errors) {
+            console.error(
+                "DETAILS:",
+                JSON.stringify(
+                    error.errors.map((e) => ({
+                        field: e.path,
+                        message: e.message,
+                        value: e.value,
+                    })),
+                    null,
+                    2,
+                ),
+            );
+        }
+
+        console.error(error);
+
         if (!t.finished) {
             await t.rollback();
         }
@@ -467,6 +500,139 @@ const cancelBooking = async ({
     }
 };
 
+const updateBookingPaymentStatus = async (
+    bookingId,
+    payment_status,
+    additionalData = {},
+) => {
+    const transaction = await db.sequelize.transaction();
+
+    try {
+        const validPaymentStatuses = ["unpaid", "paid", "failed", "expired"];
+
+        if (!bookingId || !payment_status) {
+            await transaction.rollback();
+            return {
+                errCode: 1,
+                errMessage: "Missing bookingId or payment_status",
+            };
+        }
+
+        if (!validPaymentStatuses.includes(payment_status)) {
+            await transaction.rollback();
+            return {
+                errCode: 2,
+                errMessage: `Invalid payment_status: ${payment_status}`,
+            };
+        }
+
+        const booking = await db.Booking.findByPk(bookingId, {
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+        });
+
+        if (!booking) {
+            await transaction.rollback();
+            return {
+                errCode: 3,
+                errMessage: "Booking not found",
+            };
+        }
+
+        const updateData = {
+            payment_status,
+            ...additionalData,
+        };
+
+        if (payment_status === "paid" && booking.status === "pending") {
+            updateData.status = "confirmed";
+        }
+
+        await booking.update(updateData, { transaction });
+        await transaction.commit();
+
+        const updatedBooking = await db.Booking.findByPk(bookingId, {
+            include: [
+                {
+                    model: db.User,
+                    as: "customer",
+                    attributes: ["user_id", "fullname", "email", "phone"],
+                },
+                {
+                    model: db.User,
+                    as: "staff",
+                    attributes: ["user_id", "fullname", "email", "phone"],
+                },
+                {
+                    model: db.Pet,
+                    as: "pet",
+                    attributes: ["pet_id", "name", "species", "breed"],
+                },
+                {
+                    model: db.BookingItem,
+                    as: "bookingItems",
+                    include: [
+                        {
+                            model: db.Service,
+                            as: "service",
+                            attributes: [
+                                "service_id",
+                                "name",
+                                "price",
+                                "duration",
+                                "description",
+                            ],
+                            include: [
+                                {
+                                    model: db.ServiceCategory,
+                                    as: "category",
+                                    attributes: [
+                                        "serviceCategories_id",
+                                        "type",
+                                    ],
+                                },
+                                {
+                                    model: db.Media,
+                                    as: "media",
+                                    attributes: [
+                                        "media_id",
+                                        "url",
+                                        "is_main",
+                                        "alt_text",
+                                    ],
+                                    required: false,
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    model: db.Voucher,
+                    as: "voucher",
+                    attributes: [
+                        "voucher_id",
+                        "code",
+                        "discount_type",
+                        "discount",
+                    ],
+                },
+            ],
+        });
+
+        return {
+            errCode: 0,
+            errMessage: `Payment status updated to ${payment_status}`,
+            booking: updatedBooking || booking,
+        };
+    } catch (error) {
+        await transaction.rollback();
+        return {
+            errCode: 1,
+            errMessage: error.message,
+        };
+    }
+};
+
 const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
     const t = await db.sequelize.transaction();
 
@@ -620,4 +786,5 @@ export default {
     cancelBooking,
     assignBookingToStaff,
     getBookingById,
+    updateBookingPaymentStatus,
 };

@@ -26,6 +26,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import { initRedis } from "./config/redis.js";
 const scheduleOrderTimeoutCheck = require("./cron/orderTimeoutJob");
+const scheduleBookingTimeoutCheck = require("./cron/bookingTimeoutJob");
+const scheduleBookingReminderCheck = require("./cron/bookingReminderJob");
 
 require("dotenv").config();
 const multer = require("multer");
@@ -145,6 +147,8 @@ connectDB();
 
 // Start cron jobs
 scheduleOrderTimeoutCheck();
+scheduleBookingTimeoutCheck();
+scheduleBookingReminderCheck();
 
 let port = process.env.PORT || 5059;
 server.listen(port, () => {

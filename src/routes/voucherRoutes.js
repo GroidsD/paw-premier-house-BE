@@ -60,4 +60,12 @@ router.put(
     voucherController.updateVoucher,
 );
 
+router.get(
+    "/api/voucher/usages/by-user",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({ all: ["voucher:read"] }),
+    voucherController.getUserVoucherUsages,
+);
+
 export default router;

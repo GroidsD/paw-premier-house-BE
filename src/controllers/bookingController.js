@@ -2,6 +2,7 @@ import BookingService from "../services/BookingService.js";
 import buildUrlEmail from "../utils/buildUrlEmail.js";
 import { generateVerifyToken, verifyToken } from "../utils/jwt.js";
 const { sendBookingEmail } = require("../services/BookingEmailService.js");
+const moMoService = require("../services/MoMoService");
 const verifyBooking = async (req, res) => {
     try {
         const { token, bookingId } = req.body;
@@ -32,6 +33,17 @@ const verifyBooking = async (req, res) => {
             return res.status(403).json({
                 errCode: 1,
                 errMessage: "Unauthorized booking",
+            });
+        }
+
+        if (
+            booking.payment_method === "MOMO" &&
+            booking.payment_status !== "paid"
+        ) {
+            return res.status(400).json({
+                errCode: 1,
+                errMessage:
+                    "Please complete MoMo payment before confirming the booking.",
             });
         }
 
@@ -81,22 +93,48 @@ const createBooking = async (req, res) => {
 
     const { booking, user } = result;
 
-    // token chứa userId + bookingId
-    const token = generateVerifyToken(userId, booking.booking_id);
+    let token = null;
+    let url = null;
 
-    const url = buildUrlEmail("booking", booking.booking_id, token);
-
-    try {
-        await sendBookingEmail({
-            user,
-            booking,
-            token,
-        });
-    } catch (err) {
-        console.error("Send booking email failed:", err);
+    if (booking.payment_method !== "MOMO") {
+        token = generateVerifyToken(userId, booking.booking_id);
+        url = buildUrlEmail("booking", booking.booking_id, token);
     }
+
+    let paymentUrl = null;
+
+    if (booking.payment_method === "MOMO") {
+        try {
+            const paymentResult = await moMoService.createPayment({
+                orderInfo: `Thanh toán booking ${booking.booking_code}`,
+                orderId: booking.booking_id,
+                resourceType: "booking",
+            });
+
+            paymentUrl = paymentResult?.data?.payUrl || null;
+        } catch (paymentError) {
+            console.error(
+                "Create MoMo payment for booking failed:",
+                paymentError,
+            );
+        }
+    }
+
+    if (booking.payment_method !== "MOMO") {
+        try {
+            await sendBookingEmail({
+                user,
+                booking,
+                token,
+                paymentUrl,
+            });
+        } catch (err) {
+            console.error("Send booking email failed:", err);
+        }
+    }
+
     // trả về cả url để test, thực tế sẽ không trả về url này
-    return res.status(200).json({ ...result, url });
+    return res.status(200).json({ ...result, url, paymentUrl });
 };
 
 const getMyBookings = async (req, res) => {
@@ -120,6 +158,51 @@ const updateBookingStatus = async (req, res) => {
     });
 
     return res.status(200).json(result);
+};
+
+const createBookingPayment = async (req, res) => {
+    const { bookingId } = req.params;
+
+    try {
+        const bookingResult = await BookingService.getBookingById(bookingId);
+
+        if (bookingResult.errCode !== 0) {
+            return res.status(404).json({
+                errCode: 1,
+                errMessage: "Booking not found",
+            });
+        }
+
+        const booking = bookingResult.data;
+
+        if (booking.payment_method !== "MOMO") {
+            return res.status(400).json({
+                errCode: 1,
+                errMessage: "Booking is not set for MoMo payment",
+            });
+        }
+
+        if (booking.status !== "pending") {
+            return res.status(400).json({
+                errCode: 1,
+                errMessage: "Booking is not in pending state",
+            });
+        }
+
+        const result = await moMoService.createPayment({
+            orderInfo: `Thanh toán booking ${booking.booking_code}`,
+            orderId: booking.booking_id,
+            resourceType: "booking",
+        });
+
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error("Create booking MoMo payment failed:", error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: "Create booking MoMo payment failed",
+        });
+    }
 };
 
 const customerCancelBooking = async (req, res) => {
@@ -175,6 +258,7 @@ const getBookingById = async (req, res) => {
 export default {
     verifyBooking,
     createBooking,
+    createBookingPayment,
     getMyBookings,
     getAllBookings,
     updateBookingStatus,

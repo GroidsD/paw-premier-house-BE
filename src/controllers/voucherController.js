@@ -114,6 +114,23 @@ const updateVoucher = async (req, res) => {
     }
 };
 
+const getUserVoucherUsages = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const voucherUsages = await VoucherService.getUserVoucherUsages(userId);
+
+        return res.status(200).json({
+            errCode: 0,
+            data: voucherUsages,
+        });
+    } catch (e) {
+        return res.status(500).json({
+            errCode: 1,
+            errMessage: e.message,
+        });
+    }
+};
+
 export default {
     validateVoucher,
     redeemVoucher,
@@ -121,4 +138,5 @@ export default {
     listVouchers,
     getVoucherStats,
     updateVoucher,
+    getUserVoucherUsages,
 };
