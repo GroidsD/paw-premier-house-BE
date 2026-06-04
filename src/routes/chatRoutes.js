@@ -19,4 +19,9 @@ router.get(
     optionalAuth,
     chatController.getCurrentChatMessages,
 );
+router.post(
+    "/api/chat/stream",
+    optionalAuth,
+    chatController.chatWithBotStream,
+);
 export default router;

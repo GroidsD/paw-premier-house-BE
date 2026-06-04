@@ -19,7 +19,40 @@ let callPythonChat = async (payload) => {
         throw new Error("Cannot connect to Python AI server");
     }
 };
+let callPythonChatStream = async (payload) => {
+    try {
+        const response = await axios.post(
+            `${PYTHON_AI_URL}/chat/stream`,
+            payload,
+            {
+                responseType: "stream",
+                timeout: 0,
+                headers: {
+                    Accept: "text/event-stream",
+                    "Content-Type": "application/json",
+                },
+            },
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error(
+            "[AI SERVICE] callPythonChatStream error:",
+            error.message,
+        );
+
+        if (error.response) {
+            console.error(
+                "[AI SERVICE] Python stream response:",
+                error.response.data,
+            );
+        }
+
+        throw new Error("Cannot connect to Python AI stream server");
+    }
+};
 
 export default {
     callPythonChat,
+    callPythonChatStream,
 };
