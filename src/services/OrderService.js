@@ -497,6 +497,14 @@ let createOrder = async (userId, data) => {
                 };
             }
 
+            if (product.isActive === false || product.isActive === 0 || product.isDelete === true || product.isDelete === 1) {
+                if (!transaction.finished) await transaction.rollback();
+                return {
+                    errCode: 10,
+                    errMessage: `Product ${productId} is inactive or deleted`,
+                };
+            }
+
             let variant = null;
             if (productVariantId) {
                 variant = await db.ProductVariant.findByPk(productVariantId, {
@@ -509,6 +517,14 @@ let createOrder = async (userId, data) => {
                     return {
                         errCode: 7,
                         errMessage: `Variant ${productVariantId} not found`,
+                    };
+                }
+
+                if (variant.isActive === false || variant.isActive === 0) {
+                    if (!transaction.finished) await transaction.rollback();
+                    return {
+                        errCode: 11,
+                        errMessage: `Variant ${productVariantId} is inactive`,
                     };
                 }
 
