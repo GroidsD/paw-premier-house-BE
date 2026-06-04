@@ -26,6 +26,8 @@ router.get("/api/service/get-all", serviceController.getAllServices);
 
 router.get("/api/service/get-by-id", serviceController.getServiceById);
 
+router.get("/api/service/get-by-slug", serviceController.getServiceBySlug);
+
 router.get(
     "/api/service/get-by-category",
     serviceController.getServicesByCategory,

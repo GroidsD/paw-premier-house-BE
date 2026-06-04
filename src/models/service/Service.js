@@ -60,6 +60,12 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
 
+            slug: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                unique: true,
+            },
+
             price: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
