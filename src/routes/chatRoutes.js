@@ -14,5 +14,9 @@ const router = express.Router();
  * Hiện tại làm basic:
  */
 router.post("/api/chat", optionalAuth, chatController.chatWithBot);
-
+router.get(
+    "/api/chat/:sessionId/messages",
+    optionalAuth,
+    chatController.getCurrentChatMessages,
+);
 export default router;

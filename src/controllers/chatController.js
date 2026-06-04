@@ -136,8 +136,6 @@ let chatWithBot = async (req, res) => {
             .filter((item) => item.service_id)
             .map((item) => item.service_id);
 
-     
-
         let finalIntent = aiResult.intent || analysis.intent || null;
 
         let frontendAction = null;
@@ -525,7 +523,76 @@ let chatWithBot = async (req, res) => {
         });
     }
 };
+let getCurrentChatMessages = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { guestId } = req.query;
 
+        const userId = req.user?.user_id || null;
+
+        if (!sessionId) {
+            return res.status(400).json({
+                success: false,
+                message: "sessionId is required",
+            });
+        }
+
+        const chatSession = await ChatSession.findByPk(sessionId);
+
+        if (!chatSession) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat session not found",
+            });
+        }
+
+        const isOwner = userId
+            ? chatSession.user_id === userId
+            : !chatSession.user_id && chatSession.guest_id === guestId;
+
+        if (!isOwner) {
+            return res.status(403).json({
+                success: false,
+                message: "You cannot access this chat session",
+            });
+        }
+
+        const messagesDesc = await ChatMessage.findAll({
+            where: {
+                chat_session_id: sessionId,
+            },
+            order: [["created_at", "DESC"]],
+            limit: 30,
+            attributes: [
+                "chat_message_id",
+                "sender",
+                "message",
+                "intent",
+                "retrieval_json",
+                "next_action_json",
+                "metadata_json",
+                "created_at",
+            ],
+        });
+
+        const messages = messagesDesc.reverse();
+
+        return res.status(200).json({
+            success: true,
+            sessionId: chatSession.chat_session_id,
+            guestId: chatSession.guest_id,
+            messages,
+        });
+    } catch (error) {
+        console.error("[CHAT] getCurrentChatMessages error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Cannot load chat messages",
+        });
+    }
+};
 export default {
     chatWithBot,
+    getCurrentChatMessages,
 };
