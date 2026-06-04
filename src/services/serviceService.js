@@ -1,6 +1,8 @@
 import db from "../models/index.js";
 import MediaService from "./MediaService.js";
 import { safeUnlinkByUrl } from "../helper/safeUnlinkByUrl.js";
+import { generateSlug } from "../utils/slug.js";
+
 const normalizeIds = (value) => {
     if (Array.isArray(value)) return value.map(Number).filter(Boolean);
 
@@ -23,10 +25,25 @@ const createService = async (data) => {
     const t = await db.sequelize.transaction();
 
     try {
+        let baseSlug = generateSlug(data.name);
+        let slug = baseSlug;
+        let count = 1;
+
+        while (
+            await db.Service.findOne({
+                where: { slug },
+                transaction: t,
+            })
+        ) {
+            slug = `${baseSlug}-${count}`;
+            count++;
+        }
+
         const service = await db.Service.create(
             {
                 serviceCategories_id: data.serviceCategories_id || null,
                 name: data.name,
+                slug,
                 description: data.description,
                 price: data.price,
                 duration: data.duration,
@@ -145,6 +162,52 @@ const getServiceById = async (id) => {
         };
     } catch (error) {
         console.error("❌ Error in getServiceById:", error);
+        return {
+            errCode: 1,
+            errMessage: "Failed to fetch service",
+        };
+    }
+};
+
+const getServiceBySlug = async (slug) => {
+    try {
+        const service = await db.Service.findOne({
+            where: {
+                slug,
+                isDeleted: false,
+            },
+            include: [
+                {
+                    model: db.ServiceCategory,
+                    as: "category",
+                },
+                {
+                    model: db.Media,
+                    as: "media",
+                },
+                {
+                    model: db.Feature,
+                    as: "features",
+                    through: { attributes: [] },
+                },
+            ],
+        });
+
+        if (!service) {
+            return {
+                errCode: 1,
+                errMessage: "Service not found",
+                service: null,
+            };
+        }
+
+        return {
+            errCode: 0,
+            service,
+        };
+    } catch (error) {
+        console.error("❌ Error in getServiceBySlug:", error);
+
         return {
             errCode: 1,
             errMessage: "Failed to fetch service",
@@ -385,6 +448,7 @@ export default {
     createService,
     getAllServices,
     getServiceById,
+    getServiceBySlug,
     updateService,
     softDeleteService,
     restoreService,

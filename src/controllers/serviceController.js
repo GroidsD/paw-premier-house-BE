@@ -68,6 +68,33 @@ let getServiceById = async (req, res) => {
     }
 };
 
+let getServiceBySlug = async (req, res) => {
+    try {
+        const slug = req.query.slug;
+
+        const service = await ServiceService.getServiceBySlug(slug);
+
+        if (!service) {
+            return res.status(404).json({
+                errCode: 1,
+                errMessage: "Service not found",
+            });
+        }
+
+        return res.status(200).json({
+            errCode: 0,
+            service,
+        });
+    } catch (e) {
+        console.error(e);
+
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: "Server error",
+        });
+    }
+};
+
 let updateService = async (req, res) => {
     try {
         const service_id = req.query.service_id;
@@ -177,6 +204,7 @@ export default {
     createService,
     getAllServices,
     getServiceById,
+    getServiceBySlug,
     updateService,
     softDeleteService,
     restoreService,
