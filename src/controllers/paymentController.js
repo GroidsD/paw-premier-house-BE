@@ -3,7 +3,14 @@ const moMoService = require("../services/MoMoService");
 // Create payment
 let createMoMoPayment = async (req, res) => {
     try {
-        const { orderInfo, orderId, extraData, returnUrl, notifyUrl } = req.body;
+        const {
+            orderInfo,
+            orderId,
+            resourceType,
+            extraData,
+            returnUrl,
+            notifyUrl,
+        } = req.body;
 
         if (!orderId) {
             return res.status(400).json({
@@ -15,6 +22,7 @@ let createMoMoPayment = async (req, res) => {
         const result = await moMoService.createPayment({
             orderInfo: orderInfo || `Thanh toán đơn hàng ${orderId}`,
             orderId,
+            resourceType: resourceType || "order",
             extraData,
             returnUrl,
             notifyUrl,
@@ -36,22 +44,24 @@ let handleMoMoReturn = async (req, res) => {
     try {
         const result = await moMoService.handleCallback(req.query);
 
+        console.log("========== MOMO RETURN ==========");
+        console.log("result:", result);
+
         if (result.errCode !== 0) {
             return res.redirect(`http://localhost:5173/?payment=error`);
         }
 
-        const orderId = result.orderId;
+        const { orderId, resourceType, paymentStatus } = result;
 
-        // SUCCESS
-        if (result.paymentStatus === "paid") {
+        if (resourceType === "booking") {
+            console.log("Redirect booking");
             return res.redirect(
-                `http://localhost:5173/confirm-payment?payment=success&orderId=${orderId}`,
+                `http://localhost:5173/confirm-booking?status=${paymentStatus}&bookingId=${orderId}`,
             );
         }
-
-        // FAILED
+        console.log("Redirect order");
         return res.redirect(
-            `http://localhost:5173/confirm-payment?payment=failed&orderId=${orderId}`,
+            `http://localhost:5173/confirm-order?status=${paymentStatus}&orderId=${orderId}`,
         );
     } catch (error) {
         console.error("❌ handleMoMoReturn error:", error);

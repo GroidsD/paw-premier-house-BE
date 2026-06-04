@@ -48,25 +48,47 @@ class MoMoService {
                 orderInfo = "Thanh toán MoMo",
                 extraData = "",
                 orderId: originalOrderId,
+                resourceType = "order",
                 returnUrl,
                 notifyUrl,
             } = paymentData;
 
-            // Fetch order from database to get the amount
-            const OrderServiceModule = require("./OrderService");
-            const OrderService = OrderServiceModule.default;
+            let amount = 0;
+            let resourceLabel = "order";
 
-            const orderResult = await OrderService.getOrderById(originalOrderId);
+            if (resourceType === "booking") {
+                resourceLabel = "booking";
+                const BookingServiceModule = require("./BookingService");
+                const BookingService = BookingServiceModule.default;
+                const bookingResult =
+                    await BookingService.getBookingById(originalOrderId);
 
-            if (orderResult.errCode !== 0 || !orderResult.order) {
-                return {
-                    errCode: 2,
-                    message: "Order not found",
-                    data: null,
-                };
+                if (bookingResult.errCode !== 0 || !bookingResult.data) {
+                    return {
+                        errCode: 2,
+                        message: "Booking not found",
+                        data: null,
+                    };
+                }
+
+                amount = Math.round(Number(bookingResult.data.total_price));
+            } else {
+                const OrderServiceModule = require("./OrderService");
+                const OrderService = OrderServiceModule.default;
+
+                const orderResult =
+                    await OrderService.getOrderById(originalOrderId);
+
+                if (orderResult.errCode !== 0 || !orderResult.order) {
+                    return {
+                        errCode: 2,
+                        message: "Order not found",
+                        data: null,
+                    };
+                }
+
+                amount = Math.round(Number(orderResult.order.total_price));
             }
-
-            const amount = Math.round(Number(orderResult.order.total_price));
 
             const momoOrderId = this.generateRequestId();
             const requestId = momoOrderId;
@@ -90,7 +112,8 @@ class MoMoService {
                         ? extraData
                         : Buffer.from(
                               JSON.stringify({
-                                  order_id: originalOrderId,
+                                  type: resourceType,
+                                  id: originalOrderId,
                               }),
                           ).toString("base64"),
 
@@ -237,13 +260,15 @@ class MoMoService {
             }
 
             let originalOrderId = null;
+            let resourceType = "order";
 
             try {
                 const decodedExtraData = JSON.parse(
                     Buffer.from(queryParams.extraData, "base64").toString(),
                 );
 
-                originalOrderId = decodedExtraData.order_id;
+                originalOrderId = decodedExtraData.id;
+                resourceType = decodedExtraData.type || "order";
             } catch (e) {
                 console.error(
                     "❌ [MoMo Callback] Failed to decode extraData:",
@@ -254,7 +279,7 @@ class MoMoService {
             if (!originalOrderId) {
                 return {
                     errCode: 3,
-                    message: "Cannot extract original order ID",
+                    message: "Cannot extract original resource ID",
                 };
             }
 
@@ -262,48 +287,98 @@ class MoMoService {
 
             if (paymentSuccess) {
                 try {
-                    const OrderServiceModule = require("./OrderService");
-                    const OrderService = OrderServiceModule.default;
-
-                    const updateResult =
-                        await OrderService.updateOrderPaymentStatus(
-                            originalOrderId,
-                            "paid",
-                            {
-                                payment_method: "BANK",
-                                momo_order_id: orderId,
-                                momo_trans_id: transId,
-                                momo_result_code: resultCode,
-                                momo_message: message,
-                            },
-                        );
-
-                    if (updateResult.errCode !== 0) {
-                        return {
-                            errCode: 4,
-                            message: "Failed to update order status",
-                        };
-                    }
-
-                    try {
+                    if (resourceType === "booking") {
+                        const BookingServiceModule = require("./BookingService");
+                        const BookingService = BookingServiceModule.default;
                         const {
-                            sendPaymentSuccessEmail,
-                        } = require("./OrderEmailService");
+                            sendBookingEmail,
+                        } = require("./BookingEmailService");
+                        const bookingIdToUpdate = Number(originalOrderId);
 
-                        const orderResult =
-                            await OrderService.getOrderById(originalOrderId);
+                        const updateResult =
+                            await BookingService.updateBookingPaymentStatus(
+                                bookingIdToUpdate,
+                                "paid",
+                                {
+                                    payment_method: "MOMO",
+                                    momo_order_id: orderId,
+                                    momo_trans_id: transId,
+                                    momo_result_code: resultCode,
+                                    momo_message: message,
+                                },
+                            );
 
-                        if (orderResult?.errCode === 0) {
-                            await sendPaymentSuccessEmail({
-                                user: orderResult.order.customer,
-                                order: orderResult.order,
-                            });
+                        if (updateResult.errCode !== 0) {
+                            console.error(
+                                "❌ [MoMoService] handleCallback -> booking updateResult",
+                                updateResult,
+                            );
+                            return {
+                                errCode: 4,
+                                message:
+                                    "Failed to update booking payment status",
+                            };
                         }
-                    } catch (emailError) {
-                        console.error(
-                            "❌ [MoMo Callback] Send success email failed:",
-                            emailError,
-                        );
+
+                        try {
+                            const updatedBooking = updateResult.booking;
+                            await sendBookingEmail({
+                                user: updatedBooking.customer,
+                                booking: updatedBooking,
+                                paymentUrl: null,
+                            });
+                        } catch (emailError) {
+                            console.error(
+                                "❌ [MoMo Callback] Send booking success email failed:",
+                                emailError,
+                            );
+                        }
+                    } else {
+                        const OrderServiceModule = require("./OrderService");
+                        const OrderService = OrderServiceModule.default;
+
+                        const updateResult =
+                            await OrderService.updateOrderPaymentStatus(
+                                originalOrderId,
+                                "paid",
+                                {
+                                    payment_method: "BANK",
+                                    momo_order_id: orderId,
+                                    momo_trans_id: transId,
+                                    momo_result_code: resultCode,
+                                    momo_message: message,
+                                },
+                            );
+
+                        if (updateResult.errCode !== 0) {
+                            return {
+                                errCode: 4,
+                                message: "Failed to update order status",
+                            };
+                        }
+
+                        try {
+                            const {
+                                sendPaymentSuccessEmail,
+                            } = require("./OrderEmailService");
+
+                            const orderResult =
+                                await OrderService.getOrderById(
+                                    originalOrderId,
+                                );
+
+                            if (orderResult?.errCode === 0) {
+                                await sendPaymentSuccessEmail({
+                                    user: orderResult.order.customer,
+                                    order: orderResult.order,
+                                });
+                            }
+                        } catch (emailError) {
+                            console.error(
+                                "❌ [MoMo Callback] Send success email failed:",
+                                emailError,
+                            );
+                        }
                     }
                 } catch (updateError) {
                     return {
@@ -313,38 +388,56 @@ class MoMoService {
                 }
             } else {
                 try {
-                    const OrderServiceModule = require("./OrderService");
-                    const OrderService = OrderServiceModule.default;
-                    await OrderService.updateOrderPaymentStatus(
-                        originalOrderId,
-                        "failed",
-                        {
-                            momo_order_id: orderId,
-                            momo_trans_id: transId,
-                            momo_result_code: resultCode,
-                            momo_message: message,
-                        },
-                    );
-                    try {
-                        const {
-                            sendPaymentFailedEmail,
-                        } = require("./OrderEmailService");
-
-                        const orderResult =
-                            await OrderService.getOrderById(originalOrderId);
-
-                        if (orderResult?.errCode === 0) {
-                            await sendPaymentFailedEmail({
-                                user: orderResult.order.User,
-                                order: orderResult.order,
-                                reason: message,
-                            });
-                        }
-                    } catch (emailError) {
-                        console.error(
-                            "❌ [MoMo Callback] Send failed email failed:",
-                            emailError,
+                    if (resourceType === "booking") {
+                        const BookingServiceModule = require("./BookingService");
+                        const BookingService = BookingServiceModule.default;
+                        await BookingService.updateBookingPaymentStatus(
+                            originalOrderId,
+                            "failed",
+                            {
+                                payment_method: "MOMO",
+                                momo_order_id: orderId,
+                                momo_trans_id: transId,
+                                momo_result_code: resultCode,
+                                momo_message: message,
+                            },
                         );
+                    } else {
+                        const OrderServiceModule = require("./OrderService");
+                        const OrderService = OrderServiceModule.default;
+                        await OrderService.updateOrderPaymentStatus(
+                            originalOrderId,
+                            "failed",
+                            {
+                                momo_order_id: orderId,
+                                momo_trans_id: transId,
+                                momo_result_code: resultCode,
+                                momo_message: message,
+                            },
+                        );
+                        try {
+                            const {
+                                sendPaymentFailedEmail,
+                            } = require("./OrderEmailService");
+
+                            const orderResult =
+                                await OrderService.getOrderById(
+                                    originalOrderId,
+                                );
+
+                            if (orderResult?.errCode === 0) {
+                                await sendPaymentFailedEmail({
+                                    user: orderResult.order.User,
+                                    order: orderResult.order,
+                                    reason: message,
+                                });
+                            }
+                        } catch (emailError) {
+                            console.error(
+                                "❌ [MoMo Callback] Send failed email failed:",
+                                emailError,
+                            );
+                        }
                     }
                 } catch (updateError) {
                     console.error(
@@ -360,6 +453,7 @@ class MoMoService {
                     ? "Payment processed successfully"
                     : "Payment failed",
                 orderId: originalOrderId,
+                resourceType,
                 paymentStatus: paymentSuccess ? "paid" : "failed",
             };
 

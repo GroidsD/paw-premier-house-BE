@@ -94,6 +94,38 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 defaultValue: 0,
             },
+            payment_method: {
+                type: DataTypes.ENUM("SHOP", "MOMO"),
+                allowNull: false,
+                defaultValue: "SHOP",
+                comment: "Booking payment method",
+            },
+            payment_status: {
+                type: DataTypes.ENUM("unpaid", "paid", "failed", "expired"),
+                allowNull: false,
+                defaultValue: "unpaid",
+                comment: "Booking payment status",
+            },
+            momo_order_id: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "MoMo order ID from payment gateway",
+            },
+            momo_trans_id: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "MoMo transaction ID",
+            },
+            momo_result_code: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "MoMo result code",
+            },
+            momo_message: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+                comment: "MoMo response message",
+            },
             status: {
                 type: DataTypes.ENUM(
                     "pending",
@@ -135,6 +167,12 @@ module.exports = (sequelize, DataTypes) => {
             updated_at: {
                 type: DataTypes.DATE,
                 defaultValue: DataTypes.NOW,
+            },
+            reminder_sent: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                comment: "Whether the booking reminder email has been sent",
             },
         },
         {
