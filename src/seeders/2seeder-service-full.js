@@ -32,7 +32,7 @@ module.exports = {
                 feature_name: "Basic Grooming",
                 serviceCategories_id: 1,
                 icon: "content_cut",
-                description: "Basic grooming and hygiene care",
+                description: `Basic grooming and hygiene care`,
                 created_at: now,
                 updated_at: now,
             },
@@ -41,7 +41,7 @@ module.exports = {
                 feature_name: "Nail Clipping",
                 serviceCategories_id: 1,
                 icon: "pets",
-                description: "Safe and careful nail clipping",
+                description: `Safe and careful nail clipping`,
                 created_at: now,
                 updated_at: now,
             },
@@ -50,7 +50,7 @@ module.exports = {
                 feature_name: "Massage",
                 serviceCategories_id: 1,
                 icon: "spa",
-                description: "Relaxing body massage for pets",
+                description: `Relaxing body massage for pets`,
                 created_at: now,
                 updated_at: now,
             },
@@ -59,7 +59,7 @@ module.exports = {
                 feature_name: "Aromatherapy",
                 serviceCategories_id: 1,
                 icon: "local_florist",
-                description: "Gentle aromatherapy treatment",
+                description: `Gentle aromatherapy treatment`,
                 created_at: now,
                 updated_at: now,
             },
@@ -70,7 +70,7 @@ module.exports = {
                 feature_name: "Air Conditioning",
                 serviceCategories_id: 2,
                 icon: "ac_unit",
-                description: "Comfortable air-conditioned room for pets",
+                description: `Comfortable air-conditioned room for pets`,
                 created_at: now,
                 updated_at: now,
             },
@@ -79,7 +79,7 @@ module.exports = {
                 feature_name: "Pet Bed",
                 serviceCategories_id: 2,
                 icon: "bed",
-                description: "Soft and cozy pet bed included",
+                description: `Soft and cozy pet bed included`,
                 created_at: now,
                 updated_at: now,
             },
@@ -88,8 +88,7 @@ module.exports = {
                 feature_name: "24/7 Care",
                 serviceCategories_id: 2,
                 icon: "shield",
-                description:
-                    "Staff available for monitoring and support all day",
+                description: `Staff available for monitoring and support all day`,
                 created_at: now,
                 updated_at: now,
             },
@@ -98,7 +97,7 @@ module.exports = {
                 feature_name: "Camera Monitoring",
                 serviceCategories_id: 2,
                 icon: "camera",
-                description: "Live camera monitoring for pet owners",
+                description: `Live camera monitoring for pet owners`,
                 created_at: now,
                 updated_at: now,
             },
@@ -110,8 +109,7 @@ module.exports = {
                 service_id: 1,
                 serviceCategories_id: 1,
                 name: "Basic Pet Bath",
-                description:
-                    "Gentle bath service with pet-safe shampoo and drying.",
+                description: `Gentle bath service with pet-safe shampoo and drying.`,
                 price: 120000,
                 duration: 60,
             },
@@ -119,8 +117,7 @@ module.exports = {
                 service_id: 2,
                 serviceCategories_id: 1,
                 name: "Full Grooming Package",
-                description:
-                    "Bath, drying, trimming, brushing, and basic grooming care.",
+                description: `Bath, drying, trimming, brushing, and basic grooming care.`,
                 price: 250000,
                 duration: 90,
             },
@@ -128,7 +125,7 @@ module.exports = {
                 service_id: 3,
                 serviceCategories_id: 1,
                 name: "Nail Clipping Service",
-                description: "Quick and safe nail clipping for pets.",
+                description: `Quick and safe nail clipping for pets.`,
                 price: 80000,
                 duration: 30,
             },
@@ -136,8 +133,7 @@ module.exports = {
                 service_id: 4,
                 serviceCategories_id: 1,
                 name: "Pet Massage Therapy",
-                description:
-                    "Relaxing massage treatment to reduce stress and improve comfort.",
+                description: `Relaxing massage treatment to reduce stress and improve comfort.`,
                 price: 180000,
                 duration: 45,
             },
@@ -145,8 +141,7 @@ module.exports = {
                 service_id: 5,
                 serviceCategories_id: 1,
                 name: "Aromatherapy Spa",
-                description:
-                    "A calming spa session with gentle aromatherapy treatment.",
+                description: `A calming spa session with gentle aromatherapy treatment.`,
                 price: 220000,
                 duration: 60,
             },
@@ -154,8 +149,7 @@ module.exports = {
                 service_id: 6,
                 serviceCategories_id: 1,
                 name: "Fur Brushing & Detangling",
-                description:
-                    "Professional coat brushing and detangling treatment.",
+                description: `Professional coat brushing and detangling treatment.`,
                 price: 140000,
                 duration: 45,
             },
@@ -163,8 +157,7 @@ module.exports = {
                 service_id: 7,
                 serviceCategories_id: 1,
                 name: "De-shedding Treatment",
-                description:
-                    "Special treatment to remove loose fur and reduce shedding.",
+                description: `Special treatment to remove loose fur and reduce shedding.`,
                 price: 210000,
                 duration: 60,
             },
@@ -172,8 +165,7 @@ module.exports = {
                 service_id: 8,
                 serviceCategories_id: 1,
                 name: "Paw Care Treatment",
-                description:
-                    "Paw cleaning, moisturizing, and basic care treatment.",
+                description: `Paw cleaning, moisturizing, and basic care treatment.`,
                 price: 100000,
                 duration: 30,
             },
@@ -181,7 +173,7 @@ module.exports = {
                 service_id: 9,
                 serviceCategories_id: 1,
                 name: "Ear Cleaning & Hygiene",
-                description: "Gentle ear cleaning service for better hygiene.",
+                description: `Gentle ear cleaning service for better hygiene.`,
                 price: 90000,
                 duration: 30,
             },
@@ -189,13 +181,13 @@ module.exports = {
                 service_id: 10,
                 serviceCategories_id: 1,
                 name: "Premium Spa Package",
-                description:
-                    "Complete premium spa package including bath, massage, and grooming.",
+                description: `Complete premium spa package including bath, massage, and grooming.`,
                 price: 320000,
                 duration: 120,
             },
         ].map((item) => ({
             ...item,
+            slug: item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
             isActive: true,
             isDeleted: false,
             created_at: now,
@@ -207,15 +199,16 @@ module.exports = {
                 service_id: 11,
                 serviceCategories_id: 2,
                 name: "Standard Pet Hotel Room",
-                description:
-                    "Designed for pets staying away from home, this room provides a safe, clean, and comfortable environment where your companion can relax with confidence.\n\n" +
-                    "**What's Included**\n" +
-                    "- Climate-controlled accommodation\n" +
-                    "- Cozy sleeping area\n" +
-                    "- Daily wellness monitoring\n" +
-                    "- Scheduled feeding support\n" +
-                    "- 24/7 staff supervision\n\n" +
-                    "Perfect for short-term stays while ensuring your pet feels secure, comfortable, and well cared for throughout their visit.",
+                description: `Designed for pets staying away from home, this room provides a safe, clean, and comfortable environment where your companion can relax with confidence.
+
+**What's Included**
+- Climate-controlled accommodation
+- Cozy sleeping area
+- Daily wellness monitoring
+- Scheduled feeding support
+- 24/7 staff supervision
+
+Perfect for short-term stays while ensuring your pet feels secure, comfortable, and well cared for throughout their visit.`,
                 price: 250000,
                 duration: 1440,
             },
@@ -223,16 +216,18 @@ module.exports = {
                 service_id: 12,
                 serviceCategories_id: 2,
                 name: "Deluxe Pet Hotel Room",
-                description:
-                    "Designed for pets who enjoy extra comfort during their stay, the Deluxe Pet Hotel Room offers a spacious climate-controlled environment, premium bedding, and enhanced daily care.\n\n" +
-                    "**What's Included**\n" +
-                    "- Air Conditioning\n" +
-                    "- Premium Pet Bed\n" +
-                    "- 24/7 Professional Supervision\n" +
-                    "- Live Camera Monitoring\n" +
-                    "- Personalized Wellness Checks\n\n" +
-                    "Pet owners can stay connected through live camera monitoring while our experienced caregivers provide attentive support throughout the stay.\n\n" +
-                    "Perfect for pets that benefit from additional space, comfort, and peace of mind during overnight or extended stays.",
+                description: `Designed for pets who enjoy extra comfort during their stay, the Deluxe Pet Hotel Room offers a spacious climate-controlled environment, premium bedding, and enhanced daily care.
+
+**What's Included**
+- Air Conditioning
+- Premium Pet Bed
+- 24/7 Professional Supervision
+- Live Camera Monitoring
+- Personalized Wellness Checks
+
+Pet owners can stay connected through live camera monitoring while our experienced caregivers provide attentive support throughout the stay.
+
+Perfect for pets that benefit from additional space, comfort, and peace of mind during overnight or extended stays.`,
                 price: 320000,
                 duration: 1440,
             },
@@ -240,15 +235,16 @@ module.exports = {
                 service_id: 13,
                 serviceCategories_id: 2,
                 name: "VIP Pet Suite",
-                description:
-                    "Our most luxurious accommodation option, designed to provide exceptional comfort and personalized attention for your pet.\n\n" +
-                    "**Premium Amenities**\n" +
-                    "- Spacious Private Suite\n" +
-                    "- Premium Bedding\n" +
-                    "- Climate-Controlled Comfort\n" +
-                    "- 24/7 Supervision\n" +
-                    "- Live Camera Monitoring\n\n" +
-                    "Ideal for pets accustomed to premium care and owners seeking complete peace of mind during extended stays.",
+                description: `Our most luxurious accommodation option, designed to provide exceptional comfort and personalized attention for your pet.
+
+**Premium Amenities**
+- Spacious Private Suite
+- Premium Bedding
+- Climate-Controlled Comfort
+- 24/7 Supervision
+- Live Camera Monitoring
+
+Ideal for pets accustomed to premium care and owners seeking complete peace of mind during extended stays.`,
                 price: 450000,
                 duration: 1440,
             },
@@ -256,15 +252,16 @@ module.exports = {
                 service_id: 14,
                 serviceCategories_id: 2,
                 name: "Overnight Boarding Care",
-                description:
-                    "A safe and reliable overnight accommodation service for pets requiring short-term care.\n\n" +
-                    "**Included Services**\n" +
-                    "- Overnight Supervision\n" +
-                    "- Comfortable Sleeping Arrangements\n" +
-                    "- Feeding Assistance\n" +
-                    "- Evening Wellness Checks\n" +
-                    "- Secure Boarding Environment\n\n" +
-                    "Whether you're traveling, working late, or away for the night, your pet will receive attentive care until pickup.",
+                description: `A safe and reliable overnight accommodation service for pets requiring short-term care.
+
+**Included Services**
+- Overnight Supervision
+- Comfortable Sleeping Arrangements
+- Feeding Assistance
+- Evening Wellness Checks
+- Secure Boarding Environment
+
+Whether you're traveling, working late, or away for the night, your pet will receive attentive care until pickup.`,
                 price: 280000,
                 duration: 1440,
             },
@@ -272,15 +269,16 @@ module.exports = {
                 service_id: 15,
                 serviceCategories_id: 2,
                 name: "Weekend Pet Stay",
-                description:
-                    "A complete weekend boarding package designed for pets whose owners are away for several days.\n\n" +
-                    "**Package Features**\n" +
-                    "- Weekend Accommodation\n" +
-                    "- Scheduled Feeding\n" +
-                    "- Wellness Monitoring\n" +
-                    "- 24/7 Supervision\n" +
-                    "- Camera Monitoring Access\n\n" +
-                    "Our caregivers ensure your pet remains comfortable, active, and stress-free throughout the weekend.",
+                description: `A complete weekend boarding package designed for pets whose owners are away for several days.
+
+**Package Features**
+- Weekend Accommodation
+- Scheduled Feeding
+- Wellness Monitoring
+- 24/7 Supervision
+- Camera Monitoring Access
+
+Our caregivers ensure your pet remains comfortable, active, and stress-free throughout the weekend.`,
                 price: 600000,
                 duration: 2880,
             },
@@ -288,15 +286,16 @@ module.exports = {
                 service_id: 16,
                 serviceCategories_id: 2,
                 name: "Luxury Cat Hotel Room",
-                description:
-                    "Specially designed for feline guests, this quiet accommodation provides a calm environment away from noisy activity areas.\n\n" +
-                    "**Cat-Friendly Features**\n" +
-                    "- Air-Conditioned Comfort\n" +
-                    "- Soft Bedding\n" +
-                    "- Private Resting Spaces\n" +
-                    "- Low-Stress Environment\n" +
-                    "- Daily Care and Monitoring\n\n" +
-                    "Perfect for cats who prefer privacy, relaxation, and a peaceful boarding experience.",
+                description: `Specially designed for feline guests, this quiet accommodation provides a calm environment away from noisy activity areas.
+
+**Cat-Friendly Features**
+- Air-Conditioned Comfort
+- Soft Bedding
+- Private Resting Spaces
+- Low-Stress Environment
+- Daily Care and Monitoring
+
+Perfect for cats who prefer privacy, relaxation, and a peaceful boarding experience.`,
                 price: 300000,
                 duration: 1440,
             },
@@ -304,15 +303,16 @@ module.exports = {
                 service_id: 17,
                 serviceCategories_id: 2,
                 name: "Luxury Dog Boarding",
-                description:
-                    "Premium boarding tailored specifically for dogs requiring extra attention and comfort.\n\n" +
-                    "**Included Amenities**\n" +
-                    "- Comfortable Sleeping Area\n" +
-                    "- Personalized Daily Care\n" +
-                    "- Wellness Monitoring\n" +
-                    "- Camera Monitoring Access\n" +
-                    "- 24/7 Supervision\n\n" +
-                    "An excellent choice for dogs that thrive with regular interaction and attentive support.",
+                description: `Premium boarding tailored specifically for dogs requiring extra attention and comfort.
+
+**Included Amenities**
+- Comfortable Sleeping Area
+- Personalized Daily Care
+- Wellness Monitoring
+- Camera Monitoring Access
+- 24/7 Supervision
+
+An excellent choice for dogs that thrive with regular interaction and attentive support.`,
                 price: 350000,
                 duration: 1440,
             },
@@ -320,15 +320,16 @@ module.exports = {
                 service_id: 18,
                 serviceCategories_id: 2,
                 name: "Family Multi-Pet Room",
-                description:
-                    "A spacious shared accommodation designed for pets from the same household.\n\n" +
-                    "**Room Benefits**\n" +
-                    "- Shared Family Environment\n" +
-                    "- Climate-Controlled Comfort\n" +
-                    "- Comfortable Bedding\n" +
-                    "- Reduced Separation Anxiety\n" +
-                    "- Professional Supervision\n\n" +
-                    "Allows familiar companions to stay together while receiving attentive care from our team.",
+                description: `A spacious shared accommodation designed for pets from the same household.
+
+**Room Benefits**
+- Shared Family Environment
+- Climate-Controlled Comfort
+- Comfortable Bedding
+- Reduced Separation Anxiety
+- Professional Supervision
+
+Allows familiar companions to stay together while receiving attentive care from our team.`,
                 price: 500000,
                 duration: 1440,
             },
@@ -336,15 +337,16 @@ module.exports = {
                 service_id: 19,
                 serviceCategories_id: 2,
                 name: "Daycare Hotel Package",
-                description:
-                    "A convenient daytime care solution for busy pet owners who need professional supervision during working hours.\n\n" +
-                    "**Daycare Includes**\n" +
-                    "- Comfortable Rest Area\n" +
-                    "- Feeding Support\n" +
-                    "- Wellness Monitoring\n" +
-                    "- Staff Supervision\n" +
-                    "- Structured Daily Routine\n\n" +
-                    "Pets enjoy a safe and engaging environment before returning home in the evening.",
+                description: `A convenient daytime care solution for busy pet owners who need professional supervision during working hours.
+
+**Daycare Includes**
+- Comfortable Rest Area
+- Feeding Support
+- Wellness Monitoring
+- Staff Supervision
+- Structured Daily Routine
+
+Pets enjoy a safe and engaging environment before returning home in the evening.`,
                 price: 220000,
                 duration: 720,
             },
@@ -352,20 +354,22 @@ module.exports = {
                 service_id: 20,
                 serviceCategories_id: 2,
                 name: "Premium Recovery Stay",
-                description:
-                    "A specialized accommodation option for pets recovering from medical procedures, grooming treatments, or stressful experiences.\n\n" +
-                    "**Recovery Support**\n" +
-                    "- Quiet Recovery Environment\n" +
-                    "- Continuous Supervision\n" +
-                    "- Climate-Controlled Comfort\n" +
-                    "- Wellness Monitoring\n" +
-                    "- Additional Caregiver Attention\n\n" +
-                    "Designed to promote relaxation, comfort, and a smooth recovery process.",
+                description: `A specialized accommodation option for pets recovering from medical procedures, grooming treatments, or stressful experiences.
+
+**Recovery Support**
+- Quiet Recovery Environment
+- Continuous Supervision
+- Climate-Controlled Comfort
+- Wellness Monitoring
+- Additional Caregiver Attention
+
+Designed to promote relaxation, comfort, and a smooth recovery process.`,
                 price: 400000,
                 duration: 1440,
             },
         ].map((item) => ({
             ...item,
+            slug: item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
             isActive: true,
             isDeleted: false,
             created_at: now,
