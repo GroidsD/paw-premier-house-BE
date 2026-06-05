@@ -27,6 +27,8 @@ let callPythonChatStream = async (payload) => {
             {
                 responseType: "stream",
                 timeout: 0,
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity,
                 headers: {
                     Accept: "text/event-stream",
                     "Content-Type": "application/json",

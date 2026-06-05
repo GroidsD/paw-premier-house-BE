@@ -697,8 +697,14 @@ let chatWithBotStream = async (req, res) => {
         }
 
         const sendEvent = (event, data) => {
+            if (res.writableEnded) return;
+
             res.write(`event: ${event}\n`);
             res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+            if (typeof res.flush === "function") {
+                res.flush();
+            }
         };
 
         sendEvent("meta", {
@@ -706,6 +712,9 @@ let chatWithBotStream = async (req, res) => {
             sessionId: chatSession.chat_session_id,
             guestId: finalGuestId,
         });
+        const heartbeat = setInterval(() => {
+            sendEvent("ping", { t: Date.now() });
+        }, 15000);
 
         const pythonStream = await AIServices.callPythonChatStream({
             message,
@@ -882,19 +891,22 @@ let chatWithBotStream = async (req, res) => {
             } catch (saveError) {
                 console.error("[CHAT STREAM] save error:", saveError);
             }
-
+            clearInterval(heartbeat);
             res.end();
         });
 
         pythonStream.on("error", (error) => {
             console.error("[CHAT STREAM] Python stream error:", error);
+            clearInterval(heartbeat);
             sendEvent("error", {
                 message: "AI stream error",
             });
+
             res.end();
         });
 
         res.on("close", () => {
+            clearInterval(heartbeat);
             if (!res.writableEnded) {
                 try {
                     pythonStream.destroy();
