@@ -6,7 +6,7 @@ const USER_SEED_DATA = [
         email: "staff@gmail.com",
         fullname: "staff",
         gender: "male",
-        avatar: null,
+        avatar: "https://media.istockphoto.com/id/1478688329/ja/%E3%83%99%E3%82%AF%E3%82%BF%E3%83%BC/web-%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC-%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3%E3%81%AE%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E3%83%99%E3%82%AF%E3%83%88%E3%83%AB.jpg?s=170667a&w=0&k=20&c=1fBF9Q-uASa_otFfPXTVR2-So4X3wc-NLIUhN3wE5_Q=",
         auth_provider: "firebase",
         isActive: 1,
     },
@@ -15,7 +15,7 @@ const USER_SEED_DATA = [
         email: "manager@gmail.com",
         fullname: "Thiên Sơn",
         gender: "male",
-        avatar: null,
+        avatar: "https://media.istockphoto.com/id/1478688329/ja/%E3%83%99%E3%82%AF%E3%82%BF%E3%83%BC/web-%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC-%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3%E3%81%AE%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E3%83%99%E3%82%AF%E3%83%88%E3%83%AB.jpg?s=170667a&w=0&k=20&c=1fBF9Q-uASa_otFfPXTVR2-So4X3wc-NLIUhN3wE5_Q=",
 
         auth_provider: "firebase",
         isActive: 1,
@@ -25,7 +25,7 @@ const USER_SEED_DATA = [
         email: "admin@gmail.com",
         fullname: "Admin",
         gender: "male",
-        avatar: "/uploadImageUsers/user-VnWvx8YUM2Z4WbMJYgaDqbw64cQ2-1773129359271.jpg",
+        avatar: "https://media.istockphoto.com/id/1478688329/ja/%E3%83%99%E3%82%AF%E3%82%BF%E3%83%BC/web-%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC-%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3%E3%81%AE%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E3%83%99%E3%82%AF%E3%83%88%E3%83%AB.jpg?s=170667a&w=0&k=20&c=1fBF9Q-uASa_otFfPXTVR2-So4X3wc-NLIUhN3wE5_Q=",
 
         auth_provider: "firebase",
         isActive: 1,
@@ -35,7 +35,7 @@ const USER_SEED_DATA = [
         email: "duy@gmail.com",
         fullname: "Duy",
         gender: "male",
-        avatar: null,
+        avatar: "https://media.istockphoto.com/id/1478688329/ja/%E3%83%99%E3%82%AF%E3%82%BF%E3%83%BC/web-%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC-%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3%E3%81%AE%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E3%83%99%E3%82%AF%E3%83%88%E3%83%AB.jpg?s=170667a&w=0&k=20&c=1fBF9Q-uASa_otFfPXTVR2-So4X3wc-NLIUhN3wE5_Q=",
 
         auth_provider: "firebase",
         isActive: 1,

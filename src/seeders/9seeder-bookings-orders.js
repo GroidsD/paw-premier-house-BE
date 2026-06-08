@@ -86,8 +86,8 @@ const PRODUCTS = [
 // Pets 1-5 đã được seed từ trước (Bông, Mochi, Max, Luna, Rocky)
 // Chỉ seed thêm 2 pets mới (Choco, Lily) — không hardcode pet_id
 const NEW_PET_ROWS = [
-    { owner_id:DUY_ID,   name:"Choco", species:"dog", breed:"Chihuahua", gender:"male",   weight:2.1, age:1 },
-    { owner_id:ADMIN_ID, name:"Lily",  species:"cat", breed:"Persian",   gender:"female", weight:4.8, age:2 },
+    { owner_id:DUY_ID,   name:"Choco", species:"dog", breed:"Chihuahua", gender:"male",   weight:2.1, age:1, pet_image: "https://images.pexels.com/photos/350428/pexels-photo-350428.jpeg?cs=srgb&dl=adorable-animal-breed-350428.jpg&fm=jpg" },
+    { owner_id:ADMIN_ID, name:"Lily",  species:"cat", breed:"Persian",   gender:"female", weight:4.8, age:2, pet_image: "https://th.bing.com/th/id/OIP.NjgaEWDbNreI0JKVbl8zggHaE7?w=257&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3" },
 ];
 // petsByOwner will be built dynamically after fetching real pet IDs
 // (existing: Bông=1, Mochi=2, Max=3, Luna=4, Rocky=5; new: Choco=?, Lily=?)
@@ -324,7 +324,6 @@ module.exports = {
             ...p,
             description: null,
             status: "active",
-            pet_image: null,
             created_at: now,
             updated_at: now,
         }));
@@ -342,9 +341,28 @@ module.exports = {
 
         // Track newly inserted pet IDs for rollback
         const [newPetsInserted] = await queryInterface.sequelize.query(
-            `SELECT pet_id FROM pets WHERE owner_id IN ('${DUY_ID}','${ADMIN_ID}') AND name IN ('Choco','Lily') ORDER BY pet_id DESC LIMIT 2`
+            `SELECT pet_id, name FROM pets WHERE owner_id IN ('${DUY_ID}','${ADMIN_ID}') AND name IN ('Choco','Lily')`
         );
         const newPetIds = newPetsInserted.map(p => p.pet_id);
+
+        const petMediaRows = newPetsInserted.map(p => {
+            const url = p.name === "Choco" 
+                ? "https://images.pexels.com/photos/350428/pexels-photo-350428.jpeg?cs=srgb&dl=adorable-animal-breed-350428.jpg&fm=jpg"
+                : "https://th.bing.com/th/id/OIP.NjgaEWDbNreI0JKVbl8zggHaE7?w=257&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3";
+            return {
+                entity_type: "pet",
+                entity_id: String(p.pet_id),
+                url,
+                is_main: true,
+                alt_text: p.name,
+                created_at: now,
+                updated_at: now,
+            };
+        });
+
+        if (petMediaRows.length > 0) {
+            await queryInterface.bulkInsert("media", petMediaRows, {});
+        }
 
         // ── 1. Bookings ──────────────────────────────────────
         const usedBookingCodes = new Set();
@@ -699,6 +717,15 @@ module.exports = {
         // Bookings
         await queryInterface.sequelize.query(
             `DELETE FROM bookings WHERE booking_code LIKE 'BK2026%'`
+        );
+
+        // Pet Media
+        await queryInterface.sequelize.query(
+            `DELETE FROM media WHERE entity_type = 'pet' AND entity_id IN (
+                SELECT pet_id FROM (
+                    SELECT pet_id FROM pets WHERE name IN ('Choco','Lily') AND owner_id IN ('${DUY_ID}','${ADMIN_ID}')
+                ) as temp
+            )`
         );
 
         // Pets (only delete newly inserted ones)
