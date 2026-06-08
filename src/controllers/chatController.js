@@ -4,6 +4,21 @@ import AIServices from "../services/AIServices.js";
 
 const { ChatSession, ChatMessage } = db;
 
+const parseJsonField = (value, fallback = null) => {
+    if (value === null || value === undefined) return fallback;
+
+    if (typeof value === "object") return value;
+
+    if (typeof value === "string") {
+        try {
+            return JSON.parse(value);
+        } catch {
+            return fallback;
+        }
+    }
+
+    return fallback;
+};
 const normalizeNextAction = (frontendAction, aiNextAction) => {
     if (frontendAction?.type === "ADD_TO_CART") {
         return {
@@ -21,15 +36,34 @@ const mapMessageForFrontend = (messageRecord) => {
             ? messageRecord.get({ plain: true })
             : messageRecord;
 
+    const analysis = parseJsonField(m.analysis_json, null);
+    const retrieval = parseJsonField(m.retrieval_json, null);
+    const nextAction = parseJsonField(m.next_action_json, null);
+    const metadata = parseJsonField(m.metadata_json, {});
+
     return {
         id: m.chat_message_id,
+        chat_message_id: m.chat_message_id,
+
         role: m.sender === "assistant" ? "assistant" : "user",
+        sender: m.sender,
+
         content: m.message || "",
-        intent: m.intent || null,
-        retrieval: m.retrieval_json || null,
-        nextAction: m.next_action_json || null,
-        metadata: m.metadata_json || null,
+        text: m.message || "",
+
+        intent: m.intent || analysis?.intent || null,
+
+        analysis,
+        retrieval,
+        nextAction,
+        metadata,
+
         createdAt: m.created_at,
+        created_at: m.created_at,
+
+        // Optional: giúp frontend fallback nếu muốn
+        cards: Array.isArray(retrieval?.items) ? retrieval.items : [],
+        suggestions: [],
     };
 };
 
@@ -125,13 +159,21 @@ let getCurrentChatMessages = async (req, res) => {
             where: {
                 chat_session_id: sessionId,
             },
-            order: [["created_at", "DESC"]],
+
+            // Lấy 30 tin mới nhất.
+            // Nếu created_at trùng nhau, dùng chat_message_id để giữ đúng thứ tự.
+            order: [
+                ["created_at", "DESC"],
+                ["chat_message_id", "DESC"],
+            ],
+
             limit: 30,
             attributes: [
                 "chat_message_id",
                 "sender",
                 "message",
                 "intent",
+                "analysis_json",
                 "retrieval_json",
                 "next_action_json",
                 "metadata_json",
@@ -139,6 +181,7 @@ let getCurrentChatMessages = async (req, res) => {
             ],
         });
 
+        // Đảo lại để frontend nhận theo thứ tự cũ -> mới
         const messages = messagesDesc.reverse().map(mapMessageForFrontend);
 
         return res.status(200).json({
@@ -353,7 +396,10 @@ let chatWithBotStream = async (req, res) => {
             where: {
                 chat_session_id: chatSession.chat_session_id,
             },
-            order: [["created_at", "DESC"]],
+            order: [
+                ["created_at", "DESC"],
+                ["chat_message_id", "DESC"],
+            ],
             limit: 8,
         });
 
