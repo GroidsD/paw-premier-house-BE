@@ -734,6 +734,21 @@ let createOrder = async (userId, data) => {
             await reserveStockForItems(orderItemsData, transaction);
         }
 
+        if (customer_id) {
+            await db.User.update(
+                {
+                    phone: receiver_phone,
+                    district: receiver_district,
+                    province: receiver_province,
+                    address: receiver_address,
+                },
+                {
+                    where: { user_id: customer_id },
+                    transaction,
+                }
+            );
+        }
+
         await transaction.commit();
 
         let newOrder = null;

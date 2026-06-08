@@ -36,7 +36,7 @@ module.exports = {
             },
 
             avatar: {
-                type: Sequelize.STRING,
+                type: Sequelize.TEXT,
             },
 
             address: {
@@ -44,6 +44,14 @@ module.exports = {
             },
 
             phone: {
+                type: Sequelize.STRING,
+            },
+
+            district: {
+                type: Sequelize.STRING,
+            },
+
+            province: {
                 type: Sequelize.STRING,
             },
 
