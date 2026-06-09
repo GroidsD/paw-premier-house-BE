@@ -21,7 +21,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
 import rbacRoutes from "./routes/rbacRoutes.js";
 import revenueRoutes from "./routes/revenueRoutes.js";
-import featuresRoutes from "./routes/FeatureRoutes.js";
+import featuresRoutes from "./routes/featureRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import { initRedis } from "./config/redis.js";
