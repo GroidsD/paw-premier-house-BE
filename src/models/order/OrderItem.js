@@ -153,7 +153,7 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: "OrderItem",
-            tableName: "orderItems",
+            tableName: "orderitems",
             freezeTableName: true,
             timestamps: true,
             createdAt: "created_at",

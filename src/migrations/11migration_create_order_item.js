@@ -2,7 +2,7 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("orderItems", {
+        await queryInterface.createTable("orderitems", {
             orderItem_id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
@@ -131,10 +131,10 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable("orderItems");
+        await queryInterface.dropTable("orderitems");
 
         await queryInterface.sequelize.query(
-            'DROP TYPE IF EXISTS "enum_orderItems_discount_type";',
+            'DROP TYPE IF EXISTS "enum_orderitems_discount_type";',
         );
     },
 };
