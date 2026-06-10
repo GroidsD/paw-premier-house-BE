@@ -24,6 +24,7 @@ import revenueRoutes from "./routes/revenueRoutes.js";
 import featuresRoutes from "./routes/featureRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import reportRoute from "./routes/reportRoute.js";
 import { initRedis } from "./config/redis.js";
 const scheduleOrderTimeoutCheck = require("./cron/orderTimeoutJob");
 const scheduleBookingTimeoutCheck = require("./cron/bookingTimeoutJob");
@@ -143,6 +144,7 @@ app.use("/", voucherRoutes);
 app.use("/", rbacRoutes);
 app.use("/", revenueRoutes);
 app.use("/", paymentRoutes);
+app.use("/", reportRoute);
 connectDB();
 
 // Start cron jobs

@@ -640,13 +640,33 @@ let firebaseLogin = async (idToken) => {
                 );
             }
         } catch (err) {
+            console.log("findOrCreate error:", err);
             if (err.name === "SequelizeUniqueConstraintError") {
-                // 🔥 fallback đọc ngoài transaction
-                user = await db.User.findByPk(firebaseUser.uid);
+                user = await db.User.findOne({
+                    where: {
+                        email: firebaseUser.email,
+                    },
+                    transaction: t,
+                });
+
+                // nếu user local tồn tại thì liên kết với Firebase UID
+                if (user && user.user_id !== firebaseUser.uid) {
+                    await user.update(
+                        {
+                            user_id: firebaseUser.uid,
+                            auth_provider: "firebase",
+                        },
+                        { transaction: t },
+                    );
+                }
             } else {
                 throw err;
             }
         }
+
+        console.log("firebase uid:", firebaseUser.uid);
+        console.log("firebase email:", firebaseUser.email);
+        console.log("user:", user);
 
         if (!user) {
             throw new Error("User is null after findOrCreate");
