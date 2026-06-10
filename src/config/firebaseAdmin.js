@@ -1,8 +1,25 @@
 const admin = require("firebase-admin");
+const fs = require("fs");
+const path = require("path");
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+let serviceAccount;
 
-serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    // Render
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    serviceAccount.private_key = serviceAccount.private_key.replace(
+        /\\n/g,
+        "\n",
+    );
+} else {
+    // Local
+    const serviceAccountPath = path.join(
+        __dirname,
+        "../secrets/pet-sanctuary-7f78f-firebase-adminsdk-fbsvc-83c3e52f53.json",
+    );
+
+    serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+}
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
