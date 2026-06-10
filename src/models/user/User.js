@@ -87,8 +87,14 @@ module.exports = (sequelize, DataTypes) => {
             avatar: DataTypes.TEXT,
             address: DataTypes.STRING,
             phone: DataTypes.STRING,
-            district: DataTypes.STRING,
-            province: DataTypes.STRING,
+            district: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            province: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
 
             auth_provider: {
                 type: DataTypes.ENUM("firebase", "local"),

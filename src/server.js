@@ -153,5 +153,6 @@ scheduleBookingReminderCheck();
 let port = process.env.PORT || 5059;
 server.listen(port, () => {
     console.log("🔥 REAL DB =", process.env.DB_NAME);
+
     console.log("Backend Nodejs is running on port: " + port);
 });

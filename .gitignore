@@ -3,4 +3,4 @@
 /.idea
 .idea/
 .env
-/secrets/
+src/secrets/*.json
