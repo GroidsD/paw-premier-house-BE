@@ -46,6 +46,18 @@ router.get(
     }),
     bookingController.getMyBookings,
 );
+
+router.get(
+    "/api/booking/my-assigned-bookings",
+    authMiddleware,
+    rbacMiddleware,
+    permissionMiddleware({
+        all: ["booking:read"],
+        any: ["dashboard:staff"],
+    }),
+    bookingController.getMyAssignedBookings,
+);
+
 router.get(
     "/api/booking/:bookingId",
     authMiddleware,

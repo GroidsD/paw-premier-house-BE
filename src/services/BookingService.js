@@ -315,6 +315,7 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
             "confirmed",
             "assigned",
             "cancelled",
+            "in-progress",
             "completed",
         ];
 
@@ -325,9 +326,10 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
         }
 
         const allowedTransitions = {
-            pending: ["confirmed", "assigned", "cancelled"],
+            pending: ["confirmed", "cancelled"],
             confirmed: ["assigned", "cancelled"],
-            assigned: ["completed", "cancelled"],
+            assigned: ["in-progress", "cancelled"],
+            "in-progress": ["completed", "cancelled"],
             completed: [],
             cancelled: [],
         };
@@ -344,7 +346,11 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
             if (!staffId) {
                 throw new Error("Cần staffId để assign booking");
             }
+
             updateData.staff_id = staffId;
+        }
+
+        if (status === "in-progress") {
             updateData.check_in = booking.check_in || new Date();
         }
 
@@ -643,7 +649,7 @@ const assignBookingToStaff = async ({ bookingId, staffId, scheduleId }) => {
 
         if (!booking) throw new Error("Booking không tồn tại");
 
-        if (booking.status !== "pending")
+        if (booking.status !== "confirmed")
             throw new Error("Booking không thể nhận");
 
         const scheduleStaff = await db.ScheduleStaff.findOne({
@@ -778,6 +784,34 @@ const getBookingById = async (bookingId) => {
     }
 };
 
+const getMyAssignedBookings = async (staffId) => {
+    const bookings = await db.Booking.findAll({
+        where: {
+            staff_id: staffId,
+        },
+        include: [
+            { model: db.User, as: "customer" },
+            { model: db.Pet, as: "pet" },
+            {
+                model: db.BookingItem,
+                as: "bookingItems",
+                include: [
+                    {
+                        model: db.Service,
+                        as: "service",
+                    },
+                ],
+            },
+        ],
+        order: [["created_at", "DESC"]],
+    });
+
+    return {
+        errCode: 0,
+        bookings,
+    };
+};
+
 export default {
     createBooking,
     getMyBookings,
@@ -787,4 +821,5 @@ export default {
     assignBookingToStaff,
     getBookingById,
     updateBookingPaymentStatus,
+    getMyAssignedBookings,
 };

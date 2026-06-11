@@ -255,6 +255,13 @@ const getBookingById = async (req, res) => {
 
     return res.status(200).json(result);
 };
+
+const getMyAssignedBookings = async (req, res) => {
+    const result = await BookingService.getMyAssignedBookings(req.user.user_id);
+
+    return res.status(200).json(result);
+};
+
 export default {
     verifyBooking,
     createBooking,
@@ -266,4 +273,5 @@ export default {
     staffCancelBooking,
     assignBooking,
     getBookingById,
+    getMyAssignedBookings,
 };
