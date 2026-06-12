@@ -27,10 +27,16 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
 
-            feature_name: {
-                type: DataTypes.STRING,
-                allowNull: false,
-                comment: "Tên feature",
+            feature_name_vi: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+                comment: "Tên feature tiếng Việt",
+            },
+
+            feature_name_en: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+                comment: "Tên feature tiếng Anh",
             },
 
             serviceCategories_id: {
@@ -49,10 +55,16 @@ module.exports = (sequelize, DataTypes) => {
                 comment: "Icon của feature",
             },
 
-            description: {
-                type: DataTypes.TEXT,
+            description_vi: {
+                type: DataTypes.TEXT("long"),
                 allowNull: true,
-                comment: "Mô tả feature",
+                comment: "Mô tả feature tiếng Việt",
+            },
+
+            description_en: {
+                type: DataTypes.TEXT("long"),
+                allowNull: true,
+                comment: "Mô tả feature tiếng Anh",
             },
 
             created_at: {

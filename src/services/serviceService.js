@@ -21,11 +21,28 @@ const normalizeIds = (value) => {
 
     return [];
 };
+
+const mapFeatureByLang = (feature, lang = "vi") => ({
+    feature_id: feature.feature_id,
+    serviceCategories_id: feature.serviceCategories_id,
+    icon: feature.icon,
+
+    feature_name:
+        lang === "en"
+            ? feature.feature_name_en || feature.feature_name_vi
+            : feature.feature_name_vi,
+
+    description:
+        lang === "en"
+            ? feature.description_en || feature.description_vi
+            : feature.description_vi,
+});
+
 const createService = async (data) => {
     const t = await db.sequelize.transaction();
 
     try {
-        let baseSlug = generateSlug(data.name);
+        let baseSlug = generateSlug(data.name_vi);
         let slug = baseSlug;
         let count = 1;
 
@@ -42,9 +59,11 @@ const createService = async (data) => {
         const service = await db.Service.create(
             {
                 serviceCategories_id: data.serviceCategories_id || null,
-                name: data.name,
+                name_vi: data.name_vi,
+                name_en: data.name_en || data.name_vi,
                 slug,
-                description: data.description,
+                description_vi: data.description_vi,
+                description_en: data.description_en || data.description_vi,
                 price: data.price,
                 duration: data.duration,
             },
@@ -90,7 +109,7 @@ const createService = async (data) => {
     }
 };
 
-const getAllServices = async () => {
+const getAllServices = async (lang = "vi") => {
     try {
         const services = await db.Service.findAll({
             include: [
@@ -111,9 +130,38 @@ const getAllServices = async () => {
             order: [["created_at", "DESC"]],
         });
 
+        // Map response fields based on language
+        const mappedServices = services.map((service) => {
+            const plainService = service.get({ plain: true });
+
+            return {
+                ...plainService,
+
+                name:
+                    lang === "en"
+                        ? plainService.name_en || plainService.name_vi
+                        : plainService.name_vi,
+
+                description:
+                    lang === "en"
+                        ? plainService.description_en ||
+                          plainService.description_vi
+                        : plainService.description_vi,
+
+                features: (plainService.features || []).map((feature) =>
+                    mapFeatureByLang(feature, lang),
+                ),
+
+                name_vi: undefined,
+                name_en: undefined,
+                description_vi: undefined,
+                description_en: undefined,
+            };
+        });
+
         return {
             errCode: 0,
-            services,
+            services: mappedServices,
         };
     } catch (error) {
         console.error("❌ Error in getAllServices:", error);
@@ -124,7 +172,7 @@ const getAllServices = async () => {
     }
 };
 
-const getServiceById = async (id) => {
+const getServiceById = async (id, lang = "vi") => {
     try {
         const service = await db.Service.findOne({
             where: {
@@ -156,9 +204,34 @@ const getServiceById = async (id) => {
             };
         }
 
+        // Map response fields based on language
+        const plainService = service.get({ plain: true });
+        const mappedService = {
+            ...plainService,
+
+            name:
+                lang === "en"
+                    ? plainService.name_en || plainService.name_vi
+                    : plainService.name_vi,
+
+            description:
+                lang === "en"
+                    ? plainService.description_en || plainService.description_vi
+                    : plainService.description_vi,
+
+            features: (plainService.features || []).map((feature) =>
+                mapFeatureByLang(feature, lang),
+            ),
+
+            name_vi: undefined,
+            name_en: undefined,
+            description_vi: undefined,
+            description_en: undefined,
+        };
+
         return {
             errCode: 0,
-            service,
+            service: mappedService,
         };
     } catch (error) {
         console.error("❌ Error in getServiceById:", error);
@@ -169,7 +242,7 @@ const getServiceById = async (id) => {
     }
 };
 
-const getServiceBySlug = async (slug) => {
+const getServiceBySlug = async (slug, lang = "vi") => {
     try {
         const service = await db.Service.findOne({
             where: {
@@ -201,9 +274,34 @@ const getServiceBySlug = async (slug) => {
             };
         }
 
+        // Map response fields based on language
+        const plainService = service.get({ plain: true });
+        const mappedService = {
+            ...plainService,
+
+            name:
+                lang === "en"
+                    ? plainService.name_en || plainService.name_vi
+                    : plainService.name_vi,
+
+            description:
+                lang === "en"
+                    ? plainService.description_en || plainService.description_vi
+                    : plainService.description_vi,
+
+            features: (plainService.features || []).map((feature) =>
+                mapFeatureByLang(feature, lang),
+            ),
+
+            name_vi: undefined,
+            name_en: undefined,
+            description_vi: undefined,
+            description_en: undefined,
+        };
+
         return {
             errCode: 0,
-            service,
+            service: mappedService,
         };
     } catch (error) {
         console.error("❌ Error in getServiceBySlug:", error);
@@ -215,7 +313,7 @@ const getServiceBySlug = async (slug) => {
     }
 };
 
-const getServicesByCategory = async (category_id) => {
+const getServicesByCategory = async (category_id, lang = "vi") => {
     try {
         const services = await db.Service.findAll({
             where: {
@@ -245,9 +343,38 @@ const getServicesByCategory = async (category_id) => {
             order: [["created_at", "DESC"]],
         });
 
+        // Map response fields based on language
+        const mappedServices = services.map((service) => {
+            const plainService = service.get({ plain: true });
+
+            return {
+                ...plainService,
+
+                name:
+                    lang === "en"
+                        ? plainService.name_en || plainService.name_vi
+                        : plainService.name_vi,
+
+                description:
+                    lang === "en"
+                        ? plainService.description_en ||
+                          plainService.description_vi
+                        : plainService.description_vi,
+
+                features: (plainService.features || []).map((feature) =>
+                    mapFeatureByLang(feature, lang),
+                ),
+
+                name_vi: undefined,
+                name_en: undefined,
+                description_vi: undefined,
+                description_en: undefined,
+            };
+        });
+
         return {
             errCode: 0,
-            services,
+            services: mappedServices,
         };
     } catch (error) {
         console.error("❌ Error in getServicesByCategory:", error);
@@ -286,8 +413,10 @@ const updateService = async (id, data) => {
 
         await service.update(
             {
-                name: data.name ?? service.name,
-                description: data.description ?? service.description,
+                name_vi: data.name_vi ?? service.name_vi,
+                name_en: data.name_en ?? service.name_en,
+                description_vi: data.description_vi ?? service.description_vi,
+                description_en: data.description_en ?? service.description_en,
                 price: data.price ?? service.price,
                 duration: data.duration ?? service.duration,
                 serviceCategories_id:

@@ -18,7 +18,8 @@ let createFeature = async (req, res) => {
 
 let getAllFeatures = async (req, res) => {
     try {
-        const result = await FeatureService.getAllFeatures();
+        const lang = req.query.lang || "vi";
+        const result = await FeatureService.getAllFeatures(lang);
 
         return res.status(200).json(result);
     } catch (e) {
@@ -33,8 +34,9 @@ let getAllFeatures = async (req, res) => {
 let getFeatureById = async (req, res) => {
     try {
         const feature_id = req.query.feature_id;
+        const lang = req.query.lang || "vi";
 
-        const result = await FeatureService.getFeatureById(feature_id);
+        const result = await FeatureService.getFeatureById(feature_id, lang);
 
         if (result.errCode !== 0) {
             return res.status(404).json(result);
@@ -54,9 +56,10 @@ let getFeatureById = async (req, res) => {
 let getFeaturesByCategory = async (req, res) => {
     try {
         const serviceCategories_id = req.query.serviceCategories_id;
+        const lang = req.query.lang || "vi";
 
         const result =
-            await FeatureService.getFeaturesByCategory(serviceCategories_id);
+            await FeatureService.getFeaturesByCategory(serviceCategories_id, lang);
 
         return res.status(200).json(result);
     } catch (e) {
@@ -72,10 +75,12 @@ let getFeaturesByCategory = async (req, res) => {
 let getFeaturesForService = async (req, res) => {
     try {
         const { service_id, serviceCategories_id } = req.query;
+        const lang = req.query.lang || "vi";
 
         const result = await FeatureService.getFeaturesForService(
             service_id,
             serviceCategories_id,
+            lang,
         );
 
         return res.status(200).json(result);

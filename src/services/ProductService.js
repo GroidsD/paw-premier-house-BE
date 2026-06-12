@@ -132,8 +132,8 @@ const cleanupOrphanedFiles = async (oldUrls = [], newUrls = []) => {
 const cleanupAllProductDescriptionImages = async (product) => {
     if (!product) return;
     const urls = [
-        ...extractLocalImageUrls(product.description),
-        ...extractLocalImageUrls(product.summary),
+        ...extractLocalImageUrls(product.description_vi),
+        ...extractLocalImageUrls(product.summary_vi),
     ];
     for (const url of [...new Set(urls)]) {
         await safeUnlinkByUrl(url);
@@ -146,9 +146,12 @@ let createProduct = async (data) => {
     try {
         let {
             productCategories_id,
-            name,
-            description,
-            summary,
+            name_vi,
+            name_en,
+            description_vi,
+            description_en,
+            summary_vi,
+            summary_en,
             thumbnail_url,
             original_price,
             discount = 0,
@@ -161,8 +164,8 @@ let createProduct = async (data) => {
 
         const validations = [
             {
-                condition: !name || name.trim() === "",
-                message: "Product name is required",
+                condition: !name_vi || name_vi.trim() === "",
+                message: "Product name (Vietnamese) is required",
             },
             {
                 condition: !productCategories_id,
@@ -214,7 +217,7 @@ let createProduct = async (data) => {
             }
         }
 
-        let baseSlug = generateSlug(name);
+        let baseSlug = generateSlug(name_vi);
         let slug = baseSlug;
         let count = 1;
 
@@ -230,10 +233,13 @@ let createProduct = async (data) => {
         const product = await db.Product.create(
             {
                 productCategories_id,
-                name,
+                name_vi,
+                name_en: name_en || name_vi,
                 slug,
-                description,
-                summary,
+                description_vi,
+                description_en: description_en || description_vi,
+                summary_vi,
+                summary_en: summary_en || summary_vi,
                 thumbnail_url: Array.isArray(media)
                     ? media.find((m) => m.is_main)?.url || media[0]?.url || null
                     : null,
@@ -338,17 +344,20 @@ let createProduct = async (data) => {
     }
 };
 
-let getAllProducts = () => {
+let getAllProducts = (lang = "vi") => {
     return new Promise(async (resolve, reject) => {
         try {
             let products = await db.Product.findAll({
                 attributes: [
                     "product_id",
                     "productCategories_id",
-                    "name",
+                    "name_vi",
+                    "name_en",
                     "slug",
-                    "description",
-                    "summary",
+                    "description_vi",
+                    "description_en",
+                    "summary_vi",
+                    "summary_en",
                     "thumbnail_url",
                     "price",
                     "original_price",
@@ -377,21 +386,40 @@ let getAllProducts = () => {
                 order: [["product_id", "ASC"]],
             });
 
-            resolve(products);
+            // Map response fields based on language
+            const mappedProducts = products.map(product => {
+                const plainProduct = product.get({ plain: true });
+                return {
+                    ...plainProduct,
+                    name: lang === "en" ? (plainProduct.name_en || plainProduct.name_vi) : plainProduct.name_vi,
+                    summary: lang === "en" ? (plainProduct.summary_en || plainProduct.summary_vi) : plainProduct.summary_vi,
+                    description: lang === "en" ? (plainProduct.description_en || plainProduct.description_vi) : plainProduct.description_vi,
+                    // Remove multilingual fields from response
+                    name_vi: undefined,
+                    name_en: undefined,
+                    summary_vi: undefined,
+                    summary_en: undefined,
+                    description_vi: undefined,
+                    description_en: undefined,
+                };
+            });
+
+            resolve(mappedProducts);
         } catch (e) {
             reject(e);
         }
     });
 };
 
-let getProductById = (product_id) => {
+let getProductById = (product_id, lang = "vi") => {
     return new Promise(async (resolve, reject) => {
         try {
             let product = await db.Product.findByPk(product_id, {
                 attributes: [
                     "product_id",
                     "productCategories_id",
-                    "name",
+                    "name_vi",
+                    "name_en",
                     "slug",
                     "price",
                     "original_price",
@@ -400,8 +428,10 @@ let getProductById = (product_id) => {
                     "quantity",
                     "isActive",
                     "has_variants",
-                    "description",
-                    "summary",
+                    "description_vi",
+                    "description_en",
+                    "summary_vi",
+                    "summary_en",
                     "thumbnail_url",
                     "created_at",
                 ],
@@ -430,10 +460,26 @@ let getProductById = (product_id) => {
                 });
             }
 
+            // Map response fields based on language
+            const plainProduct = product.get({ plain: true });
+            const mappedProduct = {
+                ...plainProduct,
+                name: lang === "en" ? (plainProduct.name_en || plainProduct.name_vi) : plainProduct.name_vi,
+                summary: lang === "en" ? (plainProduct.summary_en || plainProduct.summary_vi) : plainProduct.summary_vi,
+                description: lang === "en" ? (plainProduct.description_en || plainProduct.description_vi) : plainProduct.description_vi,
+                // Remove multilingual fields from response
+                name_vi: undefined,
+                name_en: undefined,
+                summary_vi: undefined,
+                summary_en: undefined,
+                description_vi: undefined,
+                description_en: undefined,
+            };
+
             resolve({
                 errCode: 0,
                 errMessage: "Product retrieved successfully",
-                product,
+                product: mappedProduct,
             });
         } catch (e) {
             reject({
@@ -451,9 +497,12 @@ let updateProduct = async (product_id, data, files) => {
     try {
         let {
             productCategories_id,
-            name,
-            description,
-            summary,
+            name_vi,
+            name_en,
+            description_vi,
+            description_en,
+            summary_vi,
+            summary_en,
             thumbnail_url,
             original_price,
             discount,
@@ -484,8 +533,8 @@ let updateProduct = async (product_id, data, files) => {
         }
 
         // Track images before update for cleanup
-        const oldDescriptionImages = extractLocalImageUrls(product.description);
-        const oldSummaryImages = extractLocalImageUrls(product.summary);
+        const oldDescriptionImages = extractLocalImageUrls(product.description_vi);
+        const oldSummaryImages = extractLocalImageUrls(product.summary_vi);
         const oldImages = [
             ...new Set([...oldDescriptionImages, ...oldSummaryImages]),
         ];
@@ -499,9 +548,12 @@ let updateProduct = async (product_id, data, files) => {
             {
                 productCategories_id:
                     productCategories_id ?? product.productCategories_id,
-                name: name ?? product.name,
-                description: description ?? product.description,
-                summary: summary ?? product.summary,
+                name_vi: name_vi ?? product.name_vi,
+                name_en: name_en ?? product.name_en,
+                description_vi: description_vi ?? product.description_vi,
+                description_en: description_en ?? product.description_en,
+                summary_vi: summary_vi ?? product.summary_vi,
+                summary_en: summary_en ?? product.summary_en,
                 isActive: isActive ?? product.isActive,
                 isDelete: isDelete ?? product.isDelete,
                 has_variants: nextHasVariants,
@@ -806,7 +858,7 @@ let updateProduct = async (product_id, data, files) => {
                         entity_id: String(product_id),
                         url,
                         is_main: i === Number(mainIndex),
-                        alt_text: name || product.name,
+                        alt_text: name_vi || product.name_vi,
                     },
                     { transaction: t },
                 );

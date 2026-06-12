@@ -59,17 +59,33 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: "SET NULL",
             },
 
-            name: {
-                type: DataTypes.STRING,
+            name_vi: {
+                type: DataTypes.STRING(255),
                 allowNull: false,
             },
 
-            description: {
+            name_en: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
+
+            description_vi: {
+                type: DataTypes.TEXT("long"),
+                allowNull: true,
+            },
+
+            description_en: {
+                type: DataTypes.TEXT("long"),
+                allowNull: true,
+            },
+
+            summary_vi: {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
-            summary: {
-                type: DataTypes.STRING,
+
+            summary_en: {
+                type: DataTypes.TEXT,
                 allowNull: true,
             },
             thumbnail_url: {

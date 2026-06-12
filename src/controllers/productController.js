@@ -63,7 +63,8 @@ const createProduct = async (req, res) => {
 
 let getAllProducts = async (req, res) => {
     try {
-        const products = await ProductService.getAllProducts();
+        const lang = req.query.lang || "vi";
+        const products = await ProductService.getAllProducts(lang);
         return res.status(200).json({
             errCode: 0,
             products,
@@ -80,7 +81,8 @@ let getAllProducts = async (req, res) => {
 let getProductById = async (req, res) => {
     try {
         const product_id = req.query.product_id;
-        const result = await ProductService.getProductById(product_id);
+        const lang = req.query.lang || "vi";
+        const result = await ProductService.getProductById(product_id, lang);
 
         return res.status(result.errCode === 0 ? 200 : 404).json(result);
     } catch (e) {

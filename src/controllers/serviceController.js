@@ -29,7 +29,8 @@ let createService = async (req, res) => {
 
 let getAllServices = async (req, res) => {
     try {
-        const services = await serviceService.getAllServices();
+        const lang = req.query.lang || "vi";
+        const services = await serviceService.getAllServices(lang);
         return res.status(200).json({
             errCode: 0,
             services,
@@ -46,7 +47,8 @@ let getAllServices = async (req, res) => {
 let getServiceById = async (req, res) => {
     try {
         const service_id = req.query.service_id;
-        const service = await serviceService.getServiceById(service_id);
+        const lang = req.query.lang || "vi";
+        const service = await serviceService.getServiceById(service_id, lang);
 
         if (!service) {
             return res.status(404).json({
@@ -71,8 +73,9 @@ let getServiceById = async (req, res) => {
 let getServiceBySlug = async (req, res) => {
     try {
         const slug = req.query.slug;
+        const lang = req.query.lang || "vi";
 
-        const service = await serviceService.getServiceBySlug(slug);
+        const service = await serviceService.getServiceBySlug(slug, lang);
 
         if (!service) {
             return res.status(404).json({
@@ -176,7 +179,8 @@ let hardDeleteService = async (req, res) => {
 let getServicesByCategory = async (req, res) => {
     try {
         const category_id = req.query.category_id;
-        const result = await serviceService.getServicesByCategory(category_id);
+        const lang = req.query.lang || "vi";
+        const result = await serviceService.getServicesByCategory(category_id, lang);
 
         if (result.errCode !== 0) {
             return res.status(404).json({
