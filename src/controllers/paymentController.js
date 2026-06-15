@@ -43,18 +43,8 @@ let createMoMoPayment = async (req, res) => {
 let handleMoMoReturn = async (req, res) => {
     const FRONTEND_URL = process.env.FRONTEND_URL;
 
-    console.log("🔥 MOMO RETURN HIT");
-    console.log("Query:", req.query);
-    console.log("FRONTEND_URL =", FRONTEND_URL);
-
     try {
-        console.log("➡️ Before handleCallback");
-
         const result = await moMoService.handleCallback(req.query);
-
-        console.log("⬅️ After handleCallback");
-        console.log("========== MOMO RETURN ==========");
-        console.log(result);
 
         if (result.errCode !== 0) {
             console.log("❌ Payment error");
@@ -71,8 +61,6 @@ let handleMoMoReturn = async (req, res) => {
             );
         }
 
-        console.log("Redirect order");
-
         return res.redirect(
             `${FRONTEND_URL}/confirm-order?status=${paymentStatus}&orderId=${orderId}`,
         );
@@ -80,7 +68,6 @@ let handleMoMoReturn = async (req, res) => {
         console.error("❌ handleMoMoReturn error:");
         console.error(error);
 
-        // Tạm thời trả JSON để nhìn thấy lỗi thật
         return res.status(500).json({
             message: error.message,
             stack: error.stack,
