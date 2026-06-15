@@ -41,6 +41,7 @@ let createMoMoPayment = async (req, res) => {
 
 // Handle redirect from MoMo (GET)
 let handleMoMoReturn = async (req, res) => {
+    console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
     try {
         const FRONTEND_URL = process.env.FRONTEND_URL;
         const result = await moMoService.handleCallback(req.query);
