@@ -41,15 +41,23 @@ let createMoMoPayment = async (req, res) => {
 
 // Handle redirect from MoMo (GET)
 let handleMoMoReturn = async (req, res) => {
-    console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
+    const FRONTEND_URL = process.env.FRONTEND_URL;
+
+    console.log("🔥 MOMO RETURN HIT");
+    console.log("Query:", req.query);
+    console.log("FRONTEND_URL =", FRONTEND_URL);
+
     try {
-        const FRONTEND_URL = process.env.FRONTEND_URL;
+        console.log("➡️ Before handleCallback");
+
         const result = await moMoService.handleCallback(req.query);
 
+        console.log("⬅️ After handleCallback");
         console.log("========== MOMO RETURN ==========");
-        console.log("result:", result);
+        console.log(result);
 
         if (result.errCode !== 0) {
+            console.log("❌ Payment error");
             return res.redirect(`${FRONTEND_URL}/?payment=error`);
         }
 
@@ -57,17 +65,26 @@ let handleMoMoReturn = async (req, res) => {
 
         if (resourceType === "booking") {
             console.log("Redirect booking");
+
             return res.redirect(
                 `${FRONTEND_URL}/confirm-booking?status=${paymentStatus}&bookingId=${orderId}`,
             );
         }
+
         console.log("Redirect order");
+
         return res.redirect(
             `${FRONTEND_URL}/confirm-order?status=${paymentStatus}&orderId=${orderId}`,
         );
     } catch (error) {
-        console.error("❌ handleMoMoReturn error:", error);
-        return res.redirect(`${FRONTEND_URL}/?payment=error`);
+        console.error("❌ handleMoMoReturn error:");
+        console.error(error);
+
+        // Tạm thời trả JSON để nhìn thấy lỗi thật
+        return res.status(500).json({
+            message: error.message,
+            stack: error.stack,
+        });
     }
 };
 
