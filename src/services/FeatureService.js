@@ -53,10 +53,10 @@ let createFeature = async (data) => {
                 ...plainFeature,
                 feature_name: plainFeature.feature_name_vi,
                 description: plainFeature.description_vi,
-                feature_name_vi: undefined,
-                feature_name_en: undefined,
-                description_vi: undefined,
-                description_en: undefined,
+                // feature_name_vi: undefined,
+                // feature_name_en: undefined,
+                // description_vi: undefined,
+                // description_en: undefined,
             },
         };
     } catch (e) {
@@ -108,10 +108,10 @@ let getAllFeatures = async (lang = "vi") => {
                           plainFeature.description_vi
                         : plainFeature.description_vi,
                 // Remove multilingual fields from response
-                feature_name_vi: undefined,
-                feature_name_en: undefined,
-                description_vi: undefined,
-                description_en: undefined,
+                // feature_name_vi: undefined,
+                // feature_name_en: undefined,
+                // description_vi: undefined,
+                // description_en: undefined,
             };
         });
 
@@ -177,10 +177,10 @@ let getFeatureById = async (feature_id, lang = "vi") => {
                     ? plainFeature.description_en || plainFeature.description_vi
                     : plainFeature.description_vi,
             // Remove multilingual fields from response
-            feature_name_vi: undefined,
-            feature_name_en: undefined,
-            description_vi: undefined,
-            description_en: undefined,
+            // feature_name_vi: undefined,
+            // feature_name_en: undefined,
+            // description_vi: undefined,
+            // description_en: undefined,
         };
 
         return {
@@ -226,10 +226,10 @@ let getFeaturesByCategory = async (serviceCategories_id, lang = "vi") => {
                           plainFeature.description_vi
                         : plainFeature.description_vi,
                 // Remove multilingual fields from response
-                feature_name_vi: undefined,
-                feature_name_en: undefined,
-                description_vi: undefined,
-                description_en: undefined,
+                // feature_name_vi: undefined,
+                // feature_name_en: undefined,
+                // description_vi: undefined,
+                // description_en: undefined,
             };
         });
 
