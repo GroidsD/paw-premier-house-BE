@@ -42,13 +42,14 @@ let createMoMoPayment = async (req, res) => {
 // Handle redirect from MoMo (GET)
 let handleMoMoReturn = async (req, res) => {
     try {
+        const FRONTEND_URL = process.env.FRONTEND_URL;
         const result = await moMoService.handleCallback(req.query);
 
         console.log("========== MOMO RETURN ==========");
         console.log("result:", result);
 
         if (result.errCode !== 0) {
-            return res.redirect(`http://localhost:5173/?payment=error`);
+            return res.redirect(`${FRONTEND_URL}/?payment=error`);
         }
 
         const { orderId, resourceType, paymentStatus } = result;
@@ -56,16 +57,16 @@ let handleMoMoReturn = async (req, res) => {
         if (resourceType === "booking") {
             console.log("Redirect booking");
             return res.redirect(
-                `http://localhost:5173/confirm-booking?status=${paymentStatus}&bookingId=${orderId}`,
+                `${FRONTEND_URL}/confirm-booking?status=${paymentStatus}&bookingId=${orderId}`,
             );
         }
         console.log("Redirect order");
         return res.redirect(
-            `http://localhost:5173/confirm-order?status=${paymentStatus}&orderId=${orderId}`,
+            `${FRONTEND_URL}/confirm-order?status=${paymentStatus}&orderId=${orderId}`,
         );
     } catch (error) {
         console.error("❌ handleMoMoReturn error:", error);
-        return res.redirect(`http://localhost:5173/?payment=error`);
+        return res.redirect(`${FRONTEND_URL}/?payment=error`);
     }
 };
 
