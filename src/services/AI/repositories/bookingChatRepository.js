@@ -15,7 +15,7 @@ const findUserBookings = async ({ currentUser, message }) => {
                         model: Service,
                         as: "service",
                         required: false,
-                        attributes: ["service_id", "name", "price", "duration"],
+                        attributes: ["service_id", "name_vi", "name_en", "price", "duration"],
                     },
                 ],
             },
@@ -45,7 +45,7 @@ const findUserBookings = async ({ currentUser, message }) => {
                 service: item.service
                     ? {
                           service_id: item.service.service_id,
-                          name: item.service.name,
+                          name: item.service.name_vi || item.service.name_en,
                           price: Number(item.service.price || 0),
                           duration: Number(item.service.duration || 0),
                       }

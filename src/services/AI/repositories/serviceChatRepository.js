@@ -15,9 +15,9 @@ const includesTerm = (haystack = "", term = "") => {
 
 const scoreService = (service, analysis = {}) => {
     let score = 0;
-    const haystack = [service.name, service.description, service.category].join(
-        " ",
-    );
+    const name = service.name_vi || service.name_en || "";
+    const description = service.description_vi || service.description_en || "";
+    const haystack = [name, description, service.category].join(" ");
 
     for (const hint of analysis.categoryHints || []) {
         if (includesTerm(service.category, hint)) {
@@ -27,7 +27,7 @@ const scoreService = (service, analysis = {}) => {
 
     for (const term of analysis.searchTerms || []) {
         if (includesTerm(haystack, term)) {
-            score += includesTerm(service.name, term) ? 14 : 8;
+            score += includesTerm(name, term) ? 14 : 8;
         }
     }
 
@@ -72,15 +72,17 @@ const findRelevantServices = async ({ message, analysis }) => {
     const items = services
         .map((service) => ({
             service_id: service.service_id,
-            name: service.name,
-            description: service.description,
+            name: service.name_vi || service.name_en,
+            description: service.description_vi || service.description_en,
             category: service.category?.type || null,
             price: Number(service.price || 0),
             duration: Number(service.duration || 0),
             _score: scoreService(
                 {
-                    name: service.name,
-                    description: service.description,
+                    name_vi: service.name_vi,
+                    name_en: service.name_en,
+                    description_vi: service.description_vi,
+                    description_en: service.description_en,
                     category: service.category?.type || null,
                 },
                 analysis,

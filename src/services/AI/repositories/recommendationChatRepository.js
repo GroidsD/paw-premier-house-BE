@@ -51,7 +51,7 @@ const findUserRecommendations = async ({ currentUser }) => {
                 if (service) {
                     entity = {
                         id: service.service_id,
-                        name: service.name,
+                        name: service.name_vi || service.name_en,
                         type: "service",
                         price: Number(service.price || 0),
                     };

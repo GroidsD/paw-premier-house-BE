@@ -283,7 +283,8 @@ const renderBookingItems = (booking) => {
             const serviceName =
                 item?.service_name ||
                 item?.name ||
-                item?.service?.name ||
+                item?.service?.name_vi ||
+                item?.service?.name_en ||
                 "Service";
 
             const petName =
@@ -306,7 +307,10 @@ const renderBookingItems = (booking) => {
             );
 
             const description =
-                item?.service?.description || item?.description || "";
+                item?.service?.description_vi ||
+                item?.service?.description_en ||
+                item?.description ||
+                "";
 
             const duration = item?.service?.duration;
             const imageUrl = getServiceImage(item);

@@ -119,10 +119,12 @@ const createBooking = async (user_id, data) => {
                             as: "service",
                             attributes: [
                                 "service_id",
-                                "name",
+                                "name_vi",
+                                "name_en",
+                                "description_vi",
+                                "description_en",
                                 "price",
                                 "duration",
-                                "description",
                             ],
                             include: [
                                 {
@@ -224,10 +226,12 @@ const getMyBookings = async (user_id) => {
                         as: "service",
                         attributes: [
                             "service_id",
-                            "name",
+                            "name_vi",
+                            "name_en",
+                            "description_vi",
+                            "description_en",
                             "price",
                             "duration",
-                            "description",
                         ],
                         include: [
                             {
@@ -387,10 +391,12 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
                             as: "service",
                             attributes: [
                                 "service_id",
-                                "name",
+                                "name_vi",
+                                "name_en",
+                                "description_vi",
+                                "description_en",
                                 "price",
                                 "duration",
-                                "description",
                             ],
                             include: [
                                 {
@@ -583,10 +589,12 @@ const updateBookingPaymentStatus = async (
                             as: "service",
                             attributes: [
                                 "service_id",
-                                "name",
+                                "name_vi",
+                                "name_en",
+                                "description_vi",
+                                "description_en",
                                 "price",
                                 "duration",
-                                "description",
                             ],
                             include: [
                                 {
@@ -723,10 +731,12 @@ const getBookingById = async (bookingId) => {
                             as: "service",
                             attributes: [
                                 "service_id",
-                                "name",
+                                "name_vi",
+                                "name_en",
+                                "description_vi",
+                                "description_en",
                                 "price",
                                 "duration",
-                                "description",
                             ],
                             include: [
                                 {
