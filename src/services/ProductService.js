@@ -467,13 +467,6 @@ let getProductById = (product_id, lang = "vi") => {
                 name: lang === "en" ? (plainProduct.name_en || plainProduct.name_vi) : plainProduct.name_vi,
                 summary: lang === "en" ? (plainProduct.summary_en || plainProduct.summary_vi) : plainProduct.summary_vi,
                 description: lang === "en" ? (plainProduct.description_en || plainProduct.description_vi) : plainProduct.description_vi,
-                // Remove multilingual fields from response
-                name_vi: undefined,
-                name_en: undefined,
-                summary_vi: undefined,
-                summary_en: undefined,
-                description_vi: undefined,
-                description_en: undefined,
             };
 
             resolve({
