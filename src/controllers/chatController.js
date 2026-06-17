@@ -211,6 +211,9 @@ let chatWithBotStream = async (req, res) => {
         const { message, sessionId, guestId, history, clientContext } =
             req.body;
 
+        console.log("[DEBUG] clientContext:", clientContext);
+        console.log("[DEBUG] message:", message);
+
         if (!message || !message.trim()) {
             return res.status(400).json({
                 success: false,
@@ -414,10 +417,25 @@ let chatWithBotStream = async (req, res) => {
             message,
         });
 
+        const isVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễđ]/i.test(message);
+
+        const normalizedClientContext = {
+            ...clientContext,
+            language: isVietnamese ? "vi" : clientContext?.language || "en",
+            preferredLanguage: isVietnamese
+                ? "vi"
+                : clientContext?.preferredLanguage || "en",
+        };
+
         const currentUser = {
             userId,
             guestId: finalGuestId,
             sessionId: chatSession.chat_session_id,
+
+            language: isVietnamese ? "vi" : clientContext?.language || "en",
+            preferredLanguage: isVietnamese
+                ? "vi"
+                : clientContext?.preferredLanguage || "en",
 
             currentProductId: chatSession.last_product_id,
             lastProductId: chatSession.last_product_id,
