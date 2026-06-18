@@ -11,10 +11,15 @@ module.exports = {
                 allowNull: false,
             },
 
-            type: {
+            type_vi: {
                 type: Sequelize.STRING,
                 allowNull: false,
-                comment: "Tên loại sản phẩm",
+                comment: "Tên loại sản phẩm (Tiếng Việt)",
+            },
+            type_en: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                comment: "Tên loại sản phẩm (Tiếng Anh)",
             },
 
             isActive: {

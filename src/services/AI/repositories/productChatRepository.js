@@ -26,8 +26,8 @@ const findActiveCategories = async ({ forceRefresh = false } = {}) => {
             isActive: true,
             isDelete: false,
         },
-        attributes: ["productCategories_id", "type"],
-        order: [["type", "ASC"]],
+        attributes: ["productCategories_id", "type_vi", "type_en"],
+        order: [["type_en", "ASC"]],
     });
 
     cachedCategories = categories;
@@ -72,7 +72,7 @@ const findProductCandidates = async ({ categoryIds = [], limit = 30 }) => {
             {
                 model: ProductCategory,
                 as: "category",
-                attributes: ["productCategories_id", "type"],
+                attributes: ["productCategories_id", "type_vi", "type_en"],
             },
             {
                 model: ProductVariant,
@@ -141,7 +141,7 @@ const findProductsByIds = async ({ productIds = [] }) => {
             {
                 model: ProductCategory,
                 as: "category",
-                attributes: ["productCategories_id", "type"],
+                attributes: ["productCategories_id", "type_vi", "type_en"],
             },
             {
                 model: ProductVariant,

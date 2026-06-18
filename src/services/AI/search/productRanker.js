@@ -188,7 +188,7 @@ const getMatchedCategories = (analysis = {}, categories = []) => {
     });
 
     let matched = categories.filter((category) => {
-        const normalizedCategory = normalizeTerm(category.type);
+        const normalizedCategory = normalizeTerm(category.type_en);
         return hints.some((hint) => includesTerm(normalizedCategory, hint));
     });
 
@@ -201,7 +201,7 @@ const getMatchedCategories = (analysis = {}, categories = []) => {
 
     if (analysis?.productForm && formToCategoryMatchers[analysis.productForm]) {
         const matchedByFormCategory = categories.filter((category) => {
-            const type = normalizeTerm(category.type);
+            const type = normalizeTerm(category.type_en);
             return formToCategoryMatchers[analysis.productForm].some(
                 (keyword) => type.includes(normalizeTerm(keyword)),
             );
@@ -214,7 +214,7 @@ const getMatchedCategories = (analysis = {}, categories = []) => {
 
     if (analysis?.petType) {
         matched = matched.filter((category) =>
-            categoryBelongsToPetType(category.type, analysis.petType),
+            categoryBelongsToPetType(category.type_en, analysis.petType),
         );
     }
 

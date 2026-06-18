@@ -8,7 +8,8 @@ module.exports = {
         await queryInterface.bulkInsert("productCategories", [
             {
                 productCategories_id: 1,
-                type: "Dog Food",
+                type_vi: "Thức Ăn Chó",
+                type_en: "Dog Food",
                 isActive: true,
                 isDelete: false,
                 created_at: now,
@@ -16,7 +17,8 @@ module.exports = {
             },
             {
                 productCategories_id: 2,
-                type: "Cat Food",
+                type_vi: "Thức Ăn Mèo",
+                type_en: "Cat Food",
                 isActive: true,
                 isDelete: false,
                 created_at: now,
@@ -24,7 +26,8 @@ module.exports = {
             },
             {
                 productCategories_id: 3,
-                type: "Pet Accessories",
+                type_vi: "Phụ Kiện Thú Cưng",
+                type_en: "Pet Accessories",
                 isActive: true,
                 isDelete: false,
                 created_at: now,
@@ -32,7 +35,8 @@ module.exports = {
             },
             {
                 productCategories_id: 4,
-                type: "Pet Toys",
+                type_vi: "Đồ Chơi Thú Cưng",
+                type_en: "Pet Toys",
                 isActive: true,
                 isDelete: false,
                 created_at: now,
@@ -40,7 +44,8 @@ module.exports = {
             },
             {
                 productCategories_id: 5,
-                type: "Hygiene & Care",
+                type_vi: "Vệ Sinh & Chăm Sóc",
+                type_en: "Hygiene & Care",
                 isActive: true,
                 isDelete: false,
                 created_at: now,

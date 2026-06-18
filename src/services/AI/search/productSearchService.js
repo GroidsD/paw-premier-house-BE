@@ -235,7 +235,11 @@ const findRelevantProducts = async ({ message, analysis }) => {
         total_matched: totalMatched, // NEW
         user_question: message,
         analysis,
-        matched_categories: matchedCategories.map((category) => category.type),
+        matched_categories: matchedCategories.map((category) =>
+            analysis?.language === "en"
+                ? category.type_en || category.type_vi
+                : category.type_vi
+        ),
         applied_filters: [
             "active_products_only",
             categoryIds.length

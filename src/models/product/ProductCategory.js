@@ -21,10 +21,15 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
             },
 
-            type: {
+            type_vi: {
                 type: DataTypes.STRING,
                 allowNull: false,
-                comment: "Tên loại sản phẩm",
+                comment: "Tên loại sản phẩm (Tiếng Việt)",
+            },
+            type_en: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                comment: "Tên loại sản phẩm (Tiếng Anh)",
             },
 
             isActive: {

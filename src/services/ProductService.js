@@ -372,7 +372,7 @@ let getAllProducts = (lang = "vi") => {
                     {
                         model: db.ProductCategory,
                         as: "category",
-                        attributes: ["productCategories_id", "type"],
+                        attributes: ["productCategories_id", "type_vi", "type_en"],
                     },
                     {
                         model: db.Media,
@@ -439,7 +439,7 @@ let getProductById = (product_id, lang = "vi") => {
                     {
                         model: db.ProductCategory,
                         as: "category",
-                        attributes: ["productCategories_id", "type"],
+                        attributes: ["productCategories_id", "type_vi", "type_en"],
                     },
                     {
                         model: db.Media,

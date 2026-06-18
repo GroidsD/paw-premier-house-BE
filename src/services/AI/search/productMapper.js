@@ -72,7 +72,9 @@ const mapProductRecord = (product, analysis, helpers) => {
         name: product.name,
         description: product.description,
         slug: product.slug,
-        category: product.category?.type || null,
+        category: analysis?.language === "en"
+            ? (product.category?.type_en || product.category?.type_vi)
+            : product.category?.type_vi,
         has_variants: product.has_variants,
 
         price: Number(product.price || 0),

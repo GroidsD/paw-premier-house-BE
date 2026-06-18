@@ -19,7 +19,8 @@ let createCategory = async (req, res) => {
 
 let getAllCategories = async (req, res) => {
     try {
-        const categories = await ProductCategoryService.getAllCategories();
+        const lang = req.query.lang || "vi";
+        const categories = await ProductCategoryService.getAllCategories(lang);
         return res.status(200).json({
             errCode: 0,
             categories,
@@ -36,8 +37,9 @@ let getAllCategories = async (req, res) => {
 let getCategoryById = async (req, res) => {
     try {
         const { productCategories_id } = req.query;
+        const lang = req.query.lang || "vi";
         const category =
-            await ProductCategoryService.getCategoryById(productCategories_id);
+            await ProductCategoryService.getCategoryById(productCategories_id, lang);
 
         if (!category) {
             return res.status(404).json({
