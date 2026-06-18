@@ -27,8 +27,8 @@ let getAllCategories = async (lang = "vi") => {
                 lang === "en"
                     ? plainCategory.type_en || plainCategory.type_vi
                     : plainCategory.type_vi,
-            type_vi: undefined,
-            type_en: undefined,
+            type_vi: plainCategory.type_vi,
+            type_en: plainCategory.type_en,
         };
     });
 
@@ -50,8 +50,8 @@ let getCategoryById = async (productCategories_id, lang = "vi") => {
             lang === "en"
                 ? plainCategory.type_en || plainCategory.type_vi
                 : plainCategory.type_vi,
-        type_vi: undefined,
-        type_en: undefined,
+        type_vi: plainCategory.type_vi,
+        type_en: plainCategory.type_en,
     };
 
     return mappedCategory;
