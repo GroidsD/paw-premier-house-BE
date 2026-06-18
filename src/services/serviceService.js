@@ -151,11 +151,6 @@ const getAllServices = async (lang = "vi") => {
                 features: (plainService.features || []).map((feature) =>
                     mapFeatureByLang(feature, lang),
                 ),
-
-                name_vi: undefined,
-                name_en: undefined,
-                description_vi: undefined,
-                description_en: undefined,
             };
         });
 
@@ -222,11 +217,6 @@ const getServiceById = async (id, lang = "vi") => {
             features: (plainService.features || []).map((feature) =>
                 mapFeatureByLang(feature, lang),
             ),
-
-            name_vi: undefined,
-            name_en: undefined,
-            description_vi: undefined,
-            description_en: undefined,
         };
 
         return {
@@ -292,11 +282,6 @@ const getServiceBySlug = async (slug, lang = "vi") => {
             features: (plainService.features || []).map((feature) =>
                 mapFeatureByLang(feature, lang),
             ),
-
-            name_vi: undefined,
-            name_en: undefined,
-            description_vi: undefined,
-            description_en: undefined,
         };
 
         return {
@@ -364,11 +349,6 @@ const getServicesByCategory = async (category_id, lang = "vi") => {
                 features: (plainService.features || []).map((feature) =>
                     mapFeatureByLang(feature, lang),
                 ),
-
-                name_vi: undefined,
-                name_en: undefined,
-                description_vi: undefined,
-                description_en: undefined,
             };
         });
 
