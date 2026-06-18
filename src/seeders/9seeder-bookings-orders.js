@@ -1126,7 +1126,7 @@ module.exports = {
         });
 
         if (orderItemRows.length > 0) {
-            await queryInterface.bulkInsert("orderitems", orderItemRows, {});
+            await queryInterface.bulkInsert("orderItems", orderItemRows, {});
         }
 
         // ── 4. Revenue for completed / cancelled-refunded orders ──
