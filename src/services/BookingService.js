@@ -456,6 +456,7 @@ const cancelBooking = async ({
     cancelledBy,
     cancelReason,
     userId,
+    role,
 }) => {
     const t = await db.sequelize.transaction();
 
@@ -464,18 +465,30 @@ const cancelBooking = async ({
             transaction: t,
         });
 
-        if (!booking) throw new Error("Booking not found");
+        if (!booking) {
+            throw new Error("Booking not found");
+        }
 
-        if (booking.status !== "pending")
+        // Chỉ cấm hủy khi đã bắt đầu hoặc đã kết thúc
+        const nonCancellableStatuses = [
+            "in-progress",
+            "completed",
+            "cancelled",
+        ];
+
+        if (nonCancellableStatuses.includes(booking.status)) {
             throw new Error("Booking không thể huỷ");
+        }
 
+        // Customer chỉ được huỷ booking của chính mình
         if (cancelledBy === "customer" && booking.customer_id !== userId) {
             throw new Error("Không có quyền huỷ booking này");
         }
 
+        // Staff/Admin
         if (cancelledBy === "staff") {
             const isStaffOfBooking = booking.staff_id === userId;
-            const isAdmin = req.user?.role === "admin";
+            const isAdmin = role === "admin";
 
             if (!isStaffOfBooking && !isAdmin) {
                 throw new Error("Bạn không có quyền huỷ booking này");
@@ -505,6 +518,7 @@ const cancelBooking = async ({
         };
     } catch (error) {
         await t.rollback();
+
         return {
             errCode: 1,
             errMessage: error.message,
