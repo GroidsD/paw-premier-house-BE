@@ -634,8 +634,45 @@ const sendBookingReminderEmail = async ({ user, booking }) => {
     });
 };
 
+const sendBookingCompletedEmail = async ({ user, booking }) => {
+    const bookingType = getBookingType(booking);
+    const checkInValue =
+        booking?.check_in || booking?.check_in_date || booking?.date || "";
+    const checkOutValue = booking?.check_out || booking?.check_out_date || "";
+
+    const html = renderTemplate(loadTemplate("booking-completed"), {
+        userFullname: user?.fullname || "Customer",
+        bookingId: booking?.booking_id || "---",
+        bookingCode: booking?.booking_code || "---",
+        bookingType: String(bookingType || "service").replace(/^./, (c) =>
+            c.toUpperCase(),
+        ),
+        petName: booking?.pet?.name || booking?.pet_name || "---",
+        petSpecies: booking?.pet?.species || "---",
+        petBreed: booking?.pet?.breed || "---",
+        checkInDate: checkInValue ? formatDateTime(checkInValue) : "---",
+        checkOutDate: checkOutValue ? formatDateTime(checkOutValue) : "---",
+        totalPrice: formatPrice(booking?.total_price),
+        bookingItems: renderBookingItems(booking),
+        originalPrice: formatPrice(
+            booking?.original_price ||
+                booking?.subtotal ||
+                booking?.total_price,
+        ),
+        discount: formatPrice(booking?.discount || 0),
+        grandTotal: formatPrice(booking?.total_price),
+    });
+
+    return sendEmail({
+        to: user.email,
+        subject: "Booking Completed - Paw Premier House",
+        html,
+    });
+};
+
 module.exports = {
     sendBookingEmail,
     sendBookingTimeoutEmail,
     sendBookingReminderEmail,
+    sendBookingCompletedEmail,
 };

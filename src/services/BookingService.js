@@ -437,6 +437,19 @@ const updateBookingStatus = async ({ bookingId, status, staffId = null }) => {
 
         await t.commit();
 
+        // Send email notification for completed booking
+        if (status === "completed" && fullBooking?.customer) {
+            try {
+                const { sendBookingCompletedEmail } = require("./BookingEmailService");
+                await sendBookingCompletedEmail({
+                    user: fullBooking.customer,
+                    booking: fullBooking,
+                });
+            } catch (emailError) {
+                console.error("Failed to send booking completed email:", emailError);
+            }
+        }
+
         return {
             errCode: 0,
             errMessage: "Cập nhật trạng thái booking thành công",

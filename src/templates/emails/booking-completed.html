@@ -1,0 +1,526 @@
+<div style="
+    margin:0;
+    padding:0;
+    background-color:#f3f4f6;
+    font-family:Arial, Helvetica, sans-serif;
+    color:#111827;
+">
+    <table
+        role="presentation"
+        width="100%"
+        cellspacing="0"
+        cellpadding="0"
+        border="0"
+        style="
+            background-color:#f3f4f6;
+            margin:0;
+            padding:28px 0;
+        "
+    >
+        <tr>
+            <td align="center">
+
+                <table
+                    role="presentation"
+                    width="100%"
+                    cellspacing="0"
+                    cellpadding="0"
+                    border="0"
+                    style="
+                        max-width:680px;
+                        background:#ffffff;
+                        border-radius:24px;
+                        overflow:hidden;
+                        border:1px solid #e5e7eb;
+                    "
+                >
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="
+                            background:#059669;
+                            padding:36px 24px 32px;
+                            text-align:center;
+                        ">
+
+                            <div style="
+                                width:72px;
+                                height:72px;
+                                line-height:72px;
+                                margin:0 auto 18px;
+                                background:#047857;
+                                border-radius:50%;
+                                font-size:34px;
+                                text-align:center;
+                            ">
+                                🎉
+                            </div>
+
+                            <h1 style="
+                                margin:0;
+                                font-size:30px;
+                                line-height:38px;
+                                color:#ffffff;
+                                font-weight:800;
+                            ">
+                                Booking Completed!
+                            </h1>
+
+                            <p style="
+                                margin:14px 0 0;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#d1fae5;
+                            ">
+                                Your {{bookingType}} booking has been successfully completed.
+                                Thank you for choosing Paw Premier House!
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- BODY -->
+                    <tr>
+                        <td style="padding:32px 24px 12px;">
+
+                            <p style="
+                                margin:0 0 14px;
+                                font-size:16px;
+                                line-height:26px;
+                                color:#111827;
+                            ">
+                                Hello
+                                <strong>
+                                    {{userFullname}}
+                                </strong>,
+                            </p>
+
+                            <p style="
+                                margin:0 0 24px;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#4b5563;
+                            ">
+                                Your booking has been successfully completed. We hope your pet enjoyed their experience with us!
+                            </p>
+
+                            <!-- BOOKING INFO -->
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="
+                                    background:#ecfdf5;
+                                    border:1px solid #a7f3d0;
+                                    border-radius:18px;
+                                    margin-bottom:24px;
+                                "
+                            >
+                                <tr>
+                                    <td style="padding:20px;">
+
+                                        <h2 style="
+                                            margin:0 0 16px;
+                                            font-size:18px;
+                                            line-height:26px;
+                                            color:#065f46;
+                                            font-weight:800;
+                                        ">
+                                            Booking Information
+                                        </h2>
+
+                                        <table
+                                            role="presentation"
+                                            width="100%"
+                                            cellspacing="0"
+                                            cellpadding="0"
+                                            border="0"
+                                        >
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Booking ID
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    #{{bookingId}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Booking Code
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#2563eb;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{bookingCode}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Booking Type
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{bookingType}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Pet Name
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{petName}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Species
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{petSpecies}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Breed
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{petBreed}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Check-in
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{checkInDate}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:8px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Check-out
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:8px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    {{checkOutDate}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:10px 0 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Total Payment
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:10px 0 0;
+                                                        font-size:22px;
+                                                        color:#047857;
+                                                        font-weight:800;
+                                                    "
+                                                >
+                                                    {{totalPrice}}
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- SERVICE DETAILS -->
+                            <div style="
+                                margin:0 0 12px;
+                                font-size:18px;
+                                line-height:26px;
+                                color:#111827;
+                                font-weight:800;
+                            ">
+                                Service Details
+                            </div>
+
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="margin-bottom:24px"
+                            >
+                                {{bookingItems}}
+                            </table>
+
+                            <!-- SUMMARY -->
+                            <table
+                                role="presentation"
+                                width="100%"
+                                cellspacing="0"
+                                cellpadding="0"
+                                border="0"
+                                style="
+                                    margin-bottom:28px;
+                                    background:#ecfdf5;
+                                    border:1px solid #a7f3d0;
+                                    border-radius:18px;
+                                "
+                            >
+                                <tr>
+                                    <td style="padding:18px;">
+
+                                        <table
+                                            role="presentation"
+                                            width="100%"
+                                            cellspacing="0"
+                                            cellpadding="0"
+                                            border="0"
+                                        >
+
+                                            <tr>
+                                                <td style="
+                                                    padding:6px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Subtotal
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:6px 0;
+                                                        font-size:14px;
+                                                        color:#111827;
+                                                    "
+                                                >
+                                                    {{originalPrice}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:6px 0;
+                                                    font-size:14px;
+                                                    color:#6b7280;
+                                                ">
+                                                    Discount
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:6px 0;
+                                                        font-size:14px;
+                                                        color:#dc2626;
+                                                        font-weight:700;
+                                                    "
+                                                >
+                                                    - {{discount}}
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="
+                                                    padding:12px 0 0;
+                                                    font-size:18px;
+                                                    color:#111827;
+                                                    font-weight:800;
+                                                ">
+                                                    Grand Total
+                                                </td>
+
+                                                <td
+                                                    align="right"
+                                                    style="
+                                                        padding:12px 0 0;
+                                                        font-size:24px;
+                                                        color:#047857;
+                                                        font-weight:800;
+                                                    "
+                                                >
+                                                    {{grandTotal}}
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="
+                                margin:0 0 16px;
+                                text-align:center;
+                                font-size:15px;
+                                line-height:24px;
+                                color:#4b5563;
+                            ">
+                                If you have any questions or concerns about your booking,
+                                please don't hesitate to contact us.
+                            </p>
+
+                            <p style="
+                                margin:0;
+                                text-align:center;
+                                font-size:14px;
+                                line-height:22px;
+                                color:#4b5563;
+                            ">
+                                Thank you for choosing Paw Premier House. We look forward to
+                                serving you and your pet again!
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="
+                            padding:22px 24px 26px;
+                            border-top:1px solid #e5e7eb;
+                            text-align:center;
+                            background:#f9fafb;
+                        ">
+
+                            <p style="
+                                margin:0 0 6px;
+                                font-size:14px;
+                                color:#111827;
+                                font-weight:700;
+                            ">
+                                Paw Premier House
+                            </p>
+
+                            <p style="
+                                margin:0;
+                                font-size:12px;
+                                line-height:18px;
+                                color:#9ca3af;
+                            ">
+                                This is an automated email. Please do not reply
+                                directly to this message.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</div>

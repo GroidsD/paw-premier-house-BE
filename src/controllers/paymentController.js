@@ -57,12 +57,12 @@ let handleMoMoReturn = async (req, res) => {
             console.log("Redirect booking");
 
             return res.redirect(
-                `${FRONTEND_URL}/confirm-booking?status=${paymentStatus}&bookingId=${orderId}`,
+                `${FRONTEND_URL}/booking-success?status=${paymentStatus}&bookingId=${orderId}`,
             );
         }
 
         return res.redirect(
-            `${FRONTEND_URL}/confirm-order?status=${paymentStatus}&orderId=${orderId}`,
+            `${FRONTEND_URL}/order-success?status=${paymentStatus}&orderId=${orderId}`,
         );
     } catch (error) {
         console.error("❌ handleMoMoReturn error:");
