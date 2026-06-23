@@ -933,7 +933,7 @@ module.exports = {
 
         if (bookingItemRows.length > 0) {
             await queryInterface.bulkInsert(
-                "bookingitems",
+                "bookingItems",
                 bookingItemRows,
                 {},
             );

@@ -74,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
         {
             sequelize,
             modelName: "BookingItem",
-            tableName: "bookingitems",
+            tableName: "bookingItems",
             freezeTableName: true,
             timestamps: true,
             createdAt: "created_at",
